@@ -76,7 +76,21 @@ Plans:
   3. Killing the app mid-grilling and relaunching offers to resume, and the session continues from the last saved turn. `session.json` is rewritten atomically after every turn, and corrupt files are quarantined, not loaded.
   4. An E2E test that taps every IPC message to the renderer finds zero interviewer-package content before review mode. Requesting any `*_interviewer_package.pdf` or an invalid case ID over `app://` is refused.
   5. Every finished session (transcript, timings, control log, scorecard) is stored as zod-validated files in the local session library.
-**Plans**: TBD
+**Plans**: 12 plans in 6 waves
+
+Plans:
+- [ ] 03-01-PLAN.md — TDD shared contracts: IPC channels, ViewState/LibraryView/Intent types + strict schemas, ports, versioned session.json schema (wave 1)
+- [ ] 03-02-PLAN.md — TDD app://bundle/cases/<id>/interviewee.pdf route (interviewer packages refused), findCase, readDeckText, fixture PDFs (wave 1)
+- [ ] 03-03-PLAN.md — TDD SessionStore: atomic tmp+fsync+rename, quarantine, library view (greyed completion, resumable) (wave 2)
+- [ ] 03-04-PLAN.md — TDD fake adapters: scripted FakeLlm, FakeStt with injection, scaled clock (wave 2)
+- [ ] 03-05-PLAN.md — TDD candidate-safe ViewState projection + review-mode reveal (wave 2)
+- [ ] 03-06-PLAN.md — Library screen: case grid, greyed completed + Retake, start sheet, resume banner (wave 2)
+- [ ] 03-07-PLAN.md — Session layout (talk/ready/skip/end) and ReviewMode screen (wave 2)
+- [ ] 03-08-PLAN.md — TDD SessionRunner: reducer effects, speech acks, leak guard, end early, crash resume (wave 3)
+- [ ] 03-09-PLAN.md — App routing over IPC + fake renderer speech queue (wave 3)
+- [ ] 03-10-PLAN.md — Composition root, validated session IPC, preload API + E2E IPC tap, index wiring (wave 4)
+- [ ] 03-11-PLAN.md — T1 E2E flow suite: library, full session, greyed/Retake, end early, time scale (wave 5)
+- [ ] 03-12-PLAN.md — T1 E2E crash-resume/quarantine + IPC-tap redaction + app:// refusals; phase gate 3x + packaged (wave 6)
 **UI hint**: yes
 
 ### Phase 4: Proctored Review Block
@@ -160,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Scaffold, Harness & Key Onboarding | 5/9 | Complete    | 2026-11-03 |
 | 2. Core Domain Logic | 4/5 | Complete    | 2026-11-03 |
-| 3. Walking Skeleton on Fakes | 0/TBD | Not started | - |
+| 3. Walking Skeleton on Fakes | 0/12 | Planned | - |
 | 4. Proctored Review Block | 0/TBD | Not started | - |
 | 5. Voice Out & Avatar | 0/TBD | Not started | - |
 | 6. Interviewer Agent | 0/TBD | Not started | - |
