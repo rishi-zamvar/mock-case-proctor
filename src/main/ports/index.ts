@@ -60,11 +60,14 @@ export interface LlmPort {
     signal: AbortSignal
   ): Promise<{ order: string[]; plan?: OpeningPlan }>
   scoreSession(input: ScoreInput, signal: AbortSignal): Promise<Scorecard>
+  /** Barge-in: the candidate cut the last warm-up/grill turn off. spokenText = only the sentences actually heard ('' if none). */
+  interrupted?(spokenText: string): void
 }
 /** One interviewer per case session (INT-08): the brief is bound at construction, never shared across sessions. */
 export type MakeLlm = (brief: InterviewerBrief) => LlmPort
+export type SttResult = { text: string; noAnswer?: boolean; voicedMs?: number }
 export interface SttPort {
-  transcribe(pcm16k: Float32Array): Promise<{ text: string }>
+  transcribe(pcm16k: Float32Array, o?: { prompt?: string }): Promise<SttResult>
 }
 /** Keeps the display awake during a session; Electron powerSaveBlocker in prod. */
 export interface AwakePort {
