@@ -1,13 +1,14 @@
 import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import type { InterviewerBrief } from '../domain/cases/brief'
 import { DEFAULT_LIBRARY_ROOT, listCases, loadCase } from '../domain/cases/library'
 import { checkUtterance, normalizeForGuard } from '../domain/text/leakGuard'
 import { FIXTURE_ROOT, deck } from '../session/runner.harness'
 import { FEW_SHOT, PERSONA, buildSystem, buildWarmupSystem } from './prompt'
 
-const load99 = () => loadCase(FIXTURE_ROOT, '99', deck).brief
+const load99 = (): InterviewerBrief => loadCase(FIXTURE_ROOT, '99', deck).brief
 const brief = load99()
-const joined = (b = brief) =>
+const joined = (b = brief): string =>
   buildSystem(b)
     .map((x) => x.text)
     .join('\n')
@@ -104,7 +105,9 @@ describe('buildWarmupSystem', () => {
 
 describe('FEW_SHOT', () => {
   const realBriefs = existsSync(DEFAULT_LIBRARY_ROOT)
-    ? listCases(DEFAULT_LIBRARY_ROOT).map((c) => loadCase(DEFAULT_LIBRARY_ROOT, String(c.number).padStart(2, '0'), '').brief)
+    ? listCases(DEFAULT_LIBRARY_ROOT).map(
+        (c) => loadCase(DEFAULT_LIBRARY_ROOT, String(c.number).padStart(2, '0'), '').brief
+      )
     : []
 
   it('given each line, when shaped, then <=3 sentences and exactly one question mark', () => {
