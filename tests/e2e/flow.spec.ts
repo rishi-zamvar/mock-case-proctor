@@ -108,7 +108,8 @@ test('full session walks every screen', async () => {
       .locator('[data-testid="full-transcript"] li[data-speaker="interviewer"]')
       .count()
     await page.getByTestId('tab-trends').click()
-    await expect(page.getByText('Trends arrive in Phase 8')).toBeVisible()
+    // One scored session: Trends needs two.
+    await expect(page.getByTestId('trends')).toHaveAttribute('data-status', 'insufficient')
 
     // On disk (REV-05)
     const files = sessionFiles(userData)
