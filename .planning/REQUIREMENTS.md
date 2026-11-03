@@ -107,7 +107,7 @@
 ### Quality (QA)
 
 - [x] **QA-01**: TDD. Tests are written before the logic for every pure module and service.
-- [ ] **QA-02**: Tier-1 end-to-end tests (every component faked) cover every screen and the full session flow, and run on every change.
+- [x] **QA-02**: Tier-1 end-to-end tests (every component faked) cover every screen and the full session flow, and run on every change.
 - [ ] **QA-03**: Tier-2 end-to-end tests use real speech-to-text and voice, replayed Claude responses, and WAV fixtures fed in as the mic. They cover the real voice loop.
 - [ ] **QA-04**: Tier-3 live run: a full session on the packaged `.app` against the real Claude API. Live evals: no leaks, pushback when given a wrong GRR, sections completing within their cap.
 
@@ -186,7 +186,7 @@
 | REV-05 | Phase 3 | Complete |
 | REV-06 | Phase 8 | Pending |
 | QA-01 | Phase 1 | Complete |
-| QA-02 | Phase 3 | Pending |
+| QA-02 | Phase 3 | Complete |
 | QA-03 | Phase 7 | Pending |
 | QA-04 | Phase 9 | Pending |
 
