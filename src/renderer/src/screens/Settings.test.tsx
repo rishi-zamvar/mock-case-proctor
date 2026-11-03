@@ -8,12 +8,10 @@ const KEY = 'paste-key-' + 'q'.repeat(6)
 const NONE: KeyStatus = { hasKey: false, source: 'none' }
 
 function setup(status: KeyStatus = NONE, outcome?: SaveOutcome) {
-  const save = vi.fn(
-    async (): Promise<SaveResult> => ({
-      result: outcome ?? 'valid',
-      status: outcome === 'valid' ? { hasKey: true, source: 'stored' } : NONE
-    })
-  )
+  const save = vi.fn(async (): Promise<SaveResult> => ({
+    result: outcome ?? 'valid',
+    status: outcome === 'valid' ? { hasKey: true, source: 'stored' } : NONE
+  }))
   const clear = vi.fn(async (): Promise<KeyStatus> => NONE)
   window.api = { key: { status: vi.fn(async () => status), save, clear } }
   const props = { onStatus: vi.fn(), onDone: vi.fn(), onBack: vi.fn() }
