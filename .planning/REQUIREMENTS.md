@@ -33,7 +33,7 @@
 
 ### Information Barrier (BAR)
 
-- [ ] **BAR-01**: No interviewer-package content (flags, answer key, rubric, ideal answer, prep brief) crosses to the renderer before review mode. An end-to-end test taps every IPC message and fails on any leak.
+- [x] **BAR-01**: No interviewer-package content (flags, answer key, rubric, ideal answer, prep brief) crosses to the renderer before review mode. An end-to-end test taps every IPC message and fails on any leak.
 - [x] **BAR-02**: `app://` never serves `*_interviewer_package.pdf`.
 - [x] **BAR-03**: A leak guard checks every interviewer utterance before it reaches the voice. It blocks answer-key phrasing (n-grams of 8 or more tokens, plus banned terms such as "rubric" and "answer key").
 
@@ -101,7 +101,7 @@
   - whether he led with a call;
   - which sections he omitted.
 - [ ] **REV-04**: Reveal. Review mode shows the 60-second ideal answer next to Rishi's opening, the key numbers, and the full transcript.
-- [ ] **REV-05**: Every session (transcript, timings, control log, scorecard) is stored in a local session library.
+- [x] **REV-05**: Every session (transcript, timings, control log, scorecard) is stored in a local session library.
 - [ ] **REV-06**: Trends across cases. A separate review agent reads the summaries of past scorecards and reports recurring weaknesses, progress by dimension, and the carried-forward "one fix".
 
 ### Quality (QA)
@@ -149,7 +149,7 @@
 | LIB-01 | Phase 3 | Pending |
 | LIB-02 | Phase 3 | Pending |
 | LIB-03 | Phase 2 | Complete |
-| BAR-01 | Phase 3 | Pending |
+| BAR-01 | Phase 3 | Complete |
 | BAR-02 | Phase 3 | Complete |
 | BAR-03 | Phase 2 | Complete |
 | FLOW-01 | Phase 2 | Complete |
@@ -183,7 +183,7 @@
 | REV-02 | Phase 8 | Pending |
 | REV-03 | Phase 8 | Pending |
 | REV-04 | Phase 8 | Pending |
-| REV-05 | Phase 3 | Pending |
+| REV-05 | Phase 3 | Complete |
 | REV-06 | Phase 8 | Pending |
 | QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 3 | Pending |
