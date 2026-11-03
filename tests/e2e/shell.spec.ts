@@ -32,9 +32,14 @@ test('renderer has no Node and a minimal api', async () => {
       'onSpeakCancel',
       'onView',
       'session',
-      'speak'
+      'speak',
+      'stt'
     ])
-    expect(await page.evaluate(() => window.api.config)).toEqual({ tts: 'fake' })
+    expect(await page.evaluate(() => window.api.config)).toEqual({ tts: 'fake', stt: 'fake' })
+    expect(await page.evaluate(() => Object.keys(window.api.stt!).sort())).toEqual([
+      'chunk',
+      'status'
+    ])
     expect(await page.evaluate(() => Object.keys(window.api.session).sort())).toEqual([
       'discard',
       'intent',
