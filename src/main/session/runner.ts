@@ -93,6 +93,15 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   type Latency = NonNullable<SessionFile['timings'][number]['latency']>
   let pendingLat: { stopAt: number; transcriptAt: number } | null = null
   let liveLat: { turnId: string; lat: Latency } | null = null
+  /** The turn being spoken: what was written (index === seq) and which seqs were acked spoken. */
+  let live: {
+    turnId: string
+    kind: string
+    written: string[]
+    spoken: Set<number>
+    t0: number
+    lat: Latency | null
+  } | null = null
 
   /** Serialise every state change; a failed job never blocks the next one. */
   function enqueue<T>(job: () => T | Promise<T>): Promise<T> {
@@ -242,6 +251,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     let control: InterviewControl | null = null
     let warmupComplete = false
     const written: string[] = []
+    live = { turnId, kind, written, spoken: new Set(), t0, lat }
     const waits: Promise<void>[] = []
 
     const emit = (sentence: string): void => {
@@ -291,9 +301,13 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       splitter.flush().forEach(emit)
       await Promise.all(waits)
     }
+    if (live?.turnId === turnId) live = null
     if (signal.aborted) {
-      speaking = false
-      pushView()
+      // A barge-in may already have started a newer turn; leave its state alone.
+      if (inflight === null && live === null) {
+        speaking = false
+        pushView()
+      }
       return null
     }
     const m = s.machineState
@@ -494,6 +508,42 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         }
         return
       }
+      case 'bargeIn': {
+        if (!speaking || !live || !TALK.includes(phase)) return
+        const L = live
+        live = null
+        const said = L.written.filter((_, n) => L.spoken.has(n))
+        abortInflight()
+        speaking = false
+        const at = clock.now()
+        const m = s.machineState
+        if (said.length)
+          s.transcript.push({
+            id: L.turnId,
+            speaker: 'interviewer',
+            phase,
+            ...(m.current ? { section: m.current } : {}),
+            text: said.join(' '),
+            at
+          })
+        s.timings.push({
+          turnId: L.turnId,
+          kind: L.kind,
+          startedAt: L.t0,
+          doneAt: at,
+          interrupted: true,
+          ...(L.lat ? { latency: L.lat } : {})
+        })
+        if (liveLat?.turnId === L.turnId) liveLat = null
+        if (L.kind === 'grill' || L.kind === 'warmup') llm.interrupted?.(said.join(' '))
+        d.log.info('barge-in', L.kind, said.length)
+        s.pending = null
+        store.save(s)
+        if (phase === 'grilling' && L.kind === 'grill')
+          dispatch({ type: 'AGENT_TURN_DONE', now: at, control: null })
+        else pushView()
+        return
+      }
       case 'ready':
         return dispatch({ type: 'READY', now })
       case 'skipWarmup':
@@ -525,6 +575,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     transcribing = false
     pendingLat = null
     liveLat = null
+    live = null
   }
 
   async function start(caseId: string, opts: StartOptions): Promise<{ sessionId: string }> {
@@ -621,8 +672,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       if (s?.status === 'active') store.save({ ...s, status: 'abandoned', endedAt: clock.now() })
     },
     intent: (i) => enqueue(() => onIntent(i)),
-    // ponytail: spoken is carried for Phase 7 barge-in history; ignored until then
-    ack(turnId, seq) {
+    ack(turnId, seq, spoken) {
+      if (spoken !== false && live?.turnId === turnId) live.spoken.add(seq)
       acks.get(`${turnId}:${seq}`)?.()
     },
     started(turnId) {
