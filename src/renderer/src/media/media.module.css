@@ -1,0 +1,56 @@
+.micCheck {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.meter {
+  width: 100%;
+  height: 8px;
+}
+
+.note {
+  margin: 0;
+  color: var(--warning);
+}
+
+.tile {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  border: var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mirror {
+  transform: scaleX(-1);
+}
+
+.label {
+  position: absolute;
+  left: var(--space);
+  bottom: var(--space);
+  padding: 2px var(--space);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: var(--muted);
+}
