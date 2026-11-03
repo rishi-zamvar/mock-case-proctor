@@ -81,9 +81,9 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — TDD shared contracts: IPC channels, ViewState/LibraryView/Intent types + strict schemas, ports, versioned session.json schema (wave 1)
 - [x] 03-02-PLAN.md — TDD app://bundle/cases/<id>/interviewee.pdf route (interviewer packages refused), findCase, readDeckText, fixture PDFs (wave 1)
-- [ ] 03-03-PLAN.md — TDD SessionStore: atomic tmp+fsync+rename, quarantine, library view (greyed completion, resumable) (wave 2)
+- [x] 03-03-PLAN.md — TDD SessionStore: atomic tmp+fsync+rename, quarantine, library view (greyed completion, resumable) (wave 2)
 - [ ] 03-04-PLAN.md — TDD fake adapters: scripted FakeLlm, FakeStt with injection, scaled clock (wave 2)
-- [ ] 03-05-PLAN.md — TDD candidate-safe ViewState projection + review-mode reveal (wave 2)
+- [x] 03-05-PLAN.md — TDD candidate-safe ViewState projection + review-mode reveal (wave 2)
 - [ ] 03-06-PLAN.md — Library screen: case grid, greyed completed + Retake, start sheet, resume banner (wave 2)
 - [ ] 03-07-PLAN.md — Session layout (talk/ready/skip/end) and ReviewMode screen (wave 2)
 - [ ] 03-08-PLAN.md — TDD SessionRunner: reducer effects, speech acks, leak guard, end early, crash resume (wave 3)
