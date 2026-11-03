@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-11-03T13:51:37.064Z"
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-11-03T14:12:25.013Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 75
-  completed_plans: 73
+  completed_plans: 74
   percent: 88
 ---
 
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 09
-Plan: 2 of 3 (09-01 done)
-Status: Executing
+Plan: 3 of 3 (09-01 done)
+Status: Ready to execute
 Last activity: 2026-11-03
 
 Progress: [█████████░] 88%
@@ -124,6 +124,7 @@ Progress: [█████████░] 88%
 | Phase 08 P10 | 6min | 2 tasks | 7 files |
 | Phase 08 P11 | 71min | 3 tasks | 8 files |
 | Phase 09 P01 | 14min | 3 tasks | 9 files |
+| Phase 09 P02 | 45min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -228,6 +229,8 @@ Recent decisions affecting current work:
 - [Phase 08]: 08-10: grader prompt unchanged; recorded+live case_99 ordering strong>average>weak (live 21/12/6, 0% dropped quotes)
 - [Phase 08]: T1 numbers-row check uses a concrete case_99 opening (GRR 85% correct, 95% wrong with expected 85%)
 - [Phase 09]: bargeInto returns nCut alongside cutTurn/bargeMs; @t3 excluded from T1, run via npm run test:t3
+- [Phase 09]: Packaged live latency MISSED 3 s (pooled 4.98 s, TTFT-dominated); options in LATENCY.md, interviewer model unchanged pending Rishi
+- [Phase 09]: Soak needs driveToReviewMode step budget 600 with real HeadTTS (harness, not app)
 
 ### Pending Todos
 
@@ -242,6 +245,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T13:51:37.060Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-11-03T14:12:25.009Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
