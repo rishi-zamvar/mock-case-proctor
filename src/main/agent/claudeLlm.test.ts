@@ -9,7 +9,10 @@ import { FIXTURE_ROOT, deck } from '../session/runner.harness'
 import { createClaudeLlm, DEFAULT_INTERVIEWER_MODEL, INTERVIEWER_MAX_TOKENS } from './claudeLlm'
 import { checkConversation } from './messages'
 import { FALLBACK_LINE } from './turnText'
-import { sseEvents, sseFetch } from './sse.harness'
+import { jsonMessage, sseEvents, sseFetch } from './sse.harness'
+import { buildWarmupSystem, warmupNote } from './prompt'
+import { ScorecardSchema } from '../../shared/schemas'
+import type { OpeningPlan } from '../ports'
 
 const brief: InterviewerBrief = loadCase(FIXTURE_ROOT, '99', deck).brief
 const flagId = brief.flags.map[0].id
@@ -254,5 +257,121 @@ describe('createClaudeLlm streamTurn', () => {
     const s = JSON.stringify(log.all())
     for (const secret of ['OPENING_SECRET', 'ANSWER_SECRET', 'REPLY_SECRET', '<proctor>', 'phase='])
       expect(s).not.toContain(secret)
+  })
+})
+
+const live = (): AbortSignal => new AbortController().signal
+
+describe('createClaudeLlm warmupTurn', () => {
+  it('given empty history, then a case-free warm-up request with no tools and text then done', async () => {
+    const { make, requests } = setup([sseEvents({ text: ['Hi, ', 'how was your week?'] })])
+    const chunks = await collect(make().warmupTurn({ history: [] }, live()))
+    const r = requests[0]
+    expect(r.system).toBe(buildWarmupSystem())
+    expect('tools' in r).toBe(false)
+    expect('thinking' in r).toBe(false)
+    expect(r.output_config).toEqual({ effort: 'low' })
+    const msgs = msgsOf(r)
+    expect(msgs).toHaveLength(1)
+    expect(JSON.stringify(msgs[0])).toContain(JSON.stringify(warmupNote(0)).slice(1, -1))
+    const raw = JSON.stringify(r)
+    expect(raw).not.toContain(brief.company.name)
+    expect(raw).not.toContain('<evaluation_key>')
+    expect(chunks.map((c) => c.type)).toEqual(['text', 'text', 'done'])
+    expect(chunks.some((c) => c.type === 'done' && c.warmupComplete)).toBe(false)
+  })
+
+  it('given a second warm-up turn, then it carries the first exchange and the wrapped reply', async () => {
+    const { make, requests } = setup([
+      sseEvents({ text: ['How was your week?'] }),
+      sseEvents({ text: ['Nice. Why growth?'] })
+    ])
+    const llm = make()
+    await collect(llm.warmupTurn({ history: [] }, live()))
+    await collect(
+      llm.warmupTurn(
+        {
+          history: [
+            { speaker: 'interviewer', text: 'How was your week?' },
+            { speaker: 'candidate', text: 'WARM_SECRET pretty good' }
+          ]
+        },
+        live()
+      )
+    )
+    const msgs = msgsOf(requests[1])
+    expect(msgs.map((m) => m.role)).toEqual(['user', 'assistant', 'user'])
+    expect(JSON.stringify(msgs[2])).toContain('<candidate_said>WARM_SECRET pretty good')
+    expect(JSON.stringify(msgs[2])).toContain(JSON.stringify(warmupNote(1)).slice(1, -1))
+    expect(checkConversation(msgs)).toEqual([])
+  })
+})
+
+describe('createClaudeLlm extractPlan', () => {
+  const plan: OpeningPlan = {
+    recap: 'Invest at a lower price',
+    recommendation: 'invest_at_price',
+    price: '8x ARR',
+    considerations: [
+      { label: 'industry tailwind', section_id: 'industry', stance: 'for' },
+      { label: 'sticky product', section_id: 'business', stance: 'for' },
+      { label: 'churn risk', section_id: 'retention', stance: 'against' }
+    ],
+    order: ['business', 'valuation', 'industry', 'retention']
+  }
+
+  it('given a valid structured response, then order comes from considerations and the plan is returned', async () => {
+    const { make, requests } = setup([jsonMessage(JSON.stringify(plan))])
+    const res = await make().extractPlan(OPENING, live())
+    expect(res).toEqual({ order: ['industry', 'business', 'retention'], plan })
+    const r = requests[0]
+    expect(r.max_tokens).toBe(2048)
+    expect((r.output_config as { effort: string }).effort).toBe('low')
+    expect((r.output_config as { format?: unknown }).format).toBeTruthy()
+    expect('tools' in r).toBe(false)
+    expect('stream' in r && r.stream).toBeFalsy()
+    const raw = JSON.stringify(r)
+    expect(raw).toContain('<candidate_said>OPENING_SECRET')
+    expect(raw).not.toContain(brief.company.name)
+    expect(raw).not.toContain('<evaluation_key>')
+  })
+
+  it('given an unparsable response, then { order: [] } and a code-only log', async () => {
+    const { make, log } = setup([jsonMessage('not json at all')])
+    expect(await make().extractPlan(OPENING, live())).toEqual({ order: [] })
+    expect(log.warn.mock.calls.flat().join(' ')).toContain('extraction unparsable')
+    expect(JSON.stringify(log.all())).not.toContain('OPENING_SECRET')
+  })
+
+  it('given a schema-invalid response, then { order: [] }', async () => {
+    const { make } = setup([jsonMessage(JSON.stringify({ ...plan, recommendation: 'maybe' }))])
+    expect(await make().extractPlan(OPENING, live())).toEqual({ order: [] })
+  })
+})
+
+describe('createClaudeLlm scoreSession + isolation', () => {
+  it('scoreSession delegates to the fake scorer (Phase 8 stub)', async () => {
+    const { make } = setup([])
+    const card = await make().scoreSession(
+      { transcript: [], controlLog: [], endedEarly: false, omitted: [] },
+      live()
+    )
+    expect(ScorecardSchema.parse(card)).toEqual(card)
+    expect(card.graderModel).toBe('fake')
+  })
+
+  it('given two sessions, then B starts fresh with no A history; warm-up and grill are independent', async () => {
+    const { make, requests } = setup([
+      sseEvents({ text: ['Warm?'] }),
+      sseEvents({ text: [REPLY], control: control() }),
+      sseEvents({ text: ['B?'], control: control() })
+    ])
+    const a = make()
+    const b = make()
+    await collect(a.warmupTurn({ history: [] }, live()))
+    await collect(a.streamTurn(grill(h1), live()))
+    expect(msgsOf(requests[1])).toHaveLength(1)
+    await collect(b.streamTurn(grill(h1), live()))
+    expect(msgsOf(requests[2])).toHaveLength(1)
   })
 })
