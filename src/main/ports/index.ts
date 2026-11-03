@@ -34,6 +34,11 @@ export type MakeLlm = (brief: InterviewerBrief) => LlmPort
 export interface SttPort {
   transcribe(pcm16k: Float32Array): Promise<{ text: string }>
 }
+/** Keeps the display awake during a session; Electron powerSaveBlocker in prod. */
+export interface AwakePort {
+  hold(): void
+  release(): void
+}
 export interface ClockPort {
   now(): number
   setTimer(at: number, cb: () => void): () => void

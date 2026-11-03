@@ -40,7 +40,9 @@ export function toViewState(
     speaking: x.speaking,
     canTalk: !x.speaking && TALK_PHASES.includes(phase),
     endedEarly: m.endedEarly,
-    reveal: phase === 'reviewMode' && s.scorecard ? buildReveal(s, brief) : null
+    reveal: phase === 'reviewMode' && s.scorecard ? buildReveal(s, brief) : null,
+    deckPage: s.deckPage ?? 1,
+    reviewWarned: m.reviewWarned
   })
 }
 

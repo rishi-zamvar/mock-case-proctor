@@ -123,7 +123,9 @@ export const ViewStateSchema = z
     speaking: z.boolean(),
     canTalk: z.boolean(),
     endedEarly: z.boolean(),
-    reveal: RevealSchema.nullable()
+    reveal: RevealSchema.nullable(),
+    deckPage: z.number().int().min(1),
+    reviewWarned: z.boolean()
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -159,7 +161,8 @@ export const IntentSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('answer'), ms: z.number().int().min(0).max(600_000) }).strict(),
   z.object({ type: z.literal('ready') }).strict(),
   z.object({ type: z.literal('skipWarmup') }).strict(),
-  z.object({ type: z.literal('end') }).strict()
+  z.object({ type: z.literal('end') }).strict(),
+  z.object({ type: z.literal('deckPage'), page: z.number().int().min(1).max(500) }).strict()
 ])
 
 export const StartArgsSchema = z.tuple([

@@ -30,6 +30,8 @@ function view(o: Partial<ViewState> = {}): ViewState {
     canTalk: true,
     endedEarly: false,
     reveal: null,
+    deckPage: 1,
+    reviewWarned: false,
     ...o
   }
 }

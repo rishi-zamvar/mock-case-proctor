@@ -105,6 +105,8 @@ export type ViewState = {
   canTalk: boolean
   endedEarly: boolean
   reveal: Reveal | null // non-null ONLY when phase === 'reviewMode'
+  deckPage: number // 1-based PDF page of the interviewee deck; 1 when unset
+  reviewWarned: boolean
 }
 export type LibraryEntry = { card: CaseCard; completed: { at: number; score: number } | null }
 export type ResumableSession = {
@@ -120,6 +122,10 @@ export type LibraryView = {
   error: string | null
 }
 export type Intent =
-  { type: 'answer'; ms: number } | { type: 'ready' } | { type: 'skipWarmup' } | { type: 'end' }
+  | { type: 'answer'; ms: number }
+  | { type: 'ready' }
+  | { type: 'skipWarmup' }
+  | { type: 'end' }
+  | { type: 'deckPage'; page: number }
 export type StartOptions = { warmup: boolean }
 export type SpeakEvent = { turnId: string; seq: number; text: string }
