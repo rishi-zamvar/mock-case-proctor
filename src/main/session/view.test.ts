@@ -142,7 +142,7 @@ describe('toViewState barrier (BAR-01)', () => {
     for (const leaf of strings(v)) expect(checkUtterance(leaf, brief)).toEqual({ ok: true })
   })
 
-  it('has exactly the 14 ViewState keys', () => {
+  it('has exactly the 15 ViewState keys', () => {
     const v = toViewState(atPhase('grilling'), card, brief, X)
     expect(Object.keys(v).sort()).toEqual(
       [
@@ -159,7 +159,8 @@ describe('toViewState barrier (BAR-01)', () => {
         'endedEarly',
         'reveal',
         'deckPage',
-        'reviewWarned'
+        'reviewWarned',
+        'transcribing'
       ].sort()
     )
   })
@@ -205,6 +206,13 @@ describe('toViewState fields', () => {
     )
     expect(toViewState(atPhase('review'), card, brief, X).canTalk).toBe(false)
     expect(toViewState(atPhase('grilling'), card, brief, X).canTalk).toBe(true)
+  })
+
+  it('given extras, then transcribing defaults false, mirrors extras, and blocks canTalk', () => {
+    expect(toViewState(atPhase('grilling'), card, brief, X).transcribing).toBe(false)
+    const v = toViewState(atPhase('grilling'), card, brief, { ...X, transcribing: true })
+    expect(v.transcribing).toBe(true)
+    expect(v.canTalk).toBe(false)
   })
 
   it('given no deckPage then 1; given deckPage 7 then 7', () => {
