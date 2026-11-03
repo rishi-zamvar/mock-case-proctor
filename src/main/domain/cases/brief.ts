@@ -1,5 +1,6 @@
 // Main-only interviewer brief (LIB-03). Never import this from src/shared, preload or renderer.
 import type { LeakSource } from '../text/leakGuard'
+import { parseNumbers } from '../text/numbers'
 import { splitPages } from './deckText'
 import { makeResolver, resolveDeep, type Tokens } from './resolve'
 
@@ -63,6 +64,8 @@ export interface InterviewerBrief extends LeakSource {
   memorize: { label: string; text: string }[]
   traps: string[]
   annotations: unknown[]
+  /** Numeric case tokens (fmt not text/year, display string parses to a number) for REV-03 checks. */
+  numberTokens: { id: string; text: string }[]
 }
 
 // Untyped case JSON; every field is picked explicitly and resolved (never spread).
@@ -162,6 +165,10 @@ export function buildBrief(data: unknown, deckText: string): InterviewerBrief {
     memorize: R(pb.memorize ?? []),
     traps: R(pb.traps ?? []),
     annotations: R(iv.s9_annotations ?? []),
+    numberTokens: Object.entries((d.tokens ?? {}) as Tokens)
+      .filter(([, t]) => t.fmt !== 'text' && t.fmt !== 'year')
+      .map(([id, t]) => ({ id, text: String(t.s) }))
+      .filter((t) => parseNumbers(t.text).length > 0),
     // BAR-03 sources: what the interviewer must never read out.
     leakSources: [
       idealAnswer,
