@@ -17,7 +17,10 @@ const card = (n: number, company: string, vertical: string, level: number): Case
 const VIEW: LibraryView = {
   cases: [
     { card: card(1, 'Acme', 'Vertical SaaS', 1), completed: null },
-    { card: card(2, 'PawsHub', 'Consumer', 2), completed: { at: Date.UTC(2026, 10, 3, 12), score: 18 } },
+    {
+      card: card(2, 'PawsHub', 'Consumer', 2),
+      completed: { at: Date.UTC(2026, 10, 3, 12), score: 18 }
+    },
     { card: card(99, 'Fixturely', 'Fintech', 3), completed: null }
   ],
   resumable: null,
@@ -25,7 +28,7 @@ const VIEW: LibraryView = {
   error: null
 }
 
-function setup(over: Partial<LibraryView> = {}) {
+function setup(over: Partial<LibraryView> = {}): Record<string, ReturnType<typeof vi.fn>> {
   const props = {
     onStart: vi.fn(),
     onResume: vi.fn(),
