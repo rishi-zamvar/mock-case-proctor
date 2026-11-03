@@ -12,7 +12,7 @@ The project starts with a sandboxed Electron shell that has test seams, secret h
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Scaffold, Harness & Key Onboarding** - Sandboxed Electron app, private repo, three-tier test harness, encrypted API key
+- [x] **Phase 1: Scaffold, Harness & Key Onboarding** - Sandboxed Electron app, private repo, three-tier test harness, encrypted API key (completed 2026-11-03)
 - [ ] **Phase 2: Core Domain Logic** - Pure, test-first state machine, case loader, leak guard and speech normaliser
 - [ ] **Phase 3: Walking Skeleton on Fakes** - Every screen and the full session flow clickable on fakes, with the barrier and persistence enforced
 - [ ] **Phase 4: Proctored Review Block** - In-window deck, a drift-free 45-minute countdown, webcam tile and mic check
@@ -151,7 +151,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scaffold, Harness & Key Onboarding | 5/9 | In Progress|  |
+| 1. Scaffold, Harness & Key Onboarding | 5/9 | Complete    | 2026-11-03 |
 | 2. Core Domain Logic | 0/TBD | Not started | - |
 | 3. Walking Skeleton on Fakes | 0/TBD | Not started | - |
 | 4. Proctored Review Block | 0/TBD | Not started | - |
