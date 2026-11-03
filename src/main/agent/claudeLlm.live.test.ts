@@ -273,7 +273,14 @@ describe.skipIf(!process.env.LIVE)('interviewer live evals (real Claude)', () =>
     mkdirSync(dir, { recursive: true })
     writeFileSync(
       join(dir, 'interviewer-ttft.json'),
-      JSON.stringify({ model: MODEL, n, medianMs, samples })
+      JSON.stringify({
+        model: MODEL,
+        n,
+        medianMs,
+        samples,
+        turns: ALL.length,
+        missingControl: ALL.filter((o) => !o.control).length
+      })
     )
     console.log('interviewer median TTFT ms', medianMs)
     expect(n).toBeGreaterThanOrEqual(5)
