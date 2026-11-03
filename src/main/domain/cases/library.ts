@@ -43,12 +43,27 @@ export function listCases(root: string = DEFAULT_LIBRARY_ROOT): CaseCard[] {
     .sort((a, b) => a.number - b.number)
 }
 
+export function findCase(root: string, id: string): { id: string; slug: string; dir: string } | null {
+  if (!/^\d{2}$/.test(id)) return null
+  const c = caseDirs(root).find((d) => d.id === id)
+  return c ? { ...c, dir: join(root, `case_${id}_${c.slug}`) } : null
+}
+
+export function casePdfResolver(root: string): (id: string) => string | null {
+  return (id) => {
+    const c = findCase(root, id)
+    if (!c) return null
+    const p = intervieweePdfPath(root, id, c.slug)
+    return existsSync(p) ? p : null
+  }
+}
+
 export function loadCase(
   root: string,
   id: string,
   deckText: string
 ): { card: CaseCard; brief: InterviewerBrief } {
-  const dir = caseDirs(root).find((c) => c.id === id)
+  const dir = findCase(root, id)
   if (!dir || !existsSync(dataPath(root, id))) throw new Error(`case ${id} not found`)
   const { card, data } = readCase(root, id, dir.slug)
   return { card, brief: buildBrief(data, deckText) }
