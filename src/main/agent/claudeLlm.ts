@@ -82,6 +82,13 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
     const grillMsgs: MessageParam[] = []
     const warmMsgs: MessageParam[] = []
     let pendingToolUseId: string | null = null
+    /** The turn interrupted() would rewrite: the one in flight, or the last one remembered. */
+    let last: {
+      msgs: MessageParam[]
+      user: MessageParam
+      remembered: boolean
+      grill: boolean
+    } | null = null
 
     return {
       async *streamTurn(req, signal) {
@@ -99,6 +106,7 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
           proctor: proctorNote(req, brief),
           candidate
         })
+        last = { msgs: grillMsgs, user, remembered: false, grill: true }
         const params: MessageCreateParamsStreaming = {
           model,
           max_tokens: INTERVIEWER_MAX_TOKENS,
@@ -111,9 +119,9 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
           stream: true
         }
         const msg = yield* run(params, signal, 'grill')
-        // ponytail: an aborted turn's candidate text is not replayed to Claude; Phase 7 barge-in owns partial history.
-        if (!msg) return
+        if (!msg || signal.aborted) return
         remember(grillMsgs, user, msg)
+        last.remembered = true
         const tu = msg.content.find(
           (b): b is Anthropic.ToolUseBlock =>
             b.type === 'tool_use' && b.name === INTERVIEW_CONTROL_TOOL.name
@@ -130,6 +138,7 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
         const candidate = lastCandidate(history)
         const n = history.filter((t) => t.speaker === 'candidate').length
         const user = userTurn({ proctor: warmupNote(n), candidate })
+        last = { msgs: warmMsgs, user, remembered: false, grill: false }
         const msg = yield* run(
           {
             model,
@@ -142,8 +151,9 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
           signal,
           'warmup'
         )
-        if (!msg) return
+        if (!msg || signal.aborted) return
         remember(warmMsgs, user, msg)
+        last.remembered = true
         // Warm-up end is code-owned (skip button / 10-min timer): never warmupComplete here.
         yield { type: 'done', usage: usageOf(msg) }
       },
@@ -168,6 +178,16 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
           log.warn('extraction unparsable')
           return { order: [] }
         }
+      },
+
+      // VOUT-05: history keeps only what was spoken. Without a call, an aborted turn is forgotten.
+      interrupted(spoken) {
+        if (!last) return
+        const a = textOnlyAssistant(spoken.trim() || '…', true)
+        if (last.remembered) last.msgs[last.msgs.length - 1] = a
+        else last.msgs.push(last.user, a)
+        if (last.grill) pendingToolUseId = null
+        last = null
       },
 
       scoreSession(input, signal) {
