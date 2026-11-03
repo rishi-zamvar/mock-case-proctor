@@ -27,6 +27,8 @@ describe('readConfig', () => {
       tts: 'headtts',
       llm: 'auto',
       interviewerModel: 'claude-opus-5-5',
+      reviewer: 'auto',
+      reviewerModel: 'claude-opus-5-5',
       stt: 'whisper',
       sttModel: 'turbo'
     })

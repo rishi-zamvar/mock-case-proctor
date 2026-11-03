@@ -5,7 +5,14 @@ import { randomUUID } from 'node:crypto'
 import Anthropic from '@anthropic-ai/sdk'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { CH, type LibraryView, type SttMode, type SttStatus, type TtsMode } from '../shared/ipc'
+import {
+  CH,
+  type LibraryView,
+  type SttMode,
+  type SttStatus,
+  type TrendsView,
+  type TtsMode
+} from '../shared/ipc'
 import { LibraryViewSchema, SpeakCancelSchema, SpeakEventSchema } from '../shared/schemas'
 import { createScaledClock } from './adapters/clock'
 import { createFakeLlm } from './adapters/fakeLlm'
@@ -15,6 +22,8 @@ import { WARMUP_CLOSING_LINE } from './agent/turnText'
 import { readDeckText } from './domain/cases/deckSource'
 import { casePdfResolver, DEFAULT_LIBRARY_ROOT, listCases, loadCase } from './domain/cases/library'
 import type { Logger } from './log'
+import { createReviewer, DEFAULT_REVIEWER_MODEL } from './review/grader'
+import { createFakeTrendsAgent, createTrendsAgent, createTrendsService } from './review/trends'
 import type { AwakePort, ClockPort, MakeLlm, SttPort } from './ports'
 import { createSessionRunner, type SessionRunner } from './session/runner'
 import { createSessionStore } from './store/sessionStore'
@@ -31,6 +40,8 @@ export type AppConfig = {
   tts: TtsMode
   llm: 'fake' | 'claude' | 'auto'
   interviewerModel: string
+  reviewer: 'fake' | 'claude' | 'auto'
+  reviewerModel: string
   stt: SttMode
   sttModel: SttModel
 }
@@ -48,6 +59,9 @@ export function readConfig(env: Env, userData: string): AppConfig {
   // Outside E2E the real interviewer runs whenever a key exists; E2E stays fake unless LLM=claude.
   const llm = env.LLM ?? (e2e ? 'fake' : 'auto')
   if (llm !== 'fake' && llm !== 'claude' && llm !== 'auto') throw unavailable('LLM', llm)
+  const reviewer = env.REVIEWER ?? (e2e ? 'fake' : 'auto')
+  if (reviewer !== 'fake' && reviewer !== 'claude' && reviewer !== 'auto')
+    throw unavailable('REVIEWER', reviewer)
   // TTS runs in the renderer (HeadTTS); main only needs the mode. E2E defaults to the fake queue.
   const tts = env.TTS ?? (e2e ? 'fake' : 'headtts')
   if (tts !== 'headtts' && tts !== 'fake') throw unavailable('TTS', tts)
@@ -66,6 +80,8 @@ export function readConfig(env: Env, userData: string): AppConfig {
     tts,
     llm,
     interviewerModel: env.INTERVIEWER_MODEL?.trim() || DEFAULT_INTERVIEWER_MODEL,
+    reviewer,
+    reviewerModel: env.REVIEWER_MODEL?.trim() || DEFAULT_REVIEWER_MODEL,
     stt,
     sttModel: sttModel as SttModel
   }
@@ -94,6 +110,7 @@ export function compose(
   e2eSay?: (text: string) => void
   sttStatus(): Promise<SttStatus>
   disposeStt?: () => void
+  trends(): Promise<TrendsView>
 } {
   const config = readConfig(env, o.userData)
   const clock = o.clock ?? createScaledClock({ scale: config.timeScale })
@@ -124,21 +141,63 @@ export function compose(
     }
   }
   o.log.info('interviewer', config.llm, config.interviewerModel)
+  o.log.info('reviewer', config.reviewer, config.reviewerModel)
+  const anthropic = (key: string, { timeout }: { timeout: number }): Anthropic =>
+    new Anthropic({
+      apiKey: key,
+      maxRetries: 1,
+      timeout,
+      ...(env.ANTHROPIC_BASE_URL ? { baseURL: env.ANTHROPIC_BASE_URL } : {})
+    })
+  // Effort 'high' grading can run well past the interviewer's 30 s budget.
+  const reviewerClient = (key: string): Anthropic => anthropic(key, { timeout: 180_000 })
+  const reviewerKey = (): string | null =>
+    config.reviewer === 'fake' ? null : (o.getKey?.() ?? null)
   const fake = createFakeLlm()
   const makeLlm: MakeLlm = (brief) => {
     const key = o.getKey?.() ?? null
+    let port
     if (config.llm === 'fake' || !key) {
       if (config.llm !== 'fake') o.log.warn('no API key; using fake interviewer')
-      return fake(brief)
+      port = fake(brief)
+    } else {
+      port = createClaudeLlm({
+        client: anthropic(key, { timeout: 30_000 }),
+        model: config.interviewerModel,
+        log: o.log
+      })(brief)
     }
-    const client = new Anthropic({
-      apiKey: key,
-      maxRetries: 1,
-      timeout: 30_000,
-      ...(env.ANTHROPIC_BASE_URL ? { baseURL: env.ANTHROPIC_BASE_URL } : {})
-    })
-    return createClaudeLlm({ client, model: config.interviewerModel, log: o.log })(brief)
+    const rk = reviewerKey()
+    if (!rk) return port
+    const scoreSession = createReviewer({
+      client: reviewerClient(rk),
+      model: config.reviewerModel,
+      log: o.log
+    })(brief)
+    return { ...port, scoreSession }
   }
+  const trends = createTrendsService({
+    listSummaries: () => store.listSummaries(),
+    cases: () => {
+      try {
+        return listCases(config.casesRoot).map(({ id, vertical, level }) => ({
+          id,
+          vertical,
+          level
+        }))
+      } catch {
+        return []
+      }
+    },
+    agent: () => {
+      const key = reviewerKey()
+      return key
+        ? createTrendsAgent({ client: reviewerClient(key), model: config.reviewerModel, log: o.log })
+        : createFakeTrendsAgent()
+    },
+    file: join(config.sessionsDir, 'trends.json'),
+    log: o.log
+  })
   const runner = createSessionRunner({
     store,
     clock,
@@ -153,6 +212,8 @@ export function compose(
     newId: (p) =>
       `${p === 'session' ? 's' : 't'}_${Date.now().toString(36)}_${randomUUID().slice(0, 8)}`,
     awake: o.awake,
+    onScored: () =>
+      void trends.refresh().catch(() => o.log.warn('trends refresh failed')),
     log: o.log
   })
   const library = (): LibraryView => {
@@ -176,6 +237,7 @@ export function compose(
     // Text injection only exists with FakeStt.
     e2eSay: config.e2e && fakeStt ? (t) => fakeStt.inject(t) : undefined,
     sttStatus,
-    disposeStt
+    disposeStt,
+    trends: trends.get
   }
 }
