@@ -71,6 +71,7 @@ function defaultDeps(): VoiceDeps {
 
 export function createVoice(o: {
   ack(turnId: string, seq: number, spoken: boolean): void
+  started?(turnId: string, seq: number): void
   deps?: VoiceDeps
 }): Voice {
   const deps = o.deps ?? defaultDeps()
@@ -135,6 +136,7 @@ export function createVoice(o: {
     },
     ready,
     ack: o.ack,
+    onStarted: o.started,
     onPlaying(p) {
       if (!p) engine?.setPlaying(false)
       playingCbs.forEach((cb) => cb(p))
@@ -215,6 +217,9 @@ export function createVoice(o: {
 
 let singleton: Voice | null = null
 /** One voice runtime (and so one TalkingHead) per app lifetime. */
-export function getVoice(o: { ack(turnId: string, seq: number, spoken: boolean): void }): Voice {
+export function getVoice(o: {
+  ack(turnId: string, seq: number, spoken: boolean): void
+  started?(turnId: string, seq: number): void
+}): Voice {
   return (singleton ??= createVoice(o))
 }

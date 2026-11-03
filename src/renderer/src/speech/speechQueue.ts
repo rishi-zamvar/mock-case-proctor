@@ -38,6 +38,7 @@ export function createSpeechQueue(o: {
   ready: Promise<void> // avatar shown + tts connected
   ack(turnId: string, seq: number, spoken: boolean): void
   onPlaying?(playing: boolean): void // true at the first start marker; false only when the queue fully drains or is cancelled empty
+  onStarted?(turnId: string, seq: number): void // once per sentence, when its audio actually starts
   now?: () => number
 }): SpeechQueue {
   const now = o.now ?? (() => performance.now())
@@ -89,6 +90,7 @@ export function createSpeechQueue(o: {
       }
       spoken.push(item.spoken)
       setPlaying(true)
+      o.onStarted?.(item.ev.turnId, item.ev.seq)
     })
     o.head.speakAudio(r.data)
     o.head.speakMarker(() => {
