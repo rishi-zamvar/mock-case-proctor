@@ -23,11 +23,31 @@ describe('normalizeForGuard', () => {
 
 describe('checkUtterance: ngram blocks', () => {
   it.each([
-    ['ideal answer', 'So tell me, I would invest because gross retention of 85 percent, right?', 'i would invest because gross retention of 85'],
-    ['flag say line', 'Would you agree GRR is 85% which trails the peer median here?', 'grr is 85 which trails the peer median'],
-    ['rubric five line', 'Can you lead with a clear call and defends it with retention math?', 'with a clear call and defends it with'],
-    ['what-it-tests evidence', 'Did you see customer concentration hides inside the cohort chart on slide twelve?', 'customer concentration hides inside the cohort chart on'],
-    ['case and punctuation differ', 'So, GRR,  IS 85%! which TRAILS the peer median?', 'grr is 85 which trails the peer median']
+    [
+      'ideal answer',
+      'So tell me, I would invest because gross retention of 85 percent, right?',
+      'i would invest because gross retention of 85'
+    ],
+    [
+      'flag say line',
+      'Would you agree GRR is 85% which trails the peer median here?',
+      'grr is 85 which trails the peer median'
+    ],
+    [
+      'rubric five line',
+      'Can you lead with a clear call and defends it with retention math?',
+      'with a clear call and defends it with'
+    ],
+    [
+      'what-it-tests evidence',
+      'Did you see customer concentration hides inside the cohort chart on slide twelve?',
+      'customer concentration hides inside the cohort chart on'
+    ],
+    [
+      'case and punctuation differ',
+      'So, GRR,  IS 85%! which TRAILS the peer median?',
+      'grr is 85 which trails the peer median'
+    ]
   ])('%s', (_name, text, gram) => {
     expect(checkUtterance(text, src)).toEqual({ ok: false, reason: 'ngram', match: gram })
   })
@@ -78,7 +98,8 @@ describe('checkUtterance: passes', () => {
   it('memoises grams per source: 1000 calls < 200 ms', () => {
     const fresh: LeakSource = { leakSources: [...src.leakSources], deckText: src.deckText }
     const t0 = performance.now()
-    for (let i = 0; i < 1000; i++) checkUtterance('Why does NRR exceed GRR here, and what would you diligence first?', fresh)
+    for (let i = 0; i < 1000; i++)
+      checkUtterance('Why does NRR exceed GRR here, and what would you diligence first?', fresh)
     expect(performance.now() - t0).toBeLessThan(200)
   })
 })
