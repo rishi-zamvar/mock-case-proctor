@@ -105,10 +105,7 @@ test('discard abandons the interrupted session', async () => {
     await second.page.getByTestId('discard-btn').click()
     await expect(second.page.getByTestId('resume-banner')).toHaveCount(0)
     expect(sessionFiles(userData)[0].status).toBe('abandoned')
-    await expect(second.page.getByTestId('case-card-99')).toHaveAttribute(
-      'data-completed',
-      'false'
-    )
+    await expect(second.page.getByTestId('case-card-99')).toHaveAttribute('data-completed', 'false')
   } finally {
     await second.app.close()
   }
