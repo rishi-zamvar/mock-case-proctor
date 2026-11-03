@@ -17,6 +17,7 @@ tests/fixtures/audio/
 cases/
 !tests/fixtures/cases/
 !tests/fixtures/cases/**
+!src/main/domain/cases/
 case-data/
 *.app
 *.tsbuildinfo
