@@ -55,13 +55,17 @@ The target is 3 s from pressing Done to the avatar's first audible word. In the 
 
 Your options:
 
-1. **Keep Opus** (the default) and accept about 4-5 s of latency. This keeps the current persona quality.
-2. **Use Haiku**, which should be faster but has an untested persona. Check it once:
-   ```bash
-   INTERVIEWER_MODEL=claude-haiku-5-5 LIVE=1 npx vitest run --project main src/main/agent/claudeLlm.live.test.ts
-   ```
-   To use it, set `INTERVIEWER_MODEL=claude-haiku-5-5` in the environment you launch from (`npm run dev`, or `open` from a shell).
-3. **Trim the cached prefix**, or **overlap the first grill turn with the opening extraction**. Both are code changes, described in LATENCY.md.
+1. **Keep Opus.** This is the default and the recommendation. Expect about 4-5 s of latency with the current persona quality.
+2. **Haiku: not worth it.** It was measured once on 2026-11-03 with the live interviewer evals:
+   - Its TTFT median was 1.99 s (n=10) against Opus's 1.90 s in the same suite, so it was **not faster**.
+   - It passed 6 of 7 evals. In the injection eval, one reply contained an answer-key n-gram. The leak guard flagged it, and in the app the guard would block it before TTS, but it is still a regression against Opus, which passed 7 of 7 with no leaks.
+   - To re-check it: `INTERVIEWER_MODEL=claude-haiku-5-5 LIVE=1 npx vitest run --project main src/main/agent/claudeLlm.live.test.ts`
+   - Any model can be chosen by setting `INTERVIEWER_MODEL` in the environment you launch from (`npm run dev`, or `open` from a shell).
+3. **The real levers are code changes, and neither is applied:**
+   - (a) Overlap the first grill turn with the opening extraction. That turn takes about 8.6 s today.
+   - (b) Trim the cached prefix from about 36K tokens to about 20K.
+
+   Both are described in LATENCY.md.
 
 ## Cases root
 

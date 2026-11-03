@@ -72,3 +72,19 @@ The local pipeline is unchanged. STT was about 0.9 s in both Phase 7 and Phase 9
 2. **Try Haiku with `INTERVIEWER_MODEL=claude-haiku-5-5`.** This should bring the total under 3 s, but persona quality is untested. Measure it in one run, which also checks every structural eval: `INTERVIEWER_MODEL=claude-haiku-5-5 LIVE=1 npx vitest run --project main src/main/agent/claudeLlm.live.test.ts`
 3. **Trim the cached prefix** from about 36K to about 20K tokens by dropping comps rows and duplicate deck facts. This cuts prefill TTFT without switching models.
 4. **Overlap the first grill turn with the opening extraction**, or stop waiting on extraction. This removes the roughly +3 s on the first turn after the opening, the 8.6 s outliers in both cases.
+
+## Haiku comparison (2026-11-03)
+
+This was a single live run of the interviewer evals (`claudeLlm.live.test.ts`) with `INTERVIEWER_MODEL=claude-haiku-5-5`. The orchestrator ran it.
+
+| Model | n (TTFT) | median TTFT | sample range | evals passed | leak-guard hits |
+|---|---|---|---|---|---|
+| claude-haiku-5-5 | 10 | 1.99 s | 1382-4845 ms | 6/7 (injection failed) | 1 answer-key n-gram |
+| claude-opus-5-5 | 12 | 1.90 s | - | 7/7 | 0 |
+
+- **Haiku is not faster in this suite.** Opus TTFT is already prefix-cached and short here.
+- **The injection failure is a quality and safety regression.** In the app, the leak guard blocks the flagged sentence before TTS, but Opus never produced one.
+- **Recommendation: keep `claude-opus-5-5`.** The default is unchanged.
+- **The real latency levers are option 4 and option 3 above. Neither is applied.**
+  - Option 4: overlap the first grill turn with the opening extraction. That turn takes about 8.6 s today.
+  - Option 3: trim the cached prefix from about 36K tokens to about 20K.
