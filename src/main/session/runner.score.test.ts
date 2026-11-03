@@ -9,7 +9,10 @@ import { setup } from './runner.harness'
 const SORRY = speakable(SORRY_LINE)
 type Score = LlmPort['scoreSession']
 
-function scripted(plan: ('fail' | 'ok' | 'hang')[]): { makeLlm: MakeLlm; score: ReturnType<typeof vi.fn<Score>> } {
+function scripted(plan: ('fail' | 'ok' | 'hang')[]): {
+  makeLlm: MakeLlm
+  score: ReturnType<typeof vi.fn<Score>>
+} {
   let real: Score | null = null
   let n = 0
   const score = vi.fn<Score>((i, s) => {
