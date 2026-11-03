@@ -149,9 +149,7 @@ describe('Session voice', () => {
     const s = setup({ transcribing: true })
     expect(id('transcribing').getAttribute('role')).toBe('status')
     expect(id('transcribing').textContent).toBe('Transcribing…')
-    s.rerender(
-      <Session view={view({ transcribing: false })} onIntent={s.onIntent} mic={s.mic} />
-    )
+    s.rerender(<Session view={view({ transcribing: false })} onIntent={s.onIntent} mic={s.mic} />)
     expect(q('transcribing')).toBeNull()
   })
 
