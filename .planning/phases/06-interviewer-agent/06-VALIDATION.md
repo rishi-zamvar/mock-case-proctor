@@ -1,9 +1,9 @@
 ---
 phase: 6
 slug: interviewer-agent
-status: planned
+status: approved
 nyquist_compliant: true
-wave_0_complete: false
+wave_0_complete: true
 created: 2026-11-03
 ---
 
@@ -39,26 +39,26 @@ created: 2026-11-03
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 6-01-01 | 01 | 1 | INT-06 | unit | `npx vitest run --project main src/main/store && npm run typecheck:node` | ✅ extend `sessionSchema.test.ts` | ⬜ pending |
-| 6-01-02 | 01 | 1 | INT-05, FLOW-02, INT-03 | unit | `npx vitest run --project main src/main/domain/machine src/main/session` | ✅ extend `interviewMachine.test.ts`, `runner.test.ts` | ⬜ pending |
-| 6-02-01 | 02 | 1 | INT-02, INT-07 | unit | `npx vitest run --project main src/main/agent/turnText.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-02-02 | 02 | 1 | INT-07 | unit | `npx vitest run --project main src/main/agent/messages.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-03-01 | 03 | 2 | INT-06 | unit | `npx vitest run --project main src/main/agent/control.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-03-02 | 03 | 2 | FLOW-05 | unit | `npx vitest run --project main src/main/agent/extraction.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-04-01 | 04 | 2 | INT-01, INT-02, INT-07, FLOW-02 | unit | `npx vitest run --project main src/main/agent/prompt.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-04-02 | 04 | 2 | INT-03, INT-04, INT-05 | unit | `npx vitest run --project main src/main/agent/prompt.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-05-01 | 05 | 2 | INT-03, INT-05 | unit | `npx vitest run --project main src/main/session/turnRequest.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-05-02 | 05 | 2 | INT-02, FLOW-05 (+ timings) | unit | `npx vitest run --project main src/main/session` | ❌ W0 `runner.agent.test.ts` (created in task) | ⬜ pending |
-| 6-06-01 | 06 | 3 | INT-01, INT-06, INT-07 | unit (real SDK via `fetch` stub) | `npx vitest run --project main src/main/agent/claudeLlm.test.ts` | ❌ W0 `claudeLlm.test.ts` + `sse.harness.ts` | ⬜ pending |
-| 6-06-02 | 06 | 3 | INT-08, FLOW-02, FLOW-05 | unit (real SDK via `fetch` stub) | `npx vitest run --project main src/main/agent` | ❌ W0 | ⬜ pending |
-| 6-07-01 | 07 | 3 | FLOW-04, FLOW-02, INT-03 (interrupt) | unit | `npx vitest run --project main src/main/session/runner.flow6.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-07-02 | 07 | 3 | (G9 failure path) | unit | `npx vitest run --project main src/main/session` | ❌ W0 | ⬜ pending |
-| 6-08-01 | 08 | 4 | INT-01, INT-08 | unit/integration | `npx vitest run --project main src/main/compose.test.ts` | ✅ extend | ⬜ pending |
-| 6-08-02 | 08 | 4 | INT-01 | typecheck + suite | `npm run typecheck:node && npx vitest run --project main src/main` | ✅ | ⬜ pending |
-| 6-09-01 | 09 | 4 | INT-01, INT-06, INT-07, FLOW-05 | integration (recorded SSE, real SDK) | `npx vitest run --project main src/main/agent/claudeLlm.replay.test.ts tests/config/fixture-hygiene.test.ts` | ❌ W0 test + fixtures (RECORD=1 once, case_99 only) | ⬜ pending |
-| 6-10-01 | 10 | 5 | INT-02..INT-07 (live evals 1-8) | live | `LIVE=1 npx vitest run --project main src/main/agent/claudeLlm.live.test.ts` | ❌ W0 (created in task) | ⬜ pending |
-| 6-10-02 | 10 | 5 | all (full session) | e2e T2 | `npm run test:e2e:t2` | ❌ W0 `interviewer.t2.spec.ts` + `interviewer-e2e` fixtures | ⬜ pending |
-| 6-10-03 | 10 | 5 | gate | all tiers | `npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run test:e2e:t2 && npm run test:packaged && npm run test:live` | ✅ | ⬜ pending |
+| 6-01-01 | 01 | 1 | INT-06 | unit | `npx vitest run --project main src/main/store && npm run typecheck:node` | ✅ extend `sessionSchema.test.ts` | ✅ green |
+| 6-01-02 | 01 | 1 | INT-05, FLOW-02, INT-03 | unit | `npx vitest run --project main src/main/domain/machine src/main/session` | ✅ extend `interviewMachine.test.ts`, `runner.test.ts` | ✅ green |
+| 6-02-01 | 02 | 1 | INT-02, INT-07 | unit | `npx vitest run --project main src/main/agent/turnText.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-02-02 | 02 | 1 | INT-07 | unit | `npx vitest run --project main src/main/agent/messages.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-03-01 | 03 | 2 | INT-06 | unit | `npx vitest run --project main src/main/agent/control.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-03-02 | 03 | 2 | FLOW-05 | unit | `npx vitest run --project main src/main/agent/extraction.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-04-01 | 04 | 2 | INT-01, INT-02, INT-07, FLOW-02 | unit | `npx vitest run --project main src/main/agent/prompt.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-04-02 | 04 | 2 | INT-03, INT-04, INT-05 | unit | `npx vitest run --project main src/main/agent/prompt.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-05-01 | 05 | 2 | INT-03, INT-05 | unit | `npx vitest run --project main src/main/session/turnRequest.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-05-02 | 05 | 2 | INT-02, FLOW-05 (+ timings) | unit | `npx vitest run --project main src/main/session` | ❌ W0 `runner.agent.test.ts` (created in task) | ✅ green |
+| 6-06-01 | 06 | 3 | INT-01, INT-06, INT-07 | unit (real SDK via `fetch` stub) | `npx vitest run --project main src/main/agent/claudeLlm.test.ts` | ❌ W0 `claudeLlm.test.ts` + `sse.harness.ts` | ✅ green |
+| 6-06-02 | 06 | 3 | INT-08, FLOW-02, FLOW-05 | unit (real SDK via `fetch` stub) | `npx vitest run --project main src/main/agent` | ❌ W0 | ✅ green |
+| 6-07-01 | 07 | 3 | FLOW-04, FLOW-02, INT-03 (interrupt) | unit | `npx vitest run --project main src/main/session/runner.flow6.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-07-02 | 07 | 3 | (G9 failure path) | unit | `npx vitest run --project main src/main/session` | ❌ W0 | ✅ green |
+| 6-08-01 | 08 | 4 | INT-01, INT-08 | unit/integration | `npx vitest run --project main src/main/compose.test.ts` | ✅ extend | ✅ green |
+| 6-08-02 | 08 | 4 | INT-01 | typecheck + suite | `npm run typecheck:node && npx vitest run --project main src/main` | ✅ | ✅ green |
+| 6-09-01 | 09 | 4 | INT-01, INT-06, INT-07, FLOW-05 | integration (recorded SSE, real SDK) | `npx vitest run --project main src/main/agent/claudeLlm.replay.test.ts tests/config/fixture-hygiene.test.ts` | ❌ W0 test + fixtures (RECORD=1 once, case_99 only) | ✅ green |
+| 6-10-01 | 10 | 5 | INT-02..INT-07 (live evals 1-8) | live | `LIVE=1 npx vitest run --project main src/main/agent/claudeLlm.live.test.ts` | ❌ W0 (created in task) | ✅ green |
+| 6-10-02 | 10 | 5 | all (full session) | e2e T2 | `npm run test:e2e:t2` | ❌ W0 `interviewer.t2.spec.ts` + `interviewer-e2e` fixtures | ✅ green |
+| 6-10-03 | 10 | 5 | gate | all tiers | `npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run test:e2e:t2 && npm run test:packaged && npm run test:live` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -84,12 +84,12 @@ created: 2026-11-03
 
 Test files are created inside the TDD tasks that need them (RED first), so there is no separate scaffold wave:
 
-- [ ] `src/main/agent/{turnText,messages,control,extraction,prompt,claudeLlm}.test.ts` — unit suites (06-02, 06-03, 06-04, 06-06)
-- [ ] `src/main/agent/sse.harness.ts` — slow-chunk SSE `fetch` stub for abort/TTFT tests (06-06, research Pitfall 8)
-- [ ] `src/main/session/{turnRequest,runner.agent,runner.flow6}.test.ts` (06-05, 06-07)
-- [ ] `src/main/agent/claudeLlm.replay.test.ts` + `tests/fixtures/claude/interviewer-{grill,warmup}/` recorded on case_99 (06-09)
-- [ ] `src/main/agent/claudeLlm.live.test.ts` (06-10)
-- [ ] `tests/e2e/interviewer.t2.spec.ts` + `tests/fixtures/claude/interviewer-e2e/` (06-10)
+- [x] `src/main/agent/{turnText,messages,control,extraction,prompt,claudeLlm}.test.ts` — unit suites (06-02, 06-03, 06-04, 06-06)
+- [x] `src/main/agent/sse.harness.ts` — slow-chunk SSE `fetch` stub for abort/TTFT tests (06-06, research Pitfall 8)
+- [x] `src/main/session/{turnRequest,runner.agent,runner.flow6}.test.ts` (06-05, 06-07)
+- [x] `src/main/agent/claudeLlm.replay.test.ts` + `tests/fixtures/claude/interviewer-{grill,warmup}/` recorded on case_99 (06-09)
+- [x] `src/main/agent/claudeLlm.live.test.ts` (06-10)
+- [x] `tests/e2e/interviewer.t2.spec.ts` + `tests/fixtures/claude/interviewer-e2e/` (06-10)
 
 Framework install: none needed.
 
@@ -110,4 +110,4 @@ All phase behaviours have automated verification. Persona "feel" beyond the stru
 - [x] Feedback latency < 6s (quick loop)
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending (06-10 Task 3 sets statuses and approves)
+**Approval:** approved 2026-11-03 (06-10 gate: lint, typecheck, npm test, T1 E2E 3x, T2 E2E 3x, packaged smoke, test:live all green)
