@@ -206,7 +206,7 @@ Plans:
 - [x] 08-07-PLAN.md — ReviewerAgent: prompt, GradeSchema, PROMPT_VERSION, createReviewer via messages.parse (wave 3)
 - [x] 08-08-PLAN.md — Trends tab: inline SVG sparklines + agent insights (wave 3)
 - [x] 08-09-PLAN.md — compose/IPC/preload wiring (REVIEWER, REVIEWER_MODEL, trends:get) + interviewer isolation test (wave 4)
-- [ ] 08-10-PLAN.md — case_99 strong/average/weak replay fixtures (score ordering) + trends run + LIVE=1 evals (wave 4)
+- [x] 08-10-PLAN.md — case_99 strong/average/weak replay fixtures (score ordering) + trends run + LIVE=1 evals (wave 4)
 - [ ] 08-11-PLAN.md — T1 review/trends E2E, T2 real replayed scorecard, phase gate + VALIDATION sign-off (wave 5)
 **UI hint**: yes
 
