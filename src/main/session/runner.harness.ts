@@ -76,6 +76,7 @@ export function setup(
     clock?: ReturnType<typeof manualClock>
     awake?: AwakePort
     reviewWarningLine?: string
+    warmupClosingLine?: string
   } = {}
 ) {
   const root = o.root ?? mkdtempSync(join(tmpdir(), 'runner-'))
@@ -106,6 +107,7 @@ export function setup(
     awake: o.awake,
     emitCancel: (t) => void cancels.push(t),
     reviewWarningLine: o.reviewWarningLine,
+    warmupClosingLine: o.warmupClosingLine,
     log
   })
   const file = (id: string): SessionFile =>
