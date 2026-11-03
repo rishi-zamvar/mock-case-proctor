@@ -1,13 +1,20 @@
 // Phase 6 runner flow: 90 s interject, uninterrupted presentation, warm-up closing line, retry path.
 import { describe, expect, it } from 'vitest'
-import { INTERRUPT_LINES, WARMUP_CLOSING_LINE } from '../agent/turnText'
+import { INTERRUPT_LINES, SORRY_LINE, WARMUP_CLOSING_LINE } from '../agent/turnText'
 import { createFakeLlm } from '../adapters/fakeLlm'
+import { SECTION_IDS } from '../domain/machine/sections'
 import { speakable } from '../domain/text/speakable'
 import type { LlmChunk, MakeLlm, TurnRequest } from '../ports'
-import { setup } from './runner.harness'
+import { lines, setup } from './runner.harness'
 
 const INTERJECTS = INTERRUPT_LINES.map(speakable)
 const CLOSING = speakable(WARMUP_CLOSING_LINE)
+const SORRY = speakable(SORRY_LINE)
+
+// eslint-disable-next-line require-yield -- a stream that fails before its first chunk
+async function* boom(): AsyncGenerator<LlmChunk> {
+  throw new Error('overloaded')
+}
 
 /** Fake LLM recording TurnRequests; optional grill stream override. */
 function recording(
@@ -123,5 +130,103 @@ describe('SessionRunner warm-up closing line (FLOW-02)', () => {
     await t.runner.intent({ type: 'skipWarmup' })
     await t.until(() => t.view().phase === 'review')
     expect(t.speaks.length).toBe(n)
+  })
+})
+
+describe('SessionRunner failure path (G9)', () => {
+  const sorries = (t: ReturnType<typeof setup>): number =>
+    t.speaks.filter((x) => x.text === SORRY).length
+
+  it('given a grill turn that fails once, when retried, then sorry is said once and the retried turn is spoken', async () => {
+    let fails = 0
+    const { makeLlm } = recording((req, signal, n) =>
+      n === 2 && fails++ === 0 ? boom() : lines('Walk me through the margin bridge.', signal)
+    )
+    const t = setup({ makeLlm })
+    await t.toGrilling()
+    await t.idle()
+    const from = t.speaks.length
+    await t.runner.intent({ type: 'answer', ms: 30_000 })
+    await t.until(() => t.view().transcript.at(-1)?.speaker === 'interviewer')
+    await t.idle()
+    const after = t.speaks.slice(from).map((x) => x.text)
+    expect(after[0]).toBe(SORRY)
+    expect(sorries(t)).toBe(1)
+    expect(after).toContain('Walk me through the margin bridge.')
+    expect(t.log.error).not.toHaveBeenCalled()
+    expect(t.view().transcript.filter((x) => x.speaker === 'interviewer')).toHaveLength(2)
+  })
+
+  it('given a grill turn that fails twice, when giving up, then sorry once, one error log, not speaking, and end still works', async () => {
+    const { makeLlm } = recording((req, signal, n) => (n >= 2 ? boom() : lines('Hi.', signal)))
+    const t = setup({ makeLlm })
+    await t.toGrilling()
+    await t.idle()
+    await t.runner.intent({ type: 'answer', ms: 30_000 })
+    await t.until(() => t.log.error.mock.calls.length > 0)
+    await t.until(() => t.view().speaking === false)
+    expect(sorries(t)).toBe(1)
+    expect(t.log.error).toHaveBeenCalledTimes(1)
+    expect(t.log.error).toHaveBeenCalledWith('llm turn failed', 'grill')
+    await t.runner.intent({ type: 'end' })
+    await t.until(() => t.view().phase === 'reviewMode')
+  })
+
+  it('given extraction failing twice, when giving up, then the default order is used and grilling starts', async () => {
+    const t = setup({
+      makeLlm: (brief) => ({
+        ...createFakeLlm({ chunkDelayMs: 0 })(brief),
+        extractPlan: async () => {
+          throw new Error('overloaded')
+        }
+      })
+    })
+    const { sessionId } = await t.runner.start('99', { warmup: false })
+    await t.runner.intent({ type: 'ready' })
+    await t.runner.intent({ type: 'answer', ms: 45_000 })
+    await t.until(() => t.view().phase === 'grilling')
+    expect(sorries(t)).toBe(1)
+    const m = t.file(sessionId).machineState
+    expect([...m.plan].sort()).toEqual([...SECTION_IDS].sort())
+    expect(m.omitted).toEqual(SECTION_IDS.filter((x) => x !== 'call'))
+  })
+
+  it('given an abort during the retry, when ending, then the retry speaks nothing and nothing is logged as an error', async () => {
+    const { makeLlm } = recording((req, signal, n) =>
+      n === 2
+        ? boom()
+        : n === 3
+          ? lines('This should never be heard out loud.', signal, 50)
+          : lines('Hi.', signal)
+    )
+    const t = setup({ makeLlm })
+    await t.toGrilling()
+    await t.idle()
+    await t.runner.intent({ type: 'answer', ms: 30_000 })
+    await t.until(() => sorries(t) === 1)
+    await t.runner.intent({ type: 'end' })
+    await t.until(() => t.view().phase === 'reviewMode')
+    await new Promise((r) => setTimeout(r, 400))
+    expect(t.speaks.some((x) => x.text.includes('never be heard'))).toBe(false)
+    expect(t.log.error).not.toHaveBeenCalled()
+  })
+
+  it('given a warm-up turn that fails once, when retried, then sorry once and the warm-up line is spoken', async () => {
+    let fails = 0
+    const t = setup({
+      makeLlm: (brief) => {
+        const base = createFakeLlm({ chunkDelayMs: 0 })(brief)
+        return {
+          ...base,
+          warmupTurn: (req, signal) => (fails++ === 0 ? boom() : base.warmupTurn(req, signal))
+        }
+      }
+    })
+    await t.runner.start('99', { warmup: true })
+    await t.until(() => t.view().transcript.length === 1)
+    await t.idle()
+    expect(t.speaks[0].text).toBe(SORRY)
+    expect(sorries(t)).toBe(1)
+    expect(t.log.error).not.toHaveBeenCalled()
   })
 })
