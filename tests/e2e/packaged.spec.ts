@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { launch, ROOT } from './launch'
+import { deckCanvasPainted, startCase, waitPhase } from './session'
 
 const APP_BIN = join(
   ROOT,
@@ -25,6 +26,25 @@ test('packaged app launches and loads the SDK', { tag: '@packaged' }, async () =
     ).json()) as { requests: { path: string }[] }
     expect(log.requests).toHaveLength(1)
     expect(log.requests[0].path).toContain('/v1/messages')
+  } finally {
+    await app.close()
+  }
+})
+
+test('packaged app renders the deck from inside the asar', { tag: '@packaged' }, async () => {
+  const { app, page } = await launch({
+    executablePath: APP_BIN,
+    scenario: 'probe-ok',
+    env: { ANTHROPIC_API_KEY: 'pkg-' + randomUUID(), CASES_ROOT: process.env.E2E_CASES_ROOT! }
+  })
+  try {
+    await expect(page.locator('main[data-screen="home"]')).toBeVisible({ timeout: 30_000 })
+    await startCase(page, '99', { warmup: false })
+    await waitPhase(page, 'review')
+    await expect(page.getByTestId('deck-viewer')).toHaveAttribute('data-pages', '4', {
+      timeout: 15_000
+    })
+    await expect.poll(() => deckCanvasPainted(page), { timeout: 10_000 }).toBe(true)
   } finally {
     await app.close()
   }
