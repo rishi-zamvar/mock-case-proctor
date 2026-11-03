@@ -210,9 +210,7 @@ describe('compose', () => {
     const withServer = async (
       fn: (
         url: string,
-        logOf: (
-          k: string
-        ) => Promise<{
+        logOf: (k: string) => Promise<{
           requests: { method: string; path: string; body: { model?: string } }[]
           sawCanary: boolean
         }>
@@ -263,7 +261,7 @@ describe('compose', () => {
       const core = compose(e, { userData: tmp(), log: l, send, getKey: () => null })
       for (let i = 1; i <= 2; i++) {
         const { sessionId } = await core.runner.start('99', { warmup: true })
-        await vi.waitFor(() => expect(spoken(send)).toContain(FAKE_HELLO))
+        await vi.waitFor(() => expect(spoken(send).join(' ')).toContain(FAKE_HELLO))
         core.runner.discard(sessionId)
         const warns = l.warn.mock.calls.filter(([m]) => m === 'no API key; using fake interviewer')
         expect(warns).toHaveLength(i)
@@ -282,7 +280,7 @@ describe('compose', () => {
         })
         expect(core.config.llm).toBe('fake')
         const { sessionId } = await core.runner.start('99', { warmup: true })
-        await vi.waitFor(() => expect(spoken(send)).toContain(FAKE_HELLO))
+        await vi.waitFor(() => expect(spoken(send).join(' ')).toContain(FAKE_HELLO))
         core.runner.discard(sessionId)
         expect((await logOf('fake')).requests).toEqual([])
         expect(l.warn).not.toHaveBeenCalled()
