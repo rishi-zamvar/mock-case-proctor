@@ -152,7 +152,7 @@ Plans:
 - [x] 06-02-PLAN.md — turnText (4-sentence cap, banned phrases, fixed lines, candidate wrapping) + messages (tool_result-first history)
 - [x] 06-03-PLAN.md — interview_control strict tool + zod parse/map; opening extraction mapping (order from considerations)
 - [ ] 06-04-PLAN.md — Cached system prefix (persona, deck_facts, evaluation_key, examples), case-free warm-up prompt, proctor note
-- [ ] 06-05-PLAN.md — buildTurnRequest proctor facts; runner turn filter, TTFT timings + cache usage, openingPlan persistence
+- [x] 06-05-PLAN.md — buildTurnRequest proctor facts; runner turn filter, TTFT timings + cache usage, openingPlan persistence
 - [ ] 06-06-PLAN.md — createClaudeLlm adapter over SDK 1.4.0 (stream, control, warm-up, extraction, abort, fresh per session)
 - [ ] 06-07-PLAN.md — Runner 90 s interject, uninterrupted presentation, warm-up closing line, one-retry failure path
 - [ ] 06-08-PLAN.md — compose LLM=claude/auto + INTERVIEWER_MODEL, per-session client, lazy key getter
