@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import styles from './DeckViewer.module.css'
 
-// Must be set in the module that renders <Document> (react-pdf README); resolves to react-pdf's pdfjs-dist 6.3.289.
+// Must be set in the module that renders <Document> (react-pdf README); resolves to react-pdf's own pinned PDF.js copy.
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url
