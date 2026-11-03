@@ -133,7 +133,7 @@ Plans:
 - [x] 05-05-PLAN.md — TalkingHead engine singleton (30 fps, run gating, states, readback) + voice runtime (warm-up, window.__voice probe) (wave 2)
 - [x] 05-06-PLAN.md — AvatarStage component + single Session mount point (wave 2)
 - [x] 05-07-PLAN.md — App wiring: fake vs real queue, warm at startup, cancel routing, fallback banner, Start resumes audio (wave 3)
-- [ ] 05-08-PLAN.md — T2 E2E (@t2), audition WAVs, full regression + packaged gate, validation (wave 4)
+- [x] 05-08-PLAN.md — T2 E2E (@t2), audition WAVs, full regression + packaged gate, validation (wave 4)
 **UI hint**: yes
 
 ### Phase 6: Interviewer Agent

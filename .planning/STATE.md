@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 05-07-PLAN.md
-last_updated: "2026-11-03T09:15:08.296Z"
+status: verifying
+stopped_at: Completed 05-08-PLAN.md
+last_updated: "2026-11-03T09:38:17.757Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 41
-  completed_plans: 40
+  completed_plans: 41
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 
 Phase: 05
 Plan: 8 of 8
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-11-03
 
 Progress: [░░░░░░░░░░] 0%
@@ -92,6 +92,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05 P06 | 4min | 2 tasks | 5 files |
 | Phase 05 P05 | 4min | 2 tasks | 6 files |
 | Phase 05 P07 | 6min | 1 tasks | 3 files |
+| Phase 05 P08 | 21min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -154,6 +155,8 @@ Recent decisions affecting current work:
 - [Phase 05]: Avatar logic in pure avatarCore.ts (tested); avatarEngine.ts is thin TalkingHead glue
 - [Phase 05]: voice.ts queue ready rejects on device none so seqs ack false immediately
 - [Phase 05]: App is the sole getVoice caller (lazy useState); missing api.config = fake; voice.resume on Start and Resume
+- [Phase 05]: Pin @electron/osx-sign isbinaryfile to 5.0.7 via npm overrides (4.0.10 crashes on model.onnx during packaging)
+- [Phase 05]: VOICE stays bm_george; am_fenrir/am_michael grade C+ vs C, switch the one constant after listening to audition WAVs
 
 ### Pending Todos
 
@@ -168,6 +171,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T09:15:08.293Z
-Stopped at: Completed 05-07-PLAN.md
+Last session: 2026-11-03T09:38:17.753Z
+Stopped at: Completed 05-08-PLAN.md
 Resume file: None
