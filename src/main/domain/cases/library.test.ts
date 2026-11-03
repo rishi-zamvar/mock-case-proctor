@@ -145,3 +145,26 @@ describe('casePdfResolver', () => {
     expect(casePdfResolver(root)('42')).toBeNull()
   })
 })
+
+describe('brief.numberTokens', () => {
+  it('given case_99, when loaded, then numeric tokens are listed with their display text', () => {
+    const { brief } = loadCase(FIXTURE_ROOT, '99', deck)
+    expect(brief.numberTokens).toContainEqual({ id: 'grr', text: '85%' })
+    expect(brief.numberTokens).toContainEqual({ id: 'arr', text: '$9.9M' })
+  })
+
+  it('given text, year and non-numeric tokens, when loaded, then they are skipped', () => {
+    const root = tmpRoot()
+    const p = join(root, '_work/data/case_99.json')
+    const data = JSON.parse(readFileSync(p, 'utf8'))
+    data.tokens.ceo = { v: 'Ann', fmt: 'text', s: 'Ann 5x' }
+    data.tokens.founded = { v: 2019, fmt: 'year', s: '2019' }
+    data.tokens.blank = { v: null, fmt: 'pct', s: 'n.a.' }
+    writeFileSync(p, JSON.stringify(data))
+    const ids = loadCase(root, '99', deck).brief.numberTokens.map((t) => t.id)
+    expect(ids).not.toContain('ceo')
+    expect(ids).not.toContain('founded')
+    expect(ids).not.toContain('blank')
+    expect(ids).toContain('grr')
+  })
+})
