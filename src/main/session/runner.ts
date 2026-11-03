@@ -14,7 +14,7 @@ import { checkUtterance } from '../domain/text/leakGuard'
 import { createSentenceSplitter } from '../domain/text/sentenceSplitter'
 import { speakable } from '../domain/text/speakable'
 import type { Logger } from '../log'
-import { createTurnFilter } from '../agent/turnText'
+import { createTurnFilter, pickInterruptLine } from '../agent/turnText'
 import type { AwakePort, ClockPort, LlmChunk, LlmPort, LlmUsage, MakeLlm, SttPort } from '../ports'
 import type { SessionStore } from '../store/sessionStore'
 import type { PendingTurn, SessionFile } from '../store/sessionSchema'
@@ -39,6 +39,8 @@ export type RunnerDeps = {
   emitCancel?(turnId: string): void
   /** Spoken at T-10 in review (headtts only); not part of the transcript. */
   reviewWarningLine?: string
+  /** Spoken when warm-up hands over to the case (skip or timer), not on END; not part of the transcript. */
+  warmupClosingLine?: string
   log: Logger
 }
 
@@ -70,6 +72,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   let lastView: ViewState | null = null
   const acks = new Map<string, () => void>()
   let queue: Promise<unknown> = Promise.resolve()
+  let pendingInterject: string | null = null
+  let interjectCount = 0
 
   /** Serialise every state change; a failed job never blocks the next one. */
   function enqueue<T>(job: () => T | Promise<T>): Promise<T> {
@@ -125,6 +129,16 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     flushAcks()
   }
 
+  /** Proctoring line: no ack wait, no transcript entry. */
+  function sayLine(line: string): void {
+    d.emitSpeak({ turnId: d.newId('turn'), seq: 0, text: speakable(line) })
+  }
+
+  async function* fixedLine(text: string): AsyncGenerator<LlmChunk> {
+    yield { type: 'text', delta: text }
+    yield { type: 'done' }
+  }
+
   function dispatch(event: InterviewEvent): void {
     const s = session
     if (!s) return
@@ -135,6 +149,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       switch (e.type) {
         case 'PHASE_CHANGED':
           if (e.from === 'review' || e.from === 'warmup') stopTimers()
+          if (e.from === 'warmup' && e.to !== 'scoring' && d.warmupClosingLine)
+            sayLine(d.warmupClosingLine)
           if (e.to === 'reviewMode') {
             s.status = 'completed'
             s.endedAt = clock.now()
@@ -148,8 +164,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         case 'REVIEW_WARNING':
           d.log.info('review warning')
           // Proctoring, not interview content: no ack wait, no transcript line.
-          if (d.reviewWarningLine)
-            d.emitSpeak({ turnId: d.newId('turn'), seq: 0, text: speakable(d.reviewWarningLine) })
+          if (d.reviewWarningLine) sayLine(d.reviewWarningLine)
           break
         case 'REQUEST_LLM_TURN':
           later.push(() => void runLlm(e))
@@ -158,7 +173,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
           store.save(s)
           break
         case 'INTERRUPT_SUGGESTED':
-          // ponytail: barge-in/interrupt lands in Phase 7
+          pendingInterject = pickInterruptLine(interjectCount++)
           break
       }
     }
@@ -324,6 +339,11 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         }
         case 'grill':
         case 'wrapup': {
+          if (pending.kind === 'grill' && pendingInterject) {
+            const line = pendingInterject
+            pendingInterject = null
+            if (!(await speakTurn(s, fixedLine(line), 'interject', signal))) return
+          }
           const stream = llm.streamTurn(
             buildTurnRequest(s, { ...pending, kind: pending.kind }, now()),
             signal
@@ -403,7 +423,10 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         pushView()
         if (phase === 'warmup') void runLlm({ kind: 'warmup' })
         else if (phase === 'presentation') dispatch({ type: 'PRESENTATION_DONE', now: clock.now() })
-        else dispatch({ type: 'ANSWER_FINAL', now: clock.now(), answerId: turn.id, text, ms: i.ms })
+        else {
+          dispatch({ type: 'ANSWER_TICK', now: clock.now(), answerId: turn.id, elapsedMs: i.ms })
+          dispatch({ type: 'ANSWER_FINAL', now: clock.now(), answerId: turn.id, text, ms: i.ms })
+        }
         return
       }
       case 'ready':
@@ -430,6 +453,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   function bind(caseId: string): void {
     ;({ card, brief } = d.loadCase(caseId))
     llm = d.makeLlm(brief) // a fresh interviewer per session (INT-08)
+    pendingInterject = null
+    interjectCount = 0
   }
 
   async function start(caseId: string, opts: StartOptions): Promise<{ sessionId: string }> {
