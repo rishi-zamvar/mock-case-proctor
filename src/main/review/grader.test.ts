@@ -201,8 +201,13 @@ const draft = (over: Partial<GradeDraft> = {}): GradeDraft => ({
 function reviewer(
   responses: string[][] | typeof globalThis.fetch,
   model = 'grader-model'
-): { score: LlmPort['scoreSession']; requests: Record<string, unknown>[]; log: ReturnType<typeof mockLog> } {
-  const stub = typeof responses === 'function' ? { fetch: responses, requests: [] } : sseFetch(responses)
+): {
+  score: LlmPort['scoreSession']
+  requests: Record<string, unknown>[]
+  log: ReturnType<typeof mockLog>
+} {
+  const stub =
+    typeof responses === 'function' ? { fetch: responses, requests: [] } : sseFetch(responses)
   const client = new Anthropic({ apiKey: 'test', fetch: stub.fetch, maxRetries: 0 })
   const log = mockLog()
   return { score: createReviewer({ client, model, log })(brief), requests: stub.requests, log }
@@ -215,6 +220,7 @@ describe('createReviewer', () => {
   it('given a verbatim draft, when scored, then request shape and code-assembled scorecard', async () => {
     const r = reviewer([jsonMessage(JSON.stringify(draft()))])
     const card = await r.score(INPUT, live())
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const req = r.requests[0] as Record<string, any>
     expect(req.model).toBe('grader-model')
     expect(req.max_tokens).toBe(REVIEWER_MAX_TOKENS)
@@ -224,7 +230,9 @@ describe('createReviewer', () => {
     expect(req).not.toHaveProperty('thinking')
     expect(req).not.toHaveProperty('tools')
     expect(req.system.at(-1).cache_control).toEqual({ type: 'ephemeral' })
-    expect(req.messages).toEqual([{ role: 'user', content: buildReviewerRequest(brief, INPUT).user }])
+    expect(req.messages).toEqual([
+      { role: 'user', content: buildReviewerRequest(brief, INPUT).user }
+    ])
     expect(ScorecardSchema.parse(card)).toEqual(card)
     expect(card.graderModel).toBe('grader-model')
     expect(card.promptVersion).toBe(PROMPT_VERSION)
@@ -236,7 +244,11 @@ describe('createReviewer', () => {
 
   it('given fabricated quotes, when scored, then those dimensions are capped at 2 and unverified', async () => {
     const d = draft()
-    d.dimensions[0] = { ...d.dimensions[0], score: 5, evidence_quotes: ['I never said this at all'] }
+    d.dimensions[0] = {
+      ...d.dimensions[0],
+      score: 5,
+      evidence_quotes: ['I never said this at all']
+    }
     const card = await reviewer([jsonMessage(JSON.stringify(d))]).score(INPUT, live())
     expect(card.rubric[0]).toMatchObject({ score: 2, unverified: true, evidence: [] })
     expect(card.total).toBe(22)

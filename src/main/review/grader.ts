@@ -2,14 +2,17 @@
 // The model proposes scores and quotes; assembleScorecard (code) verifies quotes, caps, totals, bands.
 // Logs carry codes and counts only, never transcript, quote, rationale or brief text.
 import { createHash } from 'node:crypto'
+import Anthropic, { APIError, APIUserAbortError } from '@anthropic-ai/sdk'
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import type { TextBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import { z } from 'zod'
-import { DIMENSION_IDS } from '../../shared/ipc'
+import { DIMENSION_IDS, type Scorecard } from '../../shared/ipc'
 import { evaluationKey } from '../agent/prompt'
 import { wrapCandidate } from '../agent/turnText'
 import type { InterviewerBrief } from '../domain/cases/brief'
-import type { ScoreInput } from '../ports'
-import { computeChecks, rubricRows } from './scorecard'
+import type { Logger } from '../log'
+import type { LlmPort, ScoreInput } from '../ports'
+import { assembleScorecard, computeChecks, rubricRows, type GradeDraft } from './scorecard'
 
 export const DEFAULT_REVIEWER_MODEL = 'claude-opus-5-5'
 export const REVIEWER_EFFORT = 'high'
@@ -24,8 +27,12 @@ export const GradeSchema = z.object({
       score: z.number().describe('Integer 1 to 5'),
       evidence_quotes: z
         .array(z.string())
-        .describe('1 to 3 verbatim quotes, each 3 to 25 words, from a single <candidate_said> block'),
-      answer_key_item: z.string().describe('The answer-key point this dimension was judged against'),
+        .describe(
+          '1 to 3 verbatim quotes, each 3 to 25 words, from a single <candidate_said> block'
+        ),
+      answer_key_item: z
+        .string()
+        .describe('The answer-key point this dimension was judged against'),
       rationale: z.string().describe('At most 40 words')
     })
   ),
@@ -160,5 +167,59 @@ export function buildReviewerRequest(
       { type: 'text', text: caseKey(brief), cache_control: { type: 'ephemeral' } }
     ],
     user
+  }
+}
+
+export type ReviewerConfig = { client: Anthropic; model: string; log: Logger }
+
+/** Drop-in LlmPort.scoreSession per brief. Throws on any failure; the runner retries once. */
+export function createReviewer(
+  cfg: ReviewerConfig
+): (brief: InterviewerBrief) => LlmPort['scoreSession'] {
+  const { client, model, log } = cfg
+  return (brief) => async (input, signal) => {
+    const { system, user } = buildReviewerRequest(brief, input)
+    let draft: GradeDraft | null
+    try {
+      const r = await client.messages.parse(
+        {
+          model,
+          max_tokens: REVIEWER_MAX_TOKENS,
+          output_config: { effort: REVIEWER_EFFORT, format: zodOutputFormat(GradeSchema) },
+          system,
+          messages: [{ role: 'user', content: user }]
+        },
+        { signal }
+      )
+      if (r.stop_reason === 'max_tokens') log.warn('grade: stop_reason max_tokens')
+      draft = r.parsed_output
+    } catch (e) {
+      if (e instanceof APIUserAbortError || e instanceof APIError || signal.aborted) throw e
+      draft = null
+    }
+    if (!draft) {
+      log.warn('grade unparsable')
+      throw new Error('grade unparsable')
+    }
+    let card: Scorecard
+    try {
+      card = assembleScorecard(draft, {
+        input,
+        brief,
+        graderModel: model,
+        promptVersion: PROMPT_VERSION
+      })
+    } catch {
+      log.warn('grade invalid')
+      throw new Error('grade invalid')
+    }
+    const s = card.evidenceStats
+    log.info('grade ok', {
+      total: card.total,
+      proposed: s.proposed,
+      verified: s.verified,
+      dropped: s.dropped
+    })
+    return card
   }
 }
