@@ -63,7 +63,7 @@
 ### Interviewer Agent (INT)
 
 - [ ] **INT-01**: The interviewer is Claude (one config value, default `claude-opus-5-5`), with the case's interviewer brief cached as the system prefix.
-- [ ] **INT-02**: Persona: a chill but sharp Lead Edge partner.
+- [x] **INT-02**: Persona: a chill but sharp Lead Edge partner.
   - Speaks in short turns (1–3 sentences, one question).
   - Interrupts during the grilling when an answer runs past about 90 s.
   - Sometimes hints at the answer, but only after 2 failed probes, by code policy.
@@ -79,7 +79,7 @@
   - the call.
 - [ ] **INT-05**: The interviewer probes what the deck does NOT show. The mandatory "You said X. I think it's the opposite. Convince me" pushback is used on every case.
 - [ ] **INT-06**: Each turn ends with a record-only `interview_control` tool call (section, status, evidence, flags surfaced, hint given). Code validates it.
-- [ ] **INT-07**: Rishi's text is wrapped and treated as data, so prompt injection from the transcript can't change the interviewer's rules.
+- [x] **INT-07**: Rishi's text is wrapped and treated as data, so prompt injection from the transcript can't change the interviewer's rules.
 - [ ] **INT-08**: Each case gets a fresh interviewer with no memory of other sessions.
 
 ### Voice Out & Avatar (VOUT)
@@ -166,12 +166,12 @@
 | VIN-04 | Phase 7 | Pending |
 | VIN-05 | Phase 4 | Complete |
 | INT-01 | Phase 6 | Pending |
-| INT-02 | Phase 6 | Pending |
+| INT-02 | Phase 6 | Complete |
 | INT-03 | Phase 6 | Pending |
 | INT-04 | Phase 6 | Pending |
 | INT-05 | Phase 6 | Pending |
 | INT-06 | Phase 6 | Pending |
-| INT-07 | Phase 6 | Pending |
+| INT-07 | Phase 6 | Complete |
 | INT-08 | Phase 6 | Pending |
 | VOUT-01 | Phase 5 | Complete |
 | VOUT-02 | Phase 2 | Complete |

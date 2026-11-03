@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-08-PLAN.md
-last_updated: "2026-11-03T09:49:31.803Z"
-last_activity: 2026-11-03 -- Phase 6 execution started
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-11-03T09:51:28.661Z"
+last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 5
   total_plans: 51
-  completed_plans: 41
+  completed_plans: 42
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 6 (Interviewer Agent) — EXECUTING
-Plan: 1 of 10
-Status: Executing Phase 6
-Last activity: 2026-11-03 -- Phase 6 execution started
+Plan: 2 of 10
+Status: Ready to execute
+Last activity: 2026-11-03
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -93,6 +93,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05 P05 | 4min | 2 tasks | 6 files |
 | Phase 05 P07 | 6min | 1 tasks | 3 files |
 | Phase 05 P08 | 21min | 2 tasks | 9 files |
+| Phase 06 P02 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,8 @@ Recent decisions affecting current work:
 - [Phase 05]: App is the sole getVoice caller (lazy useState); missing api.config = fake; voice.resume on Start and Resume
 - [Phase 05]: Pin @electron/osx-sign isbinaryfile to 5.0.7 via npm overrides (4.0.10 crashes on model.onnx during packaging)
 - [Phase 05]: VOICE stays bm_george; am_fenrir/am_michael grade C+ vs C, switch the one constant after listening to audition WAVs
+- [Phase 06]: Turn filter checks banned phrases before the 4-sentence cap; banned sentences don't consume a slot
+- [Phase 06]: seedFromHistory: text-only, skips empty turns, prefixes '(start)' user msg before a leading interviewer turn
 
 ### Pending Todos
 
@@ -171,6 +174,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T09:38:17.753Z
-Stopped at: Completed 05-08-PLAN.md
+Last session: 2026-11-03T09:51:28.657Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

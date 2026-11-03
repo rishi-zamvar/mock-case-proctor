@@ -149,7 +149,7 @@ Plans:
 **Plans**: 10 plans
 Plans:
 - [ ] 06-01-PLAN.md — Contracts (ports, control/state/schema widening) + reducer pushback tracking and 10-min warm-up timer
-- [ ] 06-02-PLAN.md — turnText (4-sentence cap, banned phrases, fixed lines, candidate wrapping) + messages (tool_result-first history)
+- [x] 06-02-PLAN.md — turnText (4-sentence cap, banned phrases, fixed lines, candidate wrapping) + messages (tool_result-first history)
 - [ ] 06-03-PLAN.md — interview_control strict tool + zod parse/map; opening extraction mapping (order from considerations)
 - [ ] 06-04-PLAN.md — Cached system prefix (persona, deck_facts, evaluation_key, examples), case-free warm-up prompt, proctor note
 - [ ] 06-05-PLAN.md — buildTurnRequest proctor facts; runner turn filter, TTFT timings + cache usage, openingPlan persistence
