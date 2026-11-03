@@ -49,3 +49,19 @@ test('packaged app renders the deck from inside the asar', { tag: '@packaged' },
     await app.close()
   }
 })
+
+test('packaged app loads whisper on Metal', { tag: '@packaged' }, async () => {
+  const { app, page } = await launch({
+    executablePath: APP_BIN,
+    scenario: 'probe-ok',
+    env: { ANTHROPIC_API_KEY: 'pkg-' + randomUUID(), STT: 'whisper' }
+  })
+  try {
+    await expect(page.locator('main[data-screen="home"]')).toBeVisible({ timeout: 30_000 })
+    await expect
+      .poll(() => page.evaluate(() => window.api.stt!.status()), { timeout: 120_000 })
+      .toBe('metal')
+  } finally {
+    await app.close()
+  }
+})

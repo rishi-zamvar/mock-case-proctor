@@ -14,6 +14,7 @@ import { join } from 'node:path'
 import { DEFAULT_LIBRARY_ROOT } from '../../src/main/domain/cases/library'
 import { startReplayServer } from '../replay/server'
 import { ROOT } from './launch'
+import { VOICE_FIXTURES } from './voiceFixtures'
 
 // Combined cases root: real case dirs (readdir+isDirectory skips symlinked dirs) holding
 // symlinks to the real files, so private case data is never copied into the repo or test-results.
@@ -64,15 +65,17 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   process.env.E2E_REAL_LIBRARY = cases.real ? '1' : '0'
   const audio = join(ROOT, 'tests', 'fixtures', 'audio')
   mkdirSync(audio, { recursive: true })
-  const wav = join(audio, 'tone.wav')
-  if (!existsSync(wav)) {
-    const aiff = join(audio, 'tone.aiff')
-    execFileSync('say', [
-      '-o',
-      aiff,
-      'The gross revenue retention is ninety two percent and the company grew forty eight percent last year'
-    ])
+  const speech: Record<string, string> = {
+    tone: 'The gross revenue retention is ninety two percent and the company grew forty eight percent last year',
+    ...VOICE_FIXTURES
+  }
+  for (const [name, text] of Object.entries(speech)) {
+    const wav = join(audio, `${name}.wav`)
+    if (existsSync(wav)) continue
+    const aiff = join(audio, `${name}.aiff`)
+    execFileSync('say', ['-o', aiff, text])
     execFileSync('afconvert', ['-f', 'WAVE', '-d', 'LEI16@48000', aiff, wav])
+    rmSync(aiff, { force: true })
   }
   const silence = join(audio, 'silence.wav')
   if (!existsSync(silence)) writeSilence(silence)

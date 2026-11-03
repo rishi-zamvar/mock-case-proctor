@@ -10,7 +10,9 @@
     "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,README.md}",
     "!{.env,.env.*,.npmrc}",
     "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}",
-    "!{.planning,research,release,test-results,playwright-report,coverage}/**"
+    "!{.planning,research,release,test-results,playwright-report,coverage}/**",
+    "!resources/assets/models/whisper/ggml-base.en.bin",
+    "!resources/assets/models/whisper/*.part"
   ],
   "asarUnpack": ["resources/**", "**/*.node"],
   "npmRebuild": false,
