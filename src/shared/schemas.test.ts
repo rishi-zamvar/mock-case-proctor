@@ -110,7 +110,9 @@ const baseView = {
   speaking: false,
   canTalk: true,
   endedEarly: false,
-  reveal: null
+  reveal: null,
+  deckPage: 1,
+  reviewWarned: false
 }
 const reveal = {
   scorecard: {
@@ -158,6 +160,15 @@ describe('ViewStateSchema', () => {
     bad.scorecard.rubric[0].score = 6
     expect(() => ViewStateSchema.parse({ ...baseView, phase: 'reviewMode', reveal: bad })).toThrow()
   })
+  it.each(['deckPage', 'reviewWarned'])('given a view missing %s when parsed then it throws', (k) => {
+    const v: Record<string, unknown> = { ...baseView }
+    delete v[k]
+    expect(() => ViewStateSchema.parse(v)).toThrow()
+  })
+  it('given deckPage 0 or 2.5 when parsed then it throws', () => {
+    expect(() => ViewStateSchema.parse({ ...baseView, deckPage: 0 })).toThrow()
+    expect(() => ViewStateSchema.parse({ ...baseView, deckPage: 2.5 })).toThrow()
+  })
   it('given a transcript line with an answerKey when parsed then it throws', () => {
     const transcript = [{ id: 't1', speaker: 'candidate', text: 'x', answerKey: 'leak' }]
     expect(() => ViewStateSchema.parse({ ...baseView, transcript })).toThrow()
@@ -165,6 +176,9 @@ describe('ViewStateSchema', () => {
 })
 
 describe('IntentSchema', () => {
+  it('given a deckPage intent for page 3 when parsed then it passes', () => {
+    expect(IntentSchema.parse({ type: 'deckPage', page: 3 })).toEqual({ type: 'deckPage', page: 3 })
+  })
   it('given an answer with ms when parsed then it passes', () => {
     expect(() => IntentSchema.parse({ type: 'answer', ms: 1200 })).not.toThrow()
   })
@@ -173,7 +187,11 @@ describe('IntentSchema', () => {
     ['negative ms', { type: 'answer', ms: -1 }],
     ['ms over the 10-minute cap', { type: 'answer', ms: 600_001 }],
     ['unknown type', { type: 'hack' }],
-    ['extra key', { type: 'ready', extra: 1 }]
+    ['extra key', { type: 'ready', extra: 1 }],
+    ['deckPage 0', { type: 'deckPage', page: 0 }],
+    ['deckPage 501', { type: 'deckPage', page: 501 }],
+    ['deckPage 2.5', { type: 'deckPage', page: 2.5 }],
+    ['deckPage extra key', { type: 'deckPage', page: 3, extra: 1 }]
   ])('given %s when parsed then it throws', (_n, bad) => {
     expect(() => IntentSchema.parse(bad)).toThrow()
   })
