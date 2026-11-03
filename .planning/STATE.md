@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 07-07-PLAN.md
-last_updated: "2026-11-03T11:10:23.466Z"
+stopped_at: Completed 07-08-PLAN.md
+last_updated: "2026-11-03T11:12:04.006Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 6
   total_plans: 61
-  completed_plans: 58
+  completed_plans: 59
   percent: 0
 ---
 
@@ -109,6 +109,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 07 P06 | 12min | 2 tasks | 11 files |
 | Phase 06 P10 | 64min | 3 tasks | 7 files |
 | Phase 07 P07 | 10min | 1 tasks | 2 files |
+| Phase 07 P08 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -197,6 +198,7 @@ Recent decisions affecting current work:
 - [Phase 06]: wrap_section maps to status=sufficient so sections close on the partner's call, not only the hard cap
 - [Phase 06]: Interviewer stays claude-opus-5-5; pooled median TTFT 1.74s (n=54, p90 4.8s); haiku/prefix-trim is Rishi's call
 - [Phase 07]: Barge-in commits only spoken sentences; grilling barge-in counts as AGENT_TURN_DONE (control null)
+- [Phase 07]: STT defaults whisper outside E2E, fake under E2E; whisper status failed on missing fork/model, never crashes main
 
 ### Pending Todos
 
@@ -211,6 +213,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T11:10:23.462Z
-Stopped at: Completed 07-07-PLAN.md
+Last session: 2026-11-03T11:12:04.002Z
+Stopped at: Completed 07-08-PLAN.md
 Resume file: None

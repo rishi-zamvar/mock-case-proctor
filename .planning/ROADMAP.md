@@ -179,7 +179,7 @@ Plans:
 - [x] 07-05-PLAN.md — TDD ClaudeLlm.interrupted: barge-in history keeps only spoken text, alternating (wave 2)
 - [x] 07-06-PLAN.md — IPC/schema/timings contracts + runner real answer flow, transcribing, no-answer, latency stamps (wave 2)
 - [x] 07-07-PLAN.md — TDD runner barge-in: spoken-ack tracking, truthful transcript + LLM history (wave 3)
-- [ ] 07-08-PLAN.md — Main wiring: STT config, whisper compose + pre-warm, fork + asar-unpacked model path, IPC + preload (wave 3)
+- [x] 07-08-PLAN.md — Main wiring: STT config, whisper compose + pre-warm, fork + asar-unpacked model path, IPC + preload (wave 3)
 - [ ] 07-09-PLAN.md — Renderer wiring: push-to-talk capture, barge-in, brevity band, transcribing, speak:started, STT banner (wave 3)
 - [ ] 07-10-PLAN.md — T2 full voice-loop E2E (latency + barge-in gates), packaged whisper smoke, live latency, sign-off (wave 4)
 **UI hint**: yes
