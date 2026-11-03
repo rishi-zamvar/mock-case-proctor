@@ -80,6 +80,7 @@ export function setup(
     stt?: SttPort
     realNow?: () => number
     autoStart?: boolean
+    onScored?: (sessionId: string) => void
   } = {}
 ) {
   const root = o.root ?? mkdtempSync(join(tmpdir(), 'runner-'))
@@ -117,6 +118,7 @@ export function setup(
     reviewWarningLine: o.reviewWarningLine,
     warmupClosingLine: o.warmupClosingLine,
     realNow: o.realNow,
+    onScored: o.onScored,
     log
   })
   const file = (id: string): SessionFile =>
