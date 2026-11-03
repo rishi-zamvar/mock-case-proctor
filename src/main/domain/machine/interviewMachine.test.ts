@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_CONFIG,
+  PUSHBACK_SECTION,
   REVIEW_WARNING_MS,
+  WARMUP_MS,
   initialState,
+  pushbackStatus,
   reduce,
   type Effect,
   type InterviewControl,
@@ -524,5 +527,113 @@ describe('review warning (T-10)', () => {
       id: 'warning',
       deadline: T0 + 1 + 35 * 60_000
     })
+  })
+})
+
+describe('pushback (convince me)', () => {
+  const val = (c: Partial<InterviewControl> = {}): InterviewControl =>
+    ctl({ section: 'valuation', ...c })
+
+  it('PUSHBACK_SECTION is valuation', () => {
+    expect(PUSHBACK_SECTION).toBe('valuation')
+  })
+
+  it('pushback status is not_yet outside grilling and on valuation turn 0', () => {
+    expect(pushbackStatus(initialState())).toBe('not_yet')
+    const g = toGrilling(['valuation', 'retention'])
+    expect(g.current).toBe('valuation')
+    expect(pushbackStatus(g)).toBe('not_yet')
+  })
+
+  it('pushback status is now on valuation turn >= 1, not_yet in other sections', () => {
+    const g = toGrilling(['valuation', 'retention'])
+    expect(pushbackStatus(run([turn(val())], g).state)).toBe('now')
+    const r = toGrilling(['retention', 'valuation'])
+    expect(pushbackStatus(run([turn(ctl())], r).state)).toBe('not_yet')
+  })
+
+  it('pushback status is now anywhere in call (fallback), and done once pushbackDone', () => {
+    const g = toGrilling(['retention'])
+    const inCall: InterviewState = { ...g, current: 'call', turnsInSection: 0 }
+    expect(pushbackStatus(inCall)).toBe('now')
+    expect(pushbackStatus({ ...inCall, pushbackDone: true })).toBe('done')
+    expect(pushbackStatus({ ...g, phase: 'wrapup', current: null })).toBe('not_yet')
+  })
+
+  it('pushback_done in any section sets pushbackDone and it is never unset', () => {
+    const g = toGrilling(['retention'])
+    const s1 = run([turn(ctl({ pushback_done: true }))], g).state
+    expect(s1.pushbackDone).toBe(true)
+    const s2 = run([turn(ctl({ pushback_done: false })), turn(ctl())], s1).state
+    expect(s2.pushbackDone).toBe(true)
+    expect(pushbackStatus(s2)).toBe('done')
+  })
+
+  it('pushback owed keeps valuation open on sufficient until the hard cap', () => {
+    const g = toGrilling(['valuation', 'retention'])
+    const hard = g.caps!.hard
+    let s = run([turn(val())], g).state
+    for (let i = 2; i < hard; i++) {
+      s = run([turn(val({ section_status: 'sufficient' }))], s).state
+      expect(s.current).toBe('valuation')
+      expect(s.turnsInSection).toBe(i)
+    }
+    s = run([turn(val({ section_status: 'sufficient' }))], s).state
+    expect(s.current).not.toBe('valuation')
+    expect(s.done).toContain('valuation')
+  })
+
+  it('pushback_done in the same control as sufficient honours sufficient', () => {
+    const g = toGrilling(['valuation', 'retention'])
+    const s = run(
+      [turn(val()), turn(val({ section_status: 'sufficient', pushback_done: true }))],
+      g
+    ).state
+    expect(s.done).toContain('valuation')
+    expect(s.pushbackDone).toBe(true)
+  })
+
+  it('extraction -> grilling sets grillStartedAt', () => {
+    expect(toGrilling().grillStartedAt).toBe(T0 + 4)
+  })
+})
+
+describe('warmup timer', () => {
+  it('WARMUP_MS is 10 minutes', () => {
+    expect(WARMUP_MS).toBe(600_000)
+  })
+
+  it('warmup timer: idle -> warmup (before) arms the warmup timer and sets warmupDeadline', () => {
+    const r = run([{ type: 'START', now: T0 }])
+    expect(r.state.phase).toBe('warmup')
+    expect(r.state.warmupDeadline).toBe(T0 + WARMUP_MS)
+    expect(r.effects).toContainEqual({
+      type: 'START_TIMER',
+      id: 'warmup',
+      deadline: T0 + WARMUP_MS
+    })
+    const i = r.effects.findIndex((e) => e.type === 'PHASE_CHANGED')
+    const j = r.effects.findIndex((e) => e.type === 'START_TIMER')
+    expect(i).toBeLessThan(j)
+  })
+
+  it('warmup timer: review -> warmup (after) arms the warmup timer', () => {
+    const r = run([
+      { type: 'START', now: T0, config: { warmupPosition: 'after' } },
+      { type: 'READY', now: T0 + 5 }
+    ])
+    expect(r.state.phase).toBe('warmup')
+    expect(r.state.warmupDeadline).toBe(T0 + 5 + WARMUP_MS)
+    expect(r.effects).toContainEqual({
+      type: 'START_TIMER',
+      id: 'warmup',
+      deadline: T0 + 5 + WARMUP_MS
+    })
+  })
+
+  it('warmup timer: no warm-up config arms no warmup timer', () => {
+    const r = run([{ type: 'START', now: T0, config: { warmup: false } }])
+    expect(r.effects.some((e) => e.type === 'START_TIMER' && e.id === 'warmup')).toBe(false)
+    expect(r.state.warmupDeadline).toBeNull()
   })
 })

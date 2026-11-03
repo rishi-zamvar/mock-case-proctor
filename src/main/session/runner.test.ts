@@ -3,7 +3,16 @@ import { ViewStateSchema } from '../../shared/schemas'
 import { createFakeLlm } from '../adapters/fakeLlm'
 import type { MakeLlm } from '../ports'
 import { SessionFileSchema } from '../store/sessionSchema'
-import { fakeAwake, lines, REVIEW_MS, setup, WARN_MS, withGrill } from './runner.harness'
+import { WARMUP_MS } from '../domain/machine/interviewMachine'
+import {
+  fakeAwake,
+  lines,
+  manualClock,
+  REVIEW_MS,
+  setup,
+  WARN_MS,
+  withGrill
+} from './runner.harness'
 
 describe('SessionRunner start and warm-up', () => {
   it('given start with warm-up, when the greeting is spoken and acked, then session is active and transcript has 1 line', async () => {
@@ -359,5 +368,53 @@ describe('SessionRunner awake', () => {
     const c = setup({ root: t.root, awake })
     await c.runner.resume(id2)
     expect(awake.hold).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('SessionRunner warm-up timer', () => {
+  it('given warm-up, when 10 minutes pass with no input, then the session leaves warm-up for review', async () => {
+    const t = setup()
+    await t.runner.start('99', { warmup: true })
+    await t.idle()
+    expect(t.view().phase).toBe('warmup')
+    t.clock.advance(WARMUP_MS)
+    await t.until(() => t.view().phase === 'review')
+    expect(t.view().reviewDeadline).toBe(t.clock.now() + REVIEW_MS)
+  })
+
+  it('given warm-up skipped early, when 10 minutes pass, then the warmup timer was cancelled', async () => {
+    const t = setup()
+    await t.runner.start('99', { warmup: true })
+    await t.idle()
+    await t.runner.intent({ type: 'skipWarmup' })
+    expect(t.view().phase).toBe('review')
+    const deadline = t.view().reviewDeadline
+    expect(t.clock.pending()).toBe(2) // review + warning only
+    t.clock.advance(WARMUP_MS)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(t.view().phase).toBe('review')
+    expect(t.view().reviewDeadline).toBe(deadline)
+  })
+
+  it('given a session saved in warm-up, when resumed before the deadline, then the warmup timer is re-armed', async () => {
+    const a = setup()
+    const { sessionId } = await a.runner.start('99', { warmup: true })
+    await a.idle()
+    const clock = manualClock(a.clock.now() + 60_000)
+    const b = setup({ root: a.root, clock })
+    await b.runner.resume(sessionId)
+    expect(b.view().phase).toBe('warmup')
+    expect(clock.pending()).toBe(1)
+    clock.advance(WARMUP_MS - 60_000)
+    await b.until(() => b.view().phase === 'review')
+  })
+
+  it('given a session saved in warm-up, when resumed after the deadline, then it leaves warm-up immediately', async () => {
+    const a = setup()
+    const { sessionId } = await a.runner.start('99', { warmup: true })
+    await a.idle()
+    const b = setup({ root: a.root, clock: manualClock(a.clock.now() + WARMUP_MS + 1) })
+    await b.runner.resume(sessionId)
+    await b.until(() => b.view().phase === 'review')
   })
 })
