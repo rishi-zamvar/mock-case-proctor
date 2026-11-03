@@ -62,5 +62,10 @@
     "typescript": "^5.9.3",
     "vite": "8.3.5",
     "vitest": "5.1.0"
+  },
+  "overrides": {
+    "@electron/osx-sign": {
+      "isbinaryfile": "5.0.7"
+    }
   }
 }
