@@ -14,9 +14,11 @@ import { checkUtterance } from '../domain/text/leakGuard'
 import { createSentenceSplitter } from '../domain/text/sentenceSplitter'
 import { speakable } from '../domain/text/speakable'
 import type { Logger } from '../log'
-import type { AwakePort, ClockPort, LlmChunk, LlmPort, MakeLlm, SttPort } from '../ports'
+import { createTurnFilter } from '../agent/turnText'
+import type { AwakePort, ClockPort, LlmChunk, LlmPort, LlmUsage, MakeLlm, SttPort } from '../ports'
 import type { SessionStore } from '../store/sessionStore'
 import type { PendingTurn, SessionFile } from '../store/sessionSchema'
+import { buildTurnRequest } from './turnRequest'
 import { toViewState } from './view'
 
 export type RunnerDeps = {
@@ -196,6 +198,9 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     const splitter = createSentenceSplitter()
     let seq = 0
     let firstTextAt: number | undefined
+    let firstSentenceAt: number | undefined
+    let usage: LlmUsage | undefined
+    const filter = createTurnFilter()
     let control: InterviewControl | null = null
     let warmupComplete = false
     const written: string[] = []
@@ -203,11 +208,17 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
 
     const emit = (sentence: string): void => {
       if (signal.aborted) return
+      const f = filter.accept(sentence)
+      if (!f.ok) {
+        d.log.warn('utterance dropped', f.reason)
+        return
+      }
       const g = checkUtterance(sentence, brief)
       if (!g.ok) {
         d.log.warn('utterance blocked', g.reason)
         return
       }
+      firstSentenceAt ??= clock.now()
       written.push(sentence)
       const n = seq++
       const key = `${turnId}:${n}`
@@ -231,7 +242,10 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         firstTextAt ??= clock.now()
         splitter.push(c.delta).forEach(emit)
       } else if (c.type === 'control') control = c.payload
-      else warmupComplete = c.warmupComplete === true
+      else {
+        warmupComplete = c.warmupComplete === true
+        usage = c.usage
+      }
     }
     if (!signal.aborted) {
       splitter.flush().forEach(emit)
@@ -258,8 +272,11 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       kind,
       startedAt: t0,
       ...(firstTextAt ? { firstTextAt } : {}),
-      doneAt: at
+      ...(firstSentenceAt ? { firstSentenceAt } : {}),
+      doneAt: at,
+      ...(usage ? { usage } : {})
     })
+    if (usage) d.log.info('llm usage', kind, usage.cacheRead, usage.outputTokens, usage.stopReason)
     if (control) s.controlLog.push({ at, turnId, control })
     store.save(s)
     return { control, warmupComplete }
@@ -299,25 +316,22 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
           const opening =
             s.transcript.find((t) => t.speaker === 'candidate' && t.phase === 'presentation')
               ?.text ?? ''
-          const { order } = await llm.extractPlan(opening, signal)
+          const r = await llm.extractPlan(opening, signal)
           if (signal.aborted) return
-          next = { type: 'SECTION_PLAN_SET', now: now(), order }
+          if (r.plan) s.openingPlan = r.plan
+          next = { type: 'SECTION_PLAN_SET', now: now(), order: r.order }
           break
         }
         case 'grill':
         case 'wrapup': {
           const stream = llm.streamTurn(
-            {
-              kind: pending.kind,
-              section: pending.section,
-              hintAllowed: pending.hintAllowed,
-              turnInSection: s.machineState.turnsInSection,
-              history: history(s)
-            },
+            buildTurnRequest(s, { ...pending, kind: pending.kind }, now()),
             signal
           )
           const r = await speakTurn(s, stream, pending.kind, signal)
           if (!r) return
+          if (r.control?.hint_given && !s.machineState.hintAllowed)
+            d.log.warn('hint without permission')
           next =
             pending.kind === 'grill'
               ? { type: 'AGENT_TURN_DONE', now: now(), control: r.control }
