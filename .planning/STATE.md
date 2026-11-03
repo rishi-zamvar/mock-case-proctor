@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-09-PLAN.md
-last_updated: "2026-11-03T08:00:00.107Z"
+stopped_at: Completed 03-08-PLAN.md
+last_updated: "2026-11-03T08:02:43.978Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 26
-  completed_plans: 22
+  completed_plans: 23
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 3 (Walking Skeleton on Fakes) — EXECUTING
-Plan: 9 of 12
+Plan: 10 of 12
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -74,6 +74,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P04 | 4min | 2 tasks | 6 files |
 | Phase 03 P07 | 10min | 2 tasks | 6 files |
 | Phase 03 P09 | 8min | 2 tasks | 5 files |
+| Phase 03 P08 | 9min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,7 @@ Recent decisions affecting current work:
 - [Phase 03]: Library start sheet restores focus to its trigger on close
 - [Phase 03]: Session countdown anchors app clock to local now() on each view push; Space ignored while end dialog open
 - [Phase 03]: Fake speech queue resolves setTimeout at call time so fake timers apply after mount
+- [Phase 03]: Runner applies LLM turn results inside one queued job; end ignored once scoring started; ack timeout is wall time
 
 ### Pending Todos
 
@@ -127,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T08:00:00.104Z
-Stopped at: Completed 03-09-PLAN.md
+Last session: 2026-11-03T08:02:43.975Z
+Stopped at: Completed 03-08-PLAN.md
 Resume file: None

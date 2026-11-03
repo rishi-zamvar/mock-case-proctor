@@ -50,7 +50,7 @@
 - [ ] **FLOW-05**: A structured call extracts the section order from Rishi's opening. Standard sections he didn't raise are appended at the end, and the omission is recorded.
 - [x] **FLOW-06**: The grilling has a target of about 25 minutes, configurable. Each section has a soft and a hard turn cap enforced in code. The interviewer's "section sufficient" signal is ignored on a section's first turn.
 - [x] **FLOW-07**: The session is saved atomically after every turn and can be resumed after a crash or restart.
-- [ ] **FLOW-08**: Rishi can end a session early, and the partial session is still scored.
+- [x] **FLOW-08**: Rishi can end a session early, and the partial session is still scored.
 
 ### Voice In (VIN)
 
@@ -159,7 +159,7 @@
 | FLOW-05 | Phase 6 | Pending |
 | FLOW-06 | Phase 2 | Complete |
 | FLOW-07 | Phase 3 | Complete |
-| FLOW-08 | Phase 3 | Pending |
+| FLOW-08 | Phase 3 | Complete |
 | VIN-01 | Phase 7 | Pending |
 | VIN-02 | Phase 7 | Pending |
 | VIN-03 | Phase 7 | Pending |
