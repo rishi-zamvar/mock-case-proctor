@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import os from 'node:os'
 import path from 'node:path'
-import { resolveSafePath, resolveAppRequest, isAppOrigin, resolveCasePdfRequest } from './protocol'
+import {
+  resolveSafePath,
+  resolveAppRequest,
+  isAppOrigin,
+  resolveCasePdfRequest,
+  resolveResRequest
+} from './protocol'
 
 const root = path.join(os.tmpdir(), 'root')
 
@@ -86,5 +92,29 @@ describe('resolveCasePdfRequest', () => {
     'app://bundle/cases'
   ])('given refused case url %s, when resolved, then deny', (url) => {
     expect(resolveCasePdfRequest(url)).toBe('deny')
+  })
+})
+
+describe('resolveResRequest', () => {
+  const root = path.join(os.tmpdir(), 'res-root')
+  it('given a /res url, when resolved, then maps into the assets root', () => {
+    expect(resolveResRequest('app://bundle/res/models/a.bin', root)).toBe(
+      path.join(root, 'models/a.bin')
+    )
+  })
+  it.each(['app://bundle/index.html', 'app://assets/res/a.bin', 'app://bundle/resx/a.bin'])(
+    'given non-res url %s, when resolved, then null',
+    (url) => {
+      expect(resolveResRequest(url, root)).toBeNull()
+    }
+  )
+  it.each([
+    'app://bundle/res/../x',
+    'app://bundle/res/%2e%2e/x',
+    'app://bundle/res/%2e%2e/%2e%2e/etc/passwd',
+    'app://bundle/res/',
+    'app://bundle/res/a%00.bin'
+  ])('given refused res url %s, when resolved, then deny', (url) => {
+    expect(resolveResRequest(url, root)).toBe('deny')
   })
 })
