@@ -194,7 +194,20 @@ Plans:
   3. Code-computed checks show which stated numbers match the case data (with a tolerance-based parser), per-answer brevity (30–60 s ideal, over 90 s flagged), whether he led with a call, and which sections he omitted.
   4. The reveal shows the 60-second ideal answer next to Rishi's opening, the key numbers and the full transcript. Fixture transcripts of strong, average and weak answers score in the correct order.
   5. A separate review agent reads past scorecard summaries and reports recurring weaknesses, progress by dimension, and the carried-forward "one fix". The interviewer has no access to any of this.
-**Plans**: TBD
+**Plans**: 11 plans in 5 waves
+
+Plans:
+- [ ] 08-01-PLAN.md — v2 scorecard/checks/reveal/trends contracts + legacy scorecard upgrade; consumers kept green (wave 1)
+- [ ] 08-02-PLAN.md — TDD deterministic checks: numbers vs case tokens, led-with-call, brevity, flag map, quote verification, bands (wave 1)
+- [ ] 08-03-PLAN.md — assembleScorecard (verify/cap/total/band) + computeChecks; fake scorer and reveal use it (wave 2)
+- [ ] 08-04-PLAN.md — store.listSummaries, summaries-only TrendsAgent (real + fake), trends.json-cached service (wave 2)
+- [ ] 08-05-PLAN.md — Review mode scorecard UI: header, debrief-ordered cards, clickable evidence, checks, reveal, searchable transcript (wave 2)
+- [ ] 08-06-PLAN.md — Runner scoring flow: opening plan input, silent retry, "Scoring failed — retry", onScored hook (wave 2)
+- [ ] 08-07-PLAN.md — ReviewerAgent: prompt, GradeSchema, PROMPT_VERSION, createReviewer via messages.parse (wave 3)
+- [ ] 08-08-PLAN.md — Trends tab: inline SVG sparklines + agent insights (wave 3)
+- [ ] 08-09-PLAN.md — compose/IPC/preload wiring (REVIEWER, REVIEWER_MODEL, trends:get) + interviewer isolation test (wave 4)
+- [ ] 08-10-PLAN.md — case_99 strong/average/weak replay fixtures (score ordering) + trends run + LIVE=1 evals (wave 4)
+- [ ] 08-11-PLAN.md — T1 review/trends E2E, T2 real replayed scorecard, phase gate + VALIDATION sign-off (wave 5)
 **UI hint**: yes
 
 ### Phase 9: Packaged Live Sign-off
