@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { connectTts, synthTimeoutMs, type HeadTtsLike } from './headtts'
+import { connectTts, synthTimeoutMs, type HeadTtsLike, type LoadTts } from './headtts'
 
 type Script = {
   connect?: (s?: { endpoints: string[] } | null) => Promise<unknown>
-  synthesize?: (o: { input: string }) => Promise<{ type: string; data: any }[]>
+  synthesize?: HeadTtsLike['synthesize']
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function fakeTts(script: Script = {}) {
   const tts = {
     connect: vi.fn(script.connect ?? (async () => undefined)),
-    synthesize: vi.fn(script.synthesize ?? (async () => [{ type: 'audio', data: { visemes: [] } }])),
+    synthesize: vi.fn(
+      script.synthesize ?? (async () => [{ type: 'audio', data: { visemes: [] } }])
+    ),
     setup: vi.fn(async () => undefined)
   } satisfies HeadTtsLike
   return tts
@@ -18,8 +21,9 @@ function fakeTts(script: Script = {}) {
 const adapterGpu = { requestAdapter: async () => ({}) }
 const nullGpu = { requestAdapter: async () => null }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function opts(tts: HeadTtsLike, gpu: { requestAdapter(): Promise<unknown | null> } | undefined) {
-  const load = vi.fn(async () => tts)
+  const load = vi.fn<LoadTts>(async () => tts)
   return {
     load,
     o: {
@@ -169,7 +173,9 @@ describe('Tts.synthesize', () => {
 describe('Tts.synthPcm', () => {
   it('given a pcm result, when auditioning, then sets pcm voice, returns base64 bytes and restores wav default', async () => {
     const pcm = new Int16Array([1, -1, 300]).buffer
-    const tts = fakeTts({ synthesize: async () => [{ type: 'audio', data: { visemes: [], audio: pcm } }] })
+    const tts = fakeTts({
+      synthesize: async () => [{ type: 'audio', data: { visemes: [], audio: pcm } }]
+    })
     const t = await connectTts(opts(tts, adapterGpu).o)
     const b64 = await t.synthPcm('sample', 'bm_george')
     expect(tts.setup.mock.calls).toEqual([
@@ -189,9 +195,13 @@ describe('Tts.synthPcm', () => {
 
   it('given a large buffer, when auditioning, then base64 round-trips without stack overflow', async () => {
     const bytes = new Uint8Array(300_000).map((_, i) => i % 256)
-    const tts = fakeTts({ synthesize: async () => [{ type: 'audio', data: { visemes: [], audio: bytes.buffer } }] })
+    const tts = fakeTts({
+      synthesize: async () => [{ type: 'audio', data: { visemes: [], audio: bytes.buffer } }]
+    })
     const t = await connectTts(opts(tts, adapterGpu).o)
-    const back = Uint8Array.from(atob((await t.synthPcm('s', 'am_michael'))!), (c) => c.charCodeAt(0))
+    const back = Uint8Array.from(atob((await t.synthPcm('s', 'am_michael'))!), (c) =>
+      c.charCodeAt(0)
+    )
     expect(back.length).toBe(300_000)
     expect(back[257]).toBe(1)
   })
