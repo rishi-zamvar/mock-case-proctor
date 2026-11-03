@@ -146,7 +146,18 @@ Plans:
   3. A wrong GRR or a wrong number gets called out against the case data. The "You said X. I think it's the opposite. Convince me" pushback happens in every case. Hints appear only after 2 failed probes, and answers running past about 90 s in the grilling get interrupted.
   4. Every turn ends with a valid record-only `interview_control` call (section, status, evidence, flags, hint), which code validates, and a missing call is treated as "still probing". A "tell me the answer key" or injected-instruction transcript does not change the interviewer's behaviour, and the leak guard blocks any answer-key phrasing before speech.
   5. The model ID is one config value (default `claude-opus-5-5`). The case brief is the cached system prefix, with cache reads confirmed from turn 2 onwards. A new case starts a fresh interviewer with no prior-session context.
-**Plans**: TBD
+**Plans**: 10 plans
+Plans:
+- [ ] 06-01-PLAN.md — Contracts (ports, control/state/schema widening) + reducer pushback tracking and 10-min warm-up timer
+- [ ] 06-02-PLAN.md — turnText (4-sentence cap, banned phrases, fixed lines, candidate wrapping) + messages (tool_result-first history)
+- [ ] 06-03-PLAN.md — interview_control strict tool + zod parse/map; opening extraction mapping (order from considerations)
+- [ ] 06-04-PLAN.md — Cached system prefix (persona, deck_facts, evaluation_key, examples), case-free warm-up prompt, proctor note
+- [ ] 06-05-PLAN.md — buildTurnRequest proctor facts; runner turn filter, TTFT timings + cache usage, openingPlan persistence
+- [ ] 06-06-PLAN.md — createClaudeLlm adapter over SDK 1.4.0 (stream, control, warm-up, extraction, abort, fresh per session)
+- [ ] 06-07-PLAN.md — Runner 90 s interject, uninterrupted presentation, warm-up closing line, one-retry failure path
+- [ ] 06-08-PLAN.md — compose LLM=claude/auto + INTERVIEWER_MODEL, per-session client, lazy key getter
+- [ ] 06-09-PLAN.md — Record case_99 SSE fixtures; replay integration test through the real SDK
+- [ ] 06-10-PLAN.md — LIVE=1 eval suite, T2 replayed full session E2E, phase gate + latency recommendation
 
 ### Phase 7: Voice In & Barge-In
 **Goal**: The core loop works by voice. Rishi presses Talk, speaks, presses stop, sees his words, and hears the partner reply within about 3 s. He can cut the partner off at any time.
