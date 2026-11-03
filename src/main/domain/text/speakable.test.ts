@@ -51,17 +51,26 @@ const ACRONYMS: [string, string][] = [
 const UNTOUCHED = ['box', 'every', 'Fax', 'Evan', 'Mix tape', 'the 3 sections']
 
 describe('speakable', () => {
-  it.each(LOCKED)('given the locked form %s, when normalised, then it reads "%s"', (input, expected) => {
-    expect(speakable(input)).toBe(expected)
-  })
+  it.each(LOCKED)(
+    'given the locked form %s, when normalised, then it reads "%s"',
+    (input, expected) => {
+      expect(speakable(input)).toBe(expected)
+    }
+  )
 
-  it.each(EXTRAS)('given the census form %s, when normalised, then it reads "%s"', (input, expected) => {
-    expect(speakable(input)).toBe(expected)
-  })
+  it.each(EXTRAS)(
+    'given the census form %s, when normalised, then it reads "%s"',
+    (input, expected) => {
+      expect(speakable(input)).toBe(expected)
+    }
+  )
 
-  it.each(ACRONYMS)('given acronym text %s, when normalised, then it reads "%s"', (input, expected) => {
-    expect(speakable(input)).toBe(expected)
-  })
+  it.each(ACRONYMS)(
+    'given acronym text %s, when normalised, then it reads "%s"',
+    (input, expected) => {
+      expect(speakable(input)).toBe(expected)
+    }
+  )
 
   it.each(UNTOUCHED)('given ordinary text %s, when normalised, then it is unchanged', (input) => {
     expect(speakable(input)).toBe(input)
@@ -73,8 +82,11 @@ describe('speakable', () => {
     )
   })
 
-  it.each(LOCKED.map(([i]) => i))('given %s already spoken, when normalised again, then it is unchanged', (input) => {
-    const once = speakable(input)
-    expect(speakable(once)).toBe(once)
-  })
+  it.each(LOCKED.map(([i]) => i))(
+    'given %s already spoken, when normalised again, then it is unchanged',
+    (input) => {
+      const once = speakable(input)
+      expect(speakable(once)).toBe(once)
+    }
+  )
 })

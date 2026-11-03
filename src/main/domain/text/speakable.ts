@@ -31,7 +31,10 @@ const RULES: Rule[] = [
   [/(\d),(?=\d{3}\b)/g, '$1'],
   [/(?<![\w.])n\.a\./g, 'not available'],
   [new RegExp(String.raw`\((\$?${N}[KMBT]?%?)\)`, 'g'), 'negative $1'],
-  [/\bFY(\d{2}|\d{4})([AE])?\b/g, (_m, y, ae) => `fiscal ${y.length === 2 ? `20${y}` : y}${ae === 'E' ? ' estimate' : ''}`],
+  [
+    /\bFY(\d{2}|\d{4})([AE])?\b/g,
+    (_m, y, ae) => `fiscal ${y.length === 2 ? `20${y}` : y}${ae === 'E' ? ' estimate' : ''}`
+  ],
   [
     new RegExp(String.raw`(\$)?(${N})([KMBT])?${DASH}(\$)?(${N})([KMBT])\b`, 'g'),
     (_m, d1, a, s1, d2, b, s2) => {
@@ -50,7 +53,10 @@ const RULES: Rule[] = [
   [/\bbps\b/g, 'basis points'],
   [/(\d)\+/g, '$1 plus'],
   [/~\s*/g, 'about '],
-  ...Object.entries(LEXICON).map(([k, v]): Rule => [new RegExp(String.raw`\b${escape(k)}\b`, 'g'), v]),
+  ...Object.entries(LEXICON).map(([k, v]): Rule => [
+    new RegExp(String.raw`\b${escape(k)}\b`, 'g'),
+    v
+  ]),
   [/ {2,}/g, ' ']
 ]
 
