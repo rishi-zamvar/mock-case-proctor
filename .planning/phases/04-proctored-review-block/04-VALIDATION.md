@@ -1,7 +1,7 @@
 ---
 phase: 4
 slug: proctored-review-block
-status: draft
+status: green
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-11-03
@@ -38,21 +38,21 @@ created: 2026-11-03
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 4-01-01 | 01 | 1 | FLOW-03 | unit | `npx vitest run --project main src/main/domain/machine src/main/store` | ✅ | ⬜ pending |
-| 4-01-02 | 01 | 1 | FLOW-03 | unit | `npx vitest run && npm run typecheck` | ✅ | ⬜ pending |
-| 4-02-01 | 02 | 1 | FLOW-03 | config | `npx vitest run --project main tests/config src/main/domain/cases` | ❌ W0 (deps.test.ts created in-task) | ⬜ pending |
-| 4-02-02 | 02 | 1 | FLOW-03 | component | `npx vitest run --project renderer && npm run typecheck:web` | ❌ W0 (DeckViewer.test.tsx created test-first) | ⬜ pending |
-| 4-03-01 | 03 | 1 | VIN-05 | unit + component | `npx vitest run --project renderer src/renderer/src/media` | ❌ W0 (created test-first) | ⬜ pending |
-| 4-03-02 | 03 | 1 | VOUT-06 | component + config | `npx vitest run --project renderer src/renderer/src/media && npx vitest run --project main tests/config/no-recording.test.ts` | ❌ W0 (created test-first) | ⬜ pending |
-| 4-04-01 | 04 | 1 | VOUT-06 | unit | `npx vitest run --project main src/main/power.test.ts` | ❌ W0 (created test-first) | ⬜ pending |
-| 4-04-02 | 04 | 1 | VIN-05 | unit | `npx vitest run --project main src/main/media.test.ts && npm run typecheck:node` | ❌ W0 (created test-first) | ⬜ pending |
-| 4-05-01 | 05 | 2 | FLOW-03, VOUT-06 | unit | `npx vitest run --project main src/main/session` | ✅ | ⬜ pending |
-| 4-05-02 | 05 | 2 | VOUT-06, VIN-05 | unit | `npx vitest run --project main && npm run typecheck:node && npm run lint` | ✅ | ⬜ pending |
-| 4-06-01 | 06 | 2 | FLOW-03, VOUT-06 | component | `npx vitest run --project renderer && npm run typecheck:web && npm run lint` | ✅ | ⬜ pending |
-| 4-06-02 | 06 | 2 | VIN-05 | component | `npx vitest run --project renderer src/renderer/src/screens/Library.test.tsx` | ✅ | ⬜ pending |
-| 4-07-01 | 07 | 3 | FLOW-03 | E2E | `npx electron-vite build && npx playwright test tests/e2e/review.spec.ts tests/e2e/flow.spec.ts` | ❌ (review.spec.ts created in-task) | ⬜ pending |
-| 4-07-02 | 07 | 3 | VIN-05, VOUT-06 | E2E | `npx electron-vite build && npx playwright test tests/e2e/media.spec.ts` | ❌ (media.spec.ts created in-task) | ⬜ pending |
-| 4-07-03 | 07 | 3 | all | gate | `npm run lint && npm run typecheck && npx vitest run && npm run test:e2e` (x3) `&& npm run test:packaged` | ✅ | ⬜ pending |
+| 4-01-01 | 01 | 1 | FLOW-03 | unit | `npx vitest run --project main src/main/domain/machine src/main/store` | ✅ | ✅ green |
+| 4-01-02 | 01 | 1 | FLOW-03 | unit | `npx vitest run && npm run typecheck` | ✅ | ✅ green |
+| 4-02-01 | 02 | 1 | FLOW-03 | config | `npx vitest run --project main tests/config src/main/domain/cases` | ❌ W0 (deps.test.ts created in-task) | ✅ green |
+| 4-02-02 | 02 | 1 | FLOW-03 | component | `npx vitest run --project renderer && npm run typecheck:web` | ❌ W0 (DeckViewer.test.tsx created test-first) | ✅ green |
+| 4-03-01 | 03 | 1 | VIN-05 | unit + component | `npx vitest run --project renderer src/renderer/src/media` | ❌ W0 (created test-first) | ✅ green |
+| 4-03-02 | 03 | 1 | VOUT-06 | component + config | `npx vitest run --project renderer src/renderer/src/media && npx vitest run --project main tests/config/no-recording.test.ts` | ❌ W0 (created test-first) | ✅ green |
+| 4-04-01 | 04 | 1 | VOUT-06 | unit | `npx vitest run --project main src/main/power.test.ts` | ❌ W0 (created test-first) | ✅ green |
+| 4-04-02 | 04 | 1 | VIN-05 | unit | `npx vitest run --project main src/main/media.test.ts && npm run typecheck:node` | ❌ W0 (created test-first) | ✅ green |
+| 4-05-01 | 05 | 2 | FLOW-03, VOUT-06 | unit | `npx vitest run --project main src/main/session` | ✅ | ✅ green |
+| 4-05-02 | 05 | 2 | VOUT-06, VIN-05 | unit | `npx vitest run --project main && npm run typecheck:node && npm run lint` | ✅ | ✅ green |
+| 4-06-01 | 06 | 2 | FLOW-03, VOUT-06 | component | `npx vitest run --project renderer && npm run typecheck:web && npm run lint` | ✅ | ✅ green |
+| 4-06-02 | 06 | 2 | VIN-05 | component | `npx vitest run --project renderer src/renderer/src/screens/Library.test.tsx` | ✅ | ✅ green |
+| 4-07-01 | 07 | 3 | FLOW-03 | E2E | `npx electron-vite build && npx playwright test tests/e2e/review.spec.ts tests/e2e/flow.spec.ts` | ❌ (review.spec.ts created in-task) | ✅ green |
+| 4-07-02 | 07 | 3 | VIN-05, VOUT-06 | E2E | `npx electron-vite build && npx playwright test tests/e2e/media.spec.ts` | ❌ (media.spec.ts created in-task) | ✅ green |
+| 4-07-03 | 07 | 3 | all | gate | `npm run lint && npm run typecheck && npx vitest run && npm run test:e2e` (x3) `&& npm run test:packaged` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -79,4 +79,4 @@ All phase behaviors have automated verification. Real-hardware camera/mic TCC pr
 - [x] Feedback latency < 4s (unit)
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending (set to approved by 04-07 Task 3 when the gate is green)
+**Approval:** approved 2026-11-03 (04-07 gate: lint 0 errors, typecheck, build, Vitest 785 passed, test:e2e 39/39 three runs in a row at ~165 s each, test:packaged 2/2)
