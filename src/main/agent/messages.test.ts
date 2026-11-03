@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { ContentBlock, MessageParam } from '@anthropic-ai/sdk/resources/messages'
+import type {
+  ContentBlock,
+  ContentBlockParam,
+  MessageParam
+} from '@anthropic-ai/sdk/resources/messages'
 import {
   assistantTurn,
   checkConversation,
@@ -84,9 +88,11 @@ describe('seedFromHistory', () => {
 describe('checkConversation', () => {
   const u = (content: MessageParam['content']): MessageParam => ({ role: 'user', content })
   const a = (content: MessageParam['content']): MessageParam => ({ role: 'assistant', content })
-  const t = (text: string) => [{ type: 'text' as const, text }]
-  const tr = (id: string) => [{ type: 'tool_result' as const, tool_use_id: id, content: 'ok' }]
-  const tu = (id: string) => [{ type: 'tool_use' as const, id, name: 'x', input: {} }]
+  const t = (text: string): ContentBlockParam[] => [{ type: 'text', text }]
+  const tr = (id: string): ContentBlockParam[] => [
+    { type: 'tool_result', tool_use_id: id, content: 'ok' }
+  ]
+  const tu = (id: string): ContentBlockParam[] => [{ type: 'tool_use', id, name: 'x', input: {} }]
 
   it('given a valid tool round trip, then no violations', () => {
     expect(checkConversation([u(t('a')), a(tu('tu_1')), u([...tr('tu_1'), ...t('b')])])).toEqual([])
