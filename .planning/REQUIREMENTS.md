@@ -7,13 +7,13 @@
 
 ### Foundation (FND)
 
-- [ ] **FND-01**: The app launches as a macOS (Apple Silicon) Electron app, with one command for development and one command for a packaged, ad-hoc-signed `.app`.
-- [ ] **FND-02**: The code lives in the private GitHub repo `rishi-zamvar/mock-case-proctor`. `.env`, models, sessions and case data are gitignored, and an automated secret-scan test fails if any `sk-ant-` string is tracked.
-- [ ] **FND-03**: The test harness runs from day one:
+- [x] **FND-01**: The app launches as a macOS (Apple Silicon) Electron app, with one command for development and one command for a packaged, ad-hoc-signed `.app`.
+- [x] **FND-02**: The code lives in the private GitHub repo `rishi-zamvar/mock-case-proctor`. `.env`, models, sessions and case data are gitignored, and an automated secret-scan test fails if any `sk-ant-` string is tracked.
+- [x] **FND-03**: The test harness runs from day one:
   - Vitest unit/integration projects, one for the main process and one for the renderer.
   - Playwright end-to-end tests against the built Electron app, using fake media switches. On macOS this means `--use-file-for-fake-audio-capture` plus `--disable-features=AudioServiceSandbox`.
   - A Claude replay server reached through `ANTHROPIC_BASE_URL`, with a `RECORD=1` mode that captures fixtures.
-- [ ] **FND-04**: The packaged app's camera and mic entitlements appear in both the entitlements file and the inherited entitlements file, along with the usage strings. A test asserts this.
+- [x] **FND-04**: The packaged app's camera and mic entitlements appear in both the entitlements file and the inherited entitlements file, along with the usage strings. A test asserts this.
 - [ ] **FND-05**: The renderer is sandboxed: context isolation and a CSP. It has no Node access and no general file-read IPC. Local assets are served through a custom `app://` protocol.
 
 ### API Key (KEY)
@@ -106,7 +106,7 @@
 
 ### Quality (QA)
 
-- [ ] **QA-01**: TDD. Tests are written before the logic for every pure module and service.
+- [x] **QA-01**: TDD. Tests are written before the logic for every pure module and service.
 - [ ] **QA-02**: Tier-1 end-to-end tests (every component faked) cover every screen and the full session flow, and run on every change.
 - [ ] **QA-03**: Tier-2 end-to-end tests use real speech-to-text and voice, replayed Claude responses, and WAV fixtures fed in as the mic. They cover the real voice loop.
 - [ ] **QA-04**: Tier-3 live run: a full session on the packaged `.app` against the real Claude API. Live evals: no leaks, pushback when given a wrong GRR, sections completing within their cap.
@@ -137,10 +137,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
-| FND-04 | Phase 1 | Pending |
+| FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
+| FND-04 | Phase 1 | Complete |
 | FND-05 | Phase 1 | Pending |
 | KEY-01 | Phase 1 | Pending |
 | KEY-02 | Phase 1 | Pending |
@@ -185,7 +185,7 @@
 | REV-04 | Phase 8 | Pending |
 | REV-05 | Phase 3 | Pending |
 | REV-06 | Phase 8 | Pending |
-| QA-01 | Phase 1 | Pending |
+| QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 3 | Pending |
 | QA-03 | Phase 7 | Pending |
 | QA-04 | Phase 9 | Pending |
