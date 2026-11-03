@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-11-03T06:55:42.703Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-11-03T06:55:56.243Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 9
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 1 (Scaffold, Harness & Key Onboarding) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01 P01 | 8min | 3 tasks | 18 files |
 | Phase 01 P04 | 4min | 2 tasks | 4 files |
+| Phase 01 P02 | 2min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,7 @@ Recent decisions affecting current work:
 - Roadmap: VOUT-04 (3 s latency) and VOUT-05 (barge-in) sit in Phase 7, because both need real STT plus the agent to be measurable.
 - [Phase 01]: Scaffold via temp dir + rsync; electron-builder.json (not yml) so config tests need no YAML parser
 - [Phase 01]: Replay server writes req log even on 599 missing-fixture
+- [Phase 01]: app:// resolver also checks raw path: WHATWG URL clamps %2e%2e, so traversal is refused not clamped
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T06:55:42.700Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-11-03T06:55:56.240Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

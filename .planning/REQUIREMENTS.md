@@ -14,7 +14,7 @@
   - Playwright end-to-end tests against the built Electron app, using fake media switches. On macOS this means `--use-file-for-fake-audio-capture` plus `--disable-features=AudioServiceSandbox`.
   - A Claude replay server reached through `ANTHROPIC_BASE_URL`, with a `RECORD=1` mode that captures fixtures.
 - [x] **FND-04**: The packaged app's camera and mic entitlements appear in both the entitlements file and the inherited entitlements file, along with the usage strings. A test asserts this.
-- [ ] **FND-05**: The renderer is sandboxed: context isolation and a CSP. It has no Node access and no general file-read IPC. Local assets are served through a custom `app://` protocol.
+- [x] **FND-05**: The renderer is sandboxed: context isolation and a CSP. It has no Node access and no general file-read IPC. Local assets are served through a custom `app://` protocol.
 
 ### API Key (KEY)
 
@@ -141,7 +141,7 @@
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
 | FND-04 | Phase 1 | Complete |
-| FND-05 | Phase 1 | Pending |
+| FND-05 | Phase 1 | Complete |
 | KEY-01 | Phase 1 | Pending |
 | KEY-02 | Phase 1 | Pending |
 | KEY-03 | Phase 1 | Complete |
