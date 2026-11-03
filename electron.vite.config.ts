@@ -12,7 +12,17 @@ const META_CSP = CSP.split('; ')
   .join('; ')
 
 export default defineConfig({
-  main: {},
+  main: {
+    // electron-vite 6 (Rolldown) reads build.rolldownOptions.input; emits out/main/sttWorker.js.
+    build: {
+      rolldownOptions: {
+        input: {
+          index: resolve('src/main/index.ts'),
+          sttWorker: resolve('src/main/stt/worker.ts')
+        }
+      }
+    }
+  },
   preload: {},
   renderer: {
     resolve: {
