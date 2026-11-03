@@ -181,7 +181,7 @@ Plans:
 - [x] 07-07-PLAN.md — TDD runner barge-in: spoken-ack tracking, truthful transcript + LLM history (wave 3)
 - [x] 07-08-PLAN.md — Main wiring: STT config, whisper compose + pre-warm, fork + asar-unpacked model path, IPC + preload (wave 3)
 - [x] 07-09-PLAN.md — Renderer wiring: push-to-talk capture, barge-in, brevity band, transcribing, speak:started, STT banner (wave 3)
-- [ ] 07-10-PLAN.md — T2 full voice-loop E2E (latency + barge-in gates), packaged whisper smoke, live latency, sign-off (wave 4)
+- [x] 07-10-PLAN.md — T2 full voice-loop E2E (latency + barge-in gates), packaged whisper smoke, live latency, sign-off (wave 4)
 **UI hint**: yes
 
 ### Phase 8: Review Mode & Trends

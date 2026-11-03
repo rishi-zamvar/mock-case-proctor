@@ -57,7 +57,7 @@
 - [x] **VIN-01**: Push-to-talk. Rishi presses a button (or Space) to start and presses again to stop each answer. A visible timer runs for each answer.
 - [x] **VIN-02**: Local speech-to-text (whisper.cpp large-v3-turbo on Metal), seeded with the case glossary and finance vocabulary.
 - [x] **VIN-03**: The text of each answer is shown after it is transcribed.
-- [ ] **VIN-04**: Near-silent recordings are treated as "no answer". Whisper's typical hallucinations ("Thank you.") and repeated phrases are filtered out.
+- [x] **VIN-04**: Near-silent recordings are treated as "no answer". Whisper's typical hallucinations ("Thank you.") and repeated phrases are filtered out.
 - [x] **VIN-05**: A mic check (level meter) runs before the session starts.
 
 ### Interviewer Agent (INT)
@@ -108,7 +108,7 @@
 
 - [x] **QA-01**: TDD. Tests are written before the logic for every pure module and service.
 - [x] **QA-02**: Tier-1 end-to-end tests (every component faked) cover every screen and the full session flow, and run on every change.
-- [ ] **QA-03**: Tier-2 end-to-end tests use real speech-to-text and voice, replayed Claude responses, and WAV fixtures fed in as the mic. They cover the real voice loop.
+- [x] **QA-03**: Tier-2 end-to-end tests use real speech-to-text and voice, replayed Claude responses, and WAV fixtures fed in as the mic. They cover the real voice loop.
 - [ ] **QA-04**: Tier-3 live run: a full session on the packaged `.app` against the real Claude API. Live evals: no leaks, pushback when given a wrong GRR, sections completing within their cap.
 
 ## v2 Requirements
@@ -163,7 +163,7 @@
 | VIN-01 | Phase 7 | Complete |
 | VIN-02 | Phase 7 | Complete |
 | VIN-03 | Phase 7 | Complete |
-| VIN-04 | Phase 7 | Pending |
+| VIN-04 | Phase 7 | Complete |
 | VIN-05 | Phase 4 | Complete |
 | INT-01 | Phase 6 | Complete |
 | INT-02 | Phase 6 | Complete |
@@ -187,7 +187,7 @@
 | REV-06 | Phase 8 | Pending |
 | QA-01 | Phase 1 | Complete |
 | QA-02 | Phase 3 | Complete |
-| QA-03 | Phase 7 | Pending |
+| QA-03 | Phase 7 | Complete |
 | QA-04 | Phase 9 | Pending |
 
 **Coverage:** 52/52 v1 requirements mapped, 0 unmapped
