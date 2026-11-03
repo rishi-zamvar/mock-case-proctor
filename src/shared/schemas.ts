@@ -7,6 +7,7 @@ import type {
   LibraryView,
   SaveResult,
   Scorecard,
+  SpeakCancel,
   SpeakEvent,
   ViewState
 } from './ipc'
@@ -170,7 +171,12 @@ export const StartArgsSchema = z.tuple([
   z.object({ warmup: z.boolean() }).strict()
 ])
 export const IdArgsSchema = z.tuple([z.string().regex(/^[A-Za-z0-9_-]{1,80}$/)])
-export const AckArgsSchema = z.tuple([z.string().min(1).max(80), z.number().int().min(0)])
+export const AckArgsSchema = z.tuple([
+  z.string().min(1).max(80),
+  z.number().int().min(0),
+  z.boolean().optional()
+])
+export const SpeakCancelSchema = z.object({ turnId: z.string().min(1).max(80) }).strict()
 
 export const SpeakEventSchema = z
   .object({ turnId: z.string(), seq: z.number().int().min(0), text: z.string() })
@@ -193,4 +199,6 @@ const _se: SpeakEvent = {} as z.infer<typeof SpeakEventSchema>
 const _se2: z.infer<typeof SpeakEventSchema> = {} as SpeakEvent
 const _sc: Scorecard = {} as z.infer<typeof ScorecardSchema>
 const _sc2: z.infer<typeof ScorecardSchema> = {} as Scorecard
-void [_ks, _ks2, _sr, _sr2, _cc, _cc2, _vs, _vs2, _lv, _lv2, _in, _in2, _se, _se2, _sc, _sc2]
+const _sx: SpeakCancel = {} as z.infer<typeof SpeakCancelSchema>
+const _sx2: z.infer<typeof SpeakCancelSchema> = {} as SpeakCancel
+void [_sx, _sx2, _ks, _ks2, _sr, _sr2, _cc, _cc2, _vs, _vs2, _lv, _lv2, _in, _in2, _se, _se2, _sc, _sc2]

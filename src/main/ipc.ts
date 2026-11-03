@@ -74,7 +74,7 @@ export function registerIpc(ipc: IpcLike, deps: IpcDeps, devUrl?: string): void 
     on(CH.sessionResume, IdArgsSchema, ([id]) => runner.resume(id))
     on(CH.sessionIntent, IntentArgs, async ([i]) => void (await runner.intent(i)))
     on(CH.sessionDiscard, IdArgsSchema, ([id]) => void runner.discard(id))
-    on(CH.speakAck, AckArgsSchema, ([t, seq]) => void runner.ack(t, seq))
+    on(CH.speakAck, AckArgsSchema, ([t, seq, spoken]) => void runner.ack(t, seq, spoken ?? true))
   }
   if (e2eSay) on(CH.e2eSay, SayArgs, ([t]) => void e2eSay(t))
 }

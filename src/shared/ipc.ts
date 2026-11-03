@@ -10,6 +10,7 @@ export const CH = {
   sessionResume: 'session:resume',
   sessionDiscard: 'session:discard',
   speakAck: 'speak:ack',
+  speakCancel: 'speak:cancel',
   view: 'view:state',
   speak: 'speak:sentence',
   e2eSay: 'e2e:say'
@@ -33,9 +34,11 @@ export interface Api {
     resume(id: string): Promise<{ sessionId: string }>
     discard(id: string): Promise<void>
   }
-  speak: { ack(turnId: string, seq: number): Promise<void> }
+  config: { tts: TtsMode }
+  speak: { ack(turnId: string, seq: number, spoken?: boolean): Promise<void> }
   onView(cb: (v: ViewState) => void): () => void
   onSpeak(cb: (s: SpeakEvent) => void): () => void
+  onSpeakCancel(cb: (c: SpeakCancel) => void): () => void
 }
 export type IpcTapEntry = { channel: string; payload: unknown }
 export interface E2EHooks {
@@ -129,3 +132,27 @@ export type Intent =
   | { type: 'deckPage'; page: number }
 export type StartOptions = { warmup: boolean }
 export type SpeakEvent = { turnId: string; seq: number; text: string }
+export type TtsMode = 'headtts' | 'fake'
+export type TtsDevice = 'webgpu' | 'wasm' | 'none'
+export type SpeakCancel = { turnId: string }
+export type AvatarStateName = 'idle' | 'listening' | 'thinking' | 'speaking'
+export type SpokenSeq = {
+  turnId: string
+  seq: number
+  visemes: number
+  startedAt: number
+  endedAt: number | null
+}
+// Published by the renderer as window.__voice ONLY when '__e2e' in window (contextBridge objects are frozen, so it cannot live on __e2e).
+export interface VoiceProbe {
+  readonly ttsDevice: TtsDevice | null
+  readonly ready: boolean
+  readonly isSpeaking: boolean // head.isSpeaking
+  readonly visemeCount: number // visemes actually played
+  readonly spokenSeqs: SpokenSeq[]
+  readonly avatarState: AvatarStateName
+  readonly stateLog: AvatarStateName[] // every distinct state transition, in order
+  readonly instances: number // TalkingHead constructions this app lifetime
+  opaqueFraction(): number // render + readback, 0..1
+  audition(voice: string, text: string): Promise<string> // base64 PCM16 LE, 24 kHz mono
+}
