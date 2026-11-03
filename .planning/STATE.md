@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 07-09-PLAN.md
-last_updated: "2026-11-03T11:12:40.596Z"
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-11-03T11:47:45.377Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 6
-  total_plans: 61
-  completed_plans: 60
+  total_plans: 72
+  completed_plans: 61
   percent: 0
 ---
 
@@ -111,6 +111,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 07 P07 | 10min | 1 tasks | 2 files |
 | Phase 07 P08 | 5min | 2 tasks | 6 files |
 | Phase 07 P09 | 15min | 3 tasks | 9 files |
+| Phase 08 P02 | 8min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -201,6 +202,7 @@ Recent decisions affecting current work:
 - [Phase 07]: Barge-in commits only spoken sentences; grilling barge-in counts as AGENT_TURN_DONE (control null)
 - [Phase 07]: STT defaults whisper outside E2E, fake under E2E; whisper status failed on missing fork/model, never crashes main
 - [Phase 07]: Barge-in = Talk while speaking (mic present, talk phases); renderer drops late sentences of the cut turn via a cut-turn id set
+- [Phase 08]: numberChecks window excludes the mention text; unit compatibility via matches(same value, tol 0); flagMap status fixed at first appearance, hinted wins within an entry
 
 ### Pending Todos
 
@@ -215,6 +217,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T11:12:40.592Z
-Stopped at: Completed 07-09-PLAN.md
+Last session: 2026-11-03T11:47:45.373Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
