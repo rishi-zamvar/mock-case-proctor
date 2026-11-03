@@ -57,7 +57,14 @@ Plans:
   2. Driving the state machine with event sequences in tests moves it through warm-up, review, presentation, grilling, wrap-up, scoring and review mode in order. Soft and hard turn caps per section are enforced. "Sufficient" is ignored on a section's first turn. An invalid `next_section` is rejected. The grilling target (default about 25 minutes) is configurable.
   3. The leak guard blocks any utterance that contains an 8+ token n-gram from the answer key or a banned term ("rubric", "answer key"), and passes ordinary probing questions.
   4. The speech normaliser turns `$184M`, `4.1x`, `48.2%`, `bps`, ranges, ARR, NRR, GRR and CAGR into speakable text. The sentence splitter does not break on `4.1x`, `$1.5B` or `e.g.`.
-**Plans**: TBD
+**Plans**: 5 plans in 2 waves
+
+Plans:
+- [ ] 02-01-PLAN.md — TDD token/{fn:} resolver + deck page splitter, case_99_fixture, .gitignore negation (wave 1)
+- [ ] 02-03-PLAN.md — TDD section catalog, plan merge, turn caps, pure interview reducer (wave 1)
+- [ ] 02-04-PLAN.md — TDD speakable() normaliser + lexicon (real census) and streaming sentence splitter (wave 1)
+- [ ] 02-05-PLAN.md — TDD leak guard, canonical number parser, brevity bands (wave 1)
+- [ ] 02-02-PLAN.md — TDD CaseCard contract, InterviewerBrief, case loader, STT prompt; 12-case + leak-guard real integration (wave 2)
 
 ### Phase 3: Walking Skeleton on Fakes
 **Goal**: Rishi can click through an entire session (library to review mode) on fake components, and the session survives crashes. Nothing from the interviewer package ever reaches the window.
