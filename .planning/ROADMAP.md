@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Proctored Review Block** - In-window deck, a drift-free 45-minute countdown, webcam tile and mic check (completed 2026-11-03)
 - [x] **Phase 5: Voice Out & Avatar** - Local Kokoro voice on WebGPU and a lip-synced TalkingHead partner (completed 2026-11-03)
 - [x] **Phase 6: Interviewer Agent** - A Claude partner grounded in the case's answer key that follows Rishi's structure and grills him (completed 2026-11-03)
-- [ ] **Phase 7: Voice In & Barge-In** - Push-to-talk local speech-to-text, sentence streaming within 3 s, interruptible avatar
+- [x] **Phase 7: Voice In & Barge-In** - Push-to-talk local speech-to-text, sentence streaming within 3 s, interruptible avatar (completed 2026-11-03)
 - [ ] **Phase 8: Review Mode & Trends** - Evidence-quoted rubric scorecard, flag map, code-computed checks, reveal and cross-session trends
 - [ ] **Phase 9: Packaged Live Sign-off** - A full live session on the signed `.app` against the real Claude API, passing the live evals
 
@@ -233,6 +233,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Proctored Review Block | 7/7 | Complete    | 2026-11-03 |
 | 5. Voice Out & Avatar | 2/8 | Complete    | 2026-11-03 |
 | 6. Interviewer Agent | 0/TBD | Complete    | 2026-11-03 |
-| 7. Voice In & Barge-In | 3/10 | In Progress|  |
+| 7. Voice In & Barge-In | 3/10 | Complete    | 2026-11-03 |
 | 8. Review Mode & Trends | 0/TBD | Not started | - |
 | 9. Packaged Live Sign-off | 0/TBD | Not started | - |
