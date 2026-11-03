@@ -88,7 +88,7 @@ Plans:
 - [x] 03-07-PLAN.md — Session layout (talk/ready/skip/end) and ReviewMode screen (wave 2)
 - [x] 03-08-PLAN.md — TDD SessionRunner: reducer effects, speech acks, leak guard, end early, crash resume (wave 3)
 - [x] 03-09-PLAN.md — App routing over IPC + fake renderer speech queue (wave 3)
-- [ ] 03-10-PLAN.md — Composition root, validated session IPC, preload API + E2E IPC tap, index wiring (wave 4)
+- [x] 03-10-PLAN.md — Composition root, validated session IPC, preload API + E2E IPC tap, index wiring (wave 4)
 - [ ] 03-11-PLAN.md — T1 E2E flow suite: library, full session, greyed/Retake, end early, time scale (wave 5)
 - [ ] 03-12-PLAN.md — T1 E2E crash-resume/quarantine + IPC-tap redaction + app:// refusals; phase gate 3x + packaged (wave 6)
 **UI hint**: yes
