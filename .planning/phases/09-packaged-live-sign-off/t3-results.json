@@ -1,0 +1,159 @@
+{
+  "case_99": {
+    "at": "2026-11-03T13:56:09.612Z",
+    "stages": {
+      "stt": [
+        956,
+        869,
+        995,
+        840,
+        917,
+        878
+      ],
+      "ttft": [
+        6911,
+        1426,
+        2632,
+        3757,
+        6114
+      ],
+      "tokenToAudio": [
+        771,
+        646,
+        880,
+        785,
+        313
+      ],
+      "total": [
+        8638,
+        2941,
+        4507,
+        5459,
+        7305
+      ]
+    },
+    "stats": {
+      "stt": {
+        "median": 897.5,
+        "p90": 995
+      },
+      "ttft": {
+        "median": 3757,
+        "p90": 6911
+      },
+      "tokenToAudio": {
+        "median": 771,
+        "p90": 880
+      },
+      "total": {
+        "median": 5459,
+        "p90": 8638
+      }
+    },
+    "bargeMs": 1.4000000953674316,
+    "ttsDevice": "webgpu",
+    "sttStatus": "metal",
+    "total": 10,
+    "band": "another",
+    "evidenceStats": {
+      "proposed": 12,
+      "verified": 12,
+      "dropped": 0
+    },
+    "graderModel": "claude-opus-5-5",
+    "turns": 6
+  },
+  "case_02": {
+    "at": "2026-11-03T13:59:41.548Z",
+    "stages": {
+      "stt": [
+        1198,
+        890,
+        974,
+        962,
+        908,
+        844,
+        964,
+        921
+      ],
+      "ttft": [
+        6003,
+        2248,
+        5475,
+        4972,
+        2449,
+        1622,
+        2574
+      ],
+      "tokenToAudio": [
+        1406,
+        695,
+        305,
+        295,
+        467,
+        927,
+        503
+      ],
+      "total": [
+        8607,
+        3833,
+        6754,
+        6229,
+        3824,
+        3513,
+        3998
+      ]
+    },
+    "stats": {
+      "stt": {
+        "median": 941.5,
+        "p90": 1198
+      },
+      "ttft": {
+        "median": 2574,
+        "p90": 6003
+      },
+      "tokenToAudio": {
+        "median": 503,
+        "p90": 1406
+      },
+      "total": {
+        "median": 3998,
+        "p90": 8607
+      }
+    },
+    "bargeMs": 0.7000000476837158,
+    "ttsDevice": "webgpu",
+    "sttStatus": "metal",
+    "total": 8,
+    "band": "another",
+    "evidenceStats": {
+      "proposed": 9,
+      "verified": 9,
+      "dropped": 0
+    },
+    "graderModel": "claude-opus-5-5",
+    "turns": 8
+  },
+  "soak": {
+    "at": "2026-11-03T14:09:17.046Z",
+    "unit": "KB",
+    "samples": [
+      {
+        "main": 175152,
+        "renderer": 1227376,
+        "gpu": 350576
+      },
+      {
+        "main": 179696,
+        "renderer": 1251648,
+        "gpu": 359984
+      },
+      {
+        "main": 172208,
+        "renderer": 756976,
+        "gpu": 288672
+      }
+    ]
+  }
+}

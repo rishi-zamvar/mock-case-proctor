@@ -93,16 +93,17 @@ export async function answer(page: Page, text: string): Promise<void> {
     .toBe(true)
 }
 
-// Answers every grilling prompt until the app lands in review mode (bounded).
-export async function driveToReviewMode(page: Page): Promise<void> {
-  for (let i = 0; i < 40; i++) {
+// Answers every grilling prompt until the app lands in review mode (bounded). Real TTS speaks each
+// reply, so HeadTTS callers pass a larger step budget.
+export async function driveToReviewMode(page: Page, steps = 40): Promise<void> {
+  for (let i = 0; i < steps; i++) {
     if (await inReviewMode(page)) return
     if ((await phaseOf(page)) === 'grilling' && (await page.getByTestId('talk-btn').isEnabled()))
       await answer(page, 'Answer ' + i)
     else await page.waitForTimeout(200)
   }
   if (await inReviewMode(page)) return
-  throw new Error('review mode not reached within 40 steps')
+  throw new Error(`review mode not reached within ${steps} steps`)
 }
 
 export function sessionFiles(userData: string): SessionFile[] {

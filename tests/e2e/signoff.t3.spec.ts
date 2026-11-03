@@ -247,7 +247,7 @@ test('T3 memory soak: 3 back-to-back sessions', { tag: '@t3' }, async () => {
       await waitPhase(page, 'presentation')
       await answer(page, 'My call is to invest at this price. Retention first, then valuation.')
       await waitPhase(page, 'grilling')
-      await driveToReviewMode(page)
+      await driveToReviewMode(page, 600) // HeadTTS speaks every fake reply (~8 s/turn)
       await page.waitForTimeout(3_000)
       samples.push(
         await app.evaluate(({ app }) => {
