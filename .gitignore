@@ -11,3 +11,9 @@ test-results/
 playwright-report/
 coverage/
 .DS_Store
+*.log*
+.eslintcache
+tests/fixtures/audio/
+cases/
+case-data/
+*.app
