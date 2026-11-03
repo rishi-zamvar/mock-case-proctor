@@ -137,7 +137,61 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by roadmapper) | | |
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| FND-04 | Phase 1 | Pending |
+| FND-05 | Phase 1 | Pending |
+| KEY-01 | Phase 1 | Pending |
+| KEY-02 | Phase 1 | Pending |
+| KEY-03 | Phase 1 | Pending |
+| KEY-04 | Phase 1 | Pending |
+| LIB-01 | Phase 3 | Pending |
+| LIB-02 | Phase 3 | Pending |
+| LIB-03 | Phase 2 | Pending |
+| BAR-01 | Phase 3 | Pending |
+| BAR-02 | Phase 3 | Pending |
+| BAR-03 | Phase 2 | Pending |
+| FLOW-01 | Phase 2 | Pending |
+| FLOW-02 | Phase 6 | Pending |
+| FLOW-03 | Phase 4 | Pending |
+| FLOW-04 | Phase 6 | Pending |
+| FLOW-05 | Phase 6 | Pending |
+| FLOW-06 | Phase 2 | Pending |
+| FLOW-07 | Phase 3 | Pending |
+| FLOW-08 | Phase 3 | Pending |
+| VIN-01 | Phase 7 | Pending |
+| VIN-02 | Phase 7 | Pending |
+| VIN-03 | Phase 7 | Pending |
+| VIN-04 | Phase 7 | Pending |
+| VIN-05 | Phase 4 | Pending |
+| INT-01 | Phase 6 | Pending |
+| INT-02 | Phase 6 | Pending |
+| INT-03 | Phase 6 | Pending |
+| INT-04 | Phase 6 | Pending |
+| INT-05 | Phase 6 | Pending |
+| INT-06 | Phase 6 | Pending |
+| INT-07 | Phase 6 | Pending |
+| INT-08 | Phase 6 | Pending |
+| VOUT-01 | Phase 5 | Pending |
+| VOUT-02 | Phase 2 | Pending |
+| VOUT-03 | Phase 5 | Pending |
+| VOUT-04 | Phase 7 | Pending |
+| VOUT-05 | Phase 7 | Pending |
+| VOUT-06 | Phase 4 | Pending |
+| REV-01 | Phase 8 | Pending |
+| REV-02 | Phase 8 | Pending |
+| REV-03 | Phase 8 | Pending |
+| REV-04 | Phase 8 | Pending |
+| REV-05 | Phase 3 | Pending |
+| REV-06 | Phase 8 | Pending |
+| QA-01 | Phase 1 | Pending |
+| QA-02 | Phase 3 | Pending |
+| QA-03 | Phase 7 | Pending |
+| QA-04 | Phase 9 | Pending |
+
+**Coverage:** 52/52 v1 requirements mapped, 0 unmapped
 
 ---
 *Requirements defined: 2026-11-03*
+*Traceability updated: 2026-11-03 after roadmap creation*
