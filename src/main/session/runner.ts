@@ -1,5 +1,6 @@
 // SessionRunner: the effect executor between the pure reducer and the world (ports, store, view, speech).
 // Interview logic lives in the reducer; this file only runs its effects. Never log transcript or utterance text.
+// Latency stamps use the unscaled realNow clock, never clock.now() (the E2E clock is time-scaled).
 import type { CaseCard, Intent, SpeakEvent, StartOptions, ViewState } from '../../shared/ipc'
 import type { InterviewerBrief } from '../domain/cases/brief'
 import {
@@ -10,12 +11,14 @@ import {
   type InterviewControl,
   type InterviewEvent
 } from '../domain/machine/interviewMachine'
+import { sttPrompt } from '../domain/cases/sttPrompt'
 import { checkUtterance } from '../domain/text/leakGuard'
 import { createSentenceSplitter } from '../domain/text/sentenceSplitter'
 import { speakable } from '../domain/text/speakable'
 import type { Logger } from '../log'
 import { createTurnFilter, pickInterruptLine, SORRY_LINE } from '../agent/turnText'
 import type { AwakePort, ClockPort, LlmChunk, LlmPort, LlmUsage, MakeLlm, SttPort } from '../ports'
+import { createAnswerAssembler } from '../stt/answers'
 import type { SessionStore } from '../store/sessionStore'
 import type { PendingTurn, SessionFile } from '../store/sessionSchema'
 import { buildTurnRequest } from './turnRequest'
@@ -41,6 +44,8 @@ export type RunnerDeps = {
   reviewWarningLine?: string
   /** Spoken when warm-up hands over to the case (skip or timer), not on END; not part of the transcript. */
   warmupClosingLine?: string
+  /** Unscaled clock for latency stamps (Pitfall 5). Default Date.now. */
+  realNow?: () => number
   log: Logger
 }
 
@@ -50,8 +55,15 @@ export interface SessionRunner {
   discard(id: string): void
   intent(i: Intent): Promise<void>
   ack(turnId: string, seq: number, spoken?: boolean): void
+  /** Renderer started audio for this sentence (stamps firstAudioAt). */
+  started(turnId: string, seq: number): void
+  /** A ~20 s PCM chunk of the current answer; transcribed on arrival, not queued. */
+  sttChunk(answerId: string, idx: number, pcm: Float32Array): void
   current(): ViewState | null
 }
+
+export const NO_ANSWER_LINE = "Didn't catch that — go ahead."
+export const STT_FAILED_LINE = 'Sorry, transcription failed. Please repeat that.'
 
 const TALK = ['warmup', 'presentation', 'grilling']
 const DECK = ['review', 'presentation', 'extraction', 'grilling', 'wrapup']
@@ -74,6 +86,13 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   let queue: Promise<unknown> = Promise.resolve()
   let pendingInterject: string | null = null
   let interjectCount = 0
+  const realNow = d.realNow ?? Date.now
+  let transcribing = false
+  let prompt: string | undefined
+  const answers = createAnswerAssembler({ stt: d.stt, prompt: () => prompt })
+  type Latency = NonNullable<SessionFile['timings'][number]['latency']>
+  let pendingLat: { stopAt: number; transcriptAt: number } | null = null
+  let liveLat: { turnId: string; lat: Latency } | null = null
 
   /** Serialise every state change; a failed job never blocks the next one. */
   function enqueue<T>(job: () => T | Promise<T>): Promise<T> {
@@ -87,7 +106,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     lastView = toViewState(session, card, brief, {
       clockNow: clock.now(),
       timeScale: clock.scale,
-      speaking
+      speaking,
+      transcribing
     })
     d.emitView(lastView)
   }
@@ -207,6 +227,9 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     kind: string,
     signal: AbortSignal
   ): Promise<{ control: InterviewControl | null; warmupComplete: boolean } | null> {
+    const lat: Latency | null = pendingLat ? { ...pendingLat, requestAt: realNow() } : null
+    pendingLat = null
+    liveLat = lat ? { turnId, lat } : null
     speaking = true
     pushView()
     const t0 = clock.now()
@@ -234,6 +257,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         return
       }
       firstSentenceAt ??= clock.now()
+      if (lat) lat.firstSentenceAt ??= realNow()
       written.push(sentence)
       const n = seq++
       const key = `${turnId}:${n}`
@@ -255,6 +279,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       if (signal.aborted) break
       if (c.type === 'text') {
         firstTextAt ??= clock.now()
+        if (lat) lat.firstDeltaAt ??= realNow()
         splitter.push(c.delta).forEach(emit)
       } else if (c.type === 'control') control = c.payload
       else {
@@ -289,8 +314,17 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       ...(firstTextAt ? { firstTextAt } : {}),
       ...(firstSentenceAt ? { firstSentenceAt } : {}),
       doneAt: at,
-      ...(usage ? { usage } : {})
+      ...(usage ? { usage } : {}),
+      ...(lat ? { latency: lat } : {})
     })
+    if (liveLat?.turnId === turnId) liveLat = null
+    if (lat)
+      d.log.info(
+        'latency',
+        kind,
+        (lat.firstAudioAt ?? NaN) - lat.stopAt,
+        lat.transcriptAt - lat.stopAt
+      )
     if (usage) d.log.info('llm usage', kind, usage.cacheRead, usage.outputTokens, usage.stopReason)
     if (control) s.controlLog.push({ at, turnId, control })
     store.save(s)
@@ -416,9 +450,29 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     switch (i.type) {
       case 'answer': {
         if (speaking || inflight || !TALK.includes(phase)) return
-        // ponytail: Phase 7 sends real PCM
-        const { text } = await d.stt.transcribe(new Float32Array(0))
-        if (text.trim() === '' || session !== s) return
+        const stopAt = realNow()
+        transcribing = true
+        pushView()
+        let r: { text: string; noAnswer: boolean }
+        try {
+          r = await answers.finish(i.answerId, i.chunks ?? 0)
+        } catch (e) {
+          transcribing = false
+          if (session !== s) return
+          d.log.warn('stt failed', (e as Error)?.name ?? 'error')
+          sayLine(STT_FAILED_LINE)
+          pushView()
+          return
+        }
+        transcribing = false
+        if (session !== s) return
+        if (r.noAnswer) {
+          sayLine(NO_ANSWER_LINE)
+          pushView()
+          return
+        }
+        pendingLat = { stopAt, transcriptAt: realNow() }
+        const text = r.text
         const m = s.machineState
         const turn = {
           id: d.newId('turn'),
@@ -466,6 +520,11 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     llm = d.makeLlm(brief) // a fresh interviewer per session (INT-08)
     pendingInterject = null
     interjectCount = 0
+    prompt = sttPrompt(brief)
+    answers.reset()
+    transcribing = false
+    pendingLat = null
+    liveLat = null
   }
 
   async function start(caseId: string, opts: StartOptions): Promise<{ sessionId: string }> {
@@ -565,6 +624,12 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     // ponytail: spoken is carried for Phase 7 barge-in history; ignored until then
     ack(turnId, seq) {
       acks.get(`${turnId}:${seq}`)?.()
+    },
+    started(turnId) {
+      if (liveLat?.turnId === turnId) liveLat.lat.firstAudioAt ??= realNow()
+    },
+    sttChunk(answerId, idx, pcm) {
+      if (session) answers.chunk(answerId, idx, pcm)
     },
     current: () => lastView
   }
