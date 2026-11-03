@@ -1,7 +1,7 @@
 // The only IPC surface: narrow channels, zod-validated both ways, app-origin senders only.
 // Never log handler args: key:save carries the API key.
 import { z } from 'zod'
-import { CH, type LibraryView } from '../shared/ipc'
+import { CH, type LibraryView, type SttStatus } from '../shared/ipc'
 import {
   AckArgsSchema,
   IdArgsSchema,
@@ -10,7 +10,10 @@ import {
   LibraryViewSchema,
   SaveArgsSchema,
   SaveResultSchema,
-  StartArgsSchema
+  StartArgsSchema,
+  StartedArgsSchema,
+  SttChunkArgsSchema,
+  SttStatusSchema
 } from '../shared/schemas'
 import { isAppOrigin } from './protocol'
 import type { KeyStore } from './keys/keyStore'
@@ -22,9 +25,13 @@ export type IpcLike = {
 }
 export type IpcDeps = {
   keyStore: Pick<KeyStore, 'status' | 'save' | 'clear'>
-  runner?: Pick<SessionRunner, 'start' | 'resume' | 'discard' | 'intent' | 'ack'>
+  runner?: Pick<
+    SessionRunner,
+    'start' | 'resume' | 'discard' | 'intent' | 'ack' | 'sttChunk' | 'started'
+  >
   library?: () => LibraryView
   e2eSay?: (text: string) => void
+  sttStatus?: () => Promise<SttStatus>
 }
 
 const NoArgs = z.tuple([])
@@ -75,6 +82,12 @@ export function registerIpc(ipc: IpcLike, deps: IpcDeps, devUrl?: string): void 
     on(CH.sessionIntent, IntentArgs, async ([i]) => void (await runner.intent(i)))
     on(CH.sessionDiscard, IdArgsSchema, ([id]) => void runner.discard(id))
     on(CH.speakAck, AckArgsSchema, ([t, seq, spoken]) => void runner.ack(t, seq, spoken ?? true))
+    on(CH.sttChunk, SttChunkArgsSchema, ([id, idx, pcm]) => void runner.sttChunk(id, idx, pcm))
+    on(CH.speakStarted, StartedArgsSchema, ([t, s]) => void runner.started(t, s))
+    const { sttStatus } = deps
+    on(CH.sttStatus, NoArgs, async () =>
+      SttStatusSchema.parse(sttStatus ? await sttStatus() : 'off')
+    )
   }
   if (e2eSay) on(CH.e2eSay, SayArgs, ([t]) => void e2eSay(t))
 }

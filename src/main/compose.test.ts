@@ -356,7 +356,11 @@ describe('compose', () => {
         forkStt,
         sttModelsDir: dir
       })
-      expect(sent[0]).toEqual({ type: 'init', model: join(dir, 'ggml-base.en.bin') })
+      // Pre-warm fired at compose time: no transcribe call was made by the test.
+      await vi.waitFor(() =>
+        expect(sent[0]).toEqual({ type: 'init', model: join(dir, 'ggml-base.en.bin') })
+      )
+      expect(forkStt).toHaveBeenCalledTimes(1)
       await expect(core.sttStatus()).resolves.toBe('metal')
       expect(core.e2eSay).toBeUndefined()
       expect(l.info).toHaveBeenCalledWith('stt', 'whisper', 'base')

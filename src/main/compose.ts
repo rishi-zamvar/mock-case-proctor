@@ -3,8 +3,9 @@
 // stored key), STT Phase 7 (TTS lives in the renderer).
 import { randomUUID } from 'node:crypto'
 import Anthropic from '@anthropic-ai/sdk'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { CH, type LibraryView, type TtsMode } from '../shared/ipc'
+import { CH, type LibraryView, type SttMode, type SttStatus, type TtsMode } from '../shared/ipc'
 import { LibraryViewSchema, SpeakCancelSchema, SpeakEventSchema } from '../shared/schemas'
 import { createScaledClock } from './adapters/clock'
 import { createFakeLlm } from './adapters/fakeLlm'
@@ -14,9 +15,11 @@ import { WARMUP_CLOSING_LINE } from './agent/turnText'
 import { readDeckText } from './domain/cases/deckSource'
 import { casePdfResolver, DEFAULT_LIBRARY_ROOT, listCases, loadCase } from './domain/cases/library'
 import type { Logger } from './log'
-import type { AwakePort, MakeLlm } from './ports'
+import type { AwakePort, MakeLlm, SttPort } from './ports'
 import { createSessionRunner, type SessionRunner } from './session/runner'
 import { createSessionStore } from './store/sessionStore'
+import { filteredStt } from './stt/filtered'
+import { createWhisperStt, MODEL_FILES, type ChildLike, type SttModel } from './stt/whisperStt'
 
 type Env = Record<string, string | undefined>
 export type AppConfig = {
@@ -28,6 +31,8 @@ export type AppConfig = {
   tts: TtsMode
   llm: 'fake' | 'claude' | 'auto'
   interviewerModel: string
+  stt: SttMode
+  sttModel: SttModel
 }
 
 export const REVIEW_WARNING_LINE = 'Ten minutes left.'
@@ -35,7 +40,7 @@ export const REVIEW_WARNING_LINE = 'Ten minutes left.'
 export function readConfig(env: Env, userData: string): AppConfig {
   const unavailable = (name: string, v: string): Error =>
     new Error(`adapter not available in this build: ${name}=${v}`)
-  for (const name of ['ADAPTERS', 'STT']) {
+  for (const name of ['ADAPTERS']) {
     const v = env[name]
     if (v !== undefined && v !== 'fake') throw unavailable(name, v)
   }
@@ -46,6 +51,11 @@ export function readConfig(env: Env, userData: string): AppConfig {
   // TTS runs in the renderer (HeadTTS); main only needs the mode. E2E defaults to the fake queue.
   const tts = env.TTS ?? (e2e ? 'fake' : 'headtts')
   if (tts !== 'headtts' && tts !== 'fake') throw unavailable('TTS', tts)
+  // Real whisper unless E2E, which keeps FakeStt (T1) unless STT is set explicitly.
+  const stt = env.STT ?? (e2e ? 'fake' : 'whisper')
+  if (stt !== 'whisper' && stt !== 'fake') throw unavailable('STT', stt)
+  const sttModel = env.STT_MODEL ?? 'turbo'
+  if (!Object.hasOwn(MODEL_FILES, sttModel)) throw unavailable('STT_MODEL', sttModel)
   const scale = Number(env.E2E_TIME_SCALE)
   return {
     adapters: 'fake',
@@ -55,7 +65,9 @@ export function readConfig(env: Env, userData: string): AppConfig {
     e2e,
     tts,
     llm,
-    interviewerModel: env.INTERVIEWER_MODEL?.trim() || DEFAULT_INTERVIEWER_MODEL
+    interviewerModel: env.INTERVIEWER_MODEL?.trim() || DEFAULT_INTERVIEWER_MODEL,
+    stt,
+    sttModel: sttModel as SttModel
   }
 }
 
@@ -68,6 +80,9 @@ export function compose(
     awake?: AwakePort
     /** Main-only key getter, read at each session start. The key is never logged. */
     getKey?: () => string | null
+    /** Forks the STT utilityProcess (index.ts); absent in unit tests means whisper is 'failed'. */
+    forkStt?: () => ChildLike
+    sttModelsDir?: string
   }
 ): {
   config: AppConfig
@@ -75,11 +90,37 @@ export function compose(
   library(): LibraryView
   casePdf(id: string): string | null
   e2eSay?: (text: string) => void
+  sttStatus(): Promise<SttStatus>
+  disposeStt?: () => void
 } {
   const config = readConfig(env, o.userData)
   const clock = createScaledClock({ scale: config.timeScale })
   const store = createSessionStore({ root: config.sessionsDir, now: clock.now, log: o.log })
-  const stt = createFakeStt()
+  o.log.info('stt', config.stt, config.sttModel)
+  let stt: SttPort
+  let fakeStt: ReturnType<typeof createFakeStt> | undefined
+  let sttStatus: () => Promise<SttStatus> = async () => 'off'
+  let disposeStt: (() => void) | undefined
+  if (config.stt === 'fake') {
+    fakeStt = createFakeStt()
+    stt = fakeStt
+  } else {
+    const model = join(o.sttModelsDir ?? '', MODEL_FILES[config.sttModel])
+    if (!o.forkStt || !existsSync(model)) {
+      // No path in the log: it could name the user's home dir.
+      o.log.error(
+        o.forkStt ? 'whisper model missing; run npm run fetch:voice' : 'stt worker unavailable'
+      )
+      stt = { transcribe: () => Promise.reject(new Error('stt unavailable')) }
+      sttStatus = async () => 'failed'
+    } else {
+      const w = createWhisperStt({ fork: o.forkStt, model, log: o.log })
+      void w.warm()
+      stt = filteredStt(w, { log: o.log }) // gate + cleaner wrap the real adapter only
+      sttStatus = () => w.status()
+      disposeStt = () => w.dispose()
+    }
+  }
   o.log.info('interviewer', config.llm, config.interviewerModel)
   const fake = createFakeLlm()
   const makeLlm: MakeLlm = (brief) => {
@@ -130,6 +171,9 @@ export function compose(
     runner,
     library,
     casePdf: casePdfResolver(config.casesRoot),
-    e2eSay: config.e2e ? (t) => stt.inject(t) : undefined
+    // Text injection only exists with FakeStt.
+    e2eSay: config.e2e && fakeStt ? (t) => fakeStt.inject(t) : undefined,
+    sttStatus,
+    disposeStt
   }
 }
