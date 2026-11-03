@@ -1,0 +1,17 @@
+{
+  "method": "POST",
+  "path": "/v1/messages",
+  "body": {
+    "model": "claude-haiku-5-5",
+    "max_tokens": 1,
+    "thinking": {
+      "type": "disabled"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "ping"
+      }
+    ]
+  }
+}
