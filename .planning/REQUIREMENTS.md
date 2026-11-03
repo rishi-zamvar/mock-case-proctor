@@ -41,7 +41,7 @@
 
 - [x] **FLOW-01**: A pure, code-owned state machine runs the phases in order: warm-up, review, presentation, grilling, wrap-up, scoring, review mode.
 - [ ] **FLOW-02**: Optional warm-up: a 5–10 minute casual chat with the partner before "here is the project". It can be skipped.
-- [ ] **FLOW-03**: Proctored review:
+- [x] **FLOW-03**: Proctored review:
   - The interviewee PDF is shown in the window.
   - A 45-minute countdown runs against a fixed deadline, so it doesn't drift.
   - The partner gives a spoken 10-minute warning.
@@ -154,7 +154,7 @@
 | BAR-03 | Phase 2 | Complete |
 | FLOW-01 | Phase 2 | Complete |
 | FLOW-02 | Phase 6 | Pending |
-| FLOW-03 | Phase 4 | Pending |
+| FLOW-03 | Phase 4 | Complete |
 | FLOW-04 | Phase 6 | Pending |
 | FLOW-05 | Phase 6 | Pending |
 | FLOW-06 | Phase 2 | Complete |

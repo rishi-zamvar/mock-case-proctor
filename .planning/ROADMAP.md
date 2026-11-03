@@ -105,7 +105,7 @@ Plans:
 **Plans**: 7 plans in 3 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — TDD reducer T-10 REVIEW_WARNING + contracts (ViewState deckPage/reviewWarned, deckPage intent, AwakePort) (wave 1)
+- [x] 04-01-PLAN.md — TDD reducer T-10 REVIEW_WARNING + contracts (ViewState deckPage/reviewWarned, deckPage intent, AwakePort) (wave 1)
 - [ ] 04-02-PLAN.md — react-pdf 11 DeckViewer (labels, keys, zoom, thumbnail rail), dep-pin test, 4-page fixture deck (wave 1)
 - [ ] 04-03-PLAN.md — MicCheck level meter + silence watch, mirrored WebcamTile, no-recording guard (wave 1)
 - [x] 04-04-PLAN.md — createAwake display-sleep blocker + ensureMediaAccess (macOS TCC) (wave 1)
@@ -184,7 +184,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Scaffold, Harness & Key Onboarding | 5/9 | Complete    | 2026-11-03 |
 | 2. Core Domain Logic | 4/5 | Complete    | 2026-11-03 |
 | 3. Walking Skeleton on Fakes | 12/12 | Complete    | 2026-11-03 |
-| 4. Proctored Review Block | 0/TBD | Not started | - |
+| 4. Proctored Review Block | 2/7 | In Progress|  |
 | 5. Voice Out & Avatar | 0/TBD | Not started | - |
 | 6. Interviewer Agent | 0/TBD | Not started | - |
 | 7. Voice In & Barge-In | 0/TBD | Not started | - |
