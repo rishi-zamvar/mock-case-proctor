@@ -1,94 +1,50 @@
-import { describe, it, expect, vi, type Mock } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { DIMENSION_IDS, type Reveal, type ViewState } from '../../../shared/ipc'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { render, screen, fireEvent, within } from '@testing-library/react'
+import type { Reveal, ViewState } from '../../../shared/ipc'
 import ReviewMode from './ReviewMode'
-
-const DIMS = ['Structure', 'Call', 'Numbers', 'Risks', 'Diligence', 'Communication']
+import { v2Reveal, v2View } from './review/fixtures'
 
 function reveal(): Reveal {
   return {
-    scorecard: {
-      rubric: DIMS.map((d, i) => ({
-        id: DIMENSION_IDS[i],
-        dimension: d,
-        score: 3,
-        evidence: [{ quote: `evidence for ${d}`, turnId: 't1' }],
-        answerKey: `key for ${d}`,
-        rationale: '',
-        unverified: false
-      })),
-      total: 18,
-      band: 'another',
-      flags: [
-        { id: 'f1', flag: 'Churn hidden in cohorts', status: 'found', where: 'S2' },
-        { id: 'f2', flag: 'Customer concentration', status: 'missed', where: '' }
-      ],
-      keep: '',
-      fix: '',
-      insight: { calledOut: [], missed: [] },
-      summary: '',
-      evidenceStats: { proposed: 0, verified: 0, dropped: 0 },
-      checksSummary: {
-        numbersCorrect: 0,
-        numbersWrong: 0,
-        numbersUnverifiable: 0,
-        brevity: { short: 0, brief: 0, ideal: 0, long: 0, flagged: 0 },
-        avgAnswerMs: null,
-        ledWithCall: false,
-        flagsFound: 0,
-        flagsHinted: 0,
-        flagsTotal: 0
+    ...v2Reveal(),
+    transcript: [
+      {
+        id: 'i0',
+        speaker: 'interviewer',
+        text: 'What is your call?',
+        offsetMs: 0,
+        ms: null,
+        section: null
       },
-      graderModel: 'fake',
-      promptVersion: 'v0',
-      scoredAt: 0
-    },
-    checks: {
-      brevity: [{ turnId: 't1', ms: 45000, band: 'ideal' }],
-      ledWithCall: true,
-      omitted: ['Diligence'],
-      numbers: []
-    },
-    idealAnswer: 'Pass at this price…',
-    opening: 'My call is…',
-    keyNumbers: [{ label: 'Deal', text: '$9.9M ARR at 3.4x' }],
-    intendedRead: '',
-    backSolve: [],
-    transcript: []
+      {
+        id: 'c0',
+        speaker: 'candidate',
+        text: 'Retention is the story. Gross RETENTION is 88%.',
+        offsetMs: 5000,
+        ms: 45000,
+        section: 'opening'
+      },
+      {
+        id: 'i1',
+        speaker: 'interviewer',
+        text: 'Why?',
+        offsetMs: 65000,
+        ms: null,
+        section: 'opening'
+      },
+      {
+        id: 'c2',
+        speaker: 'candidate',
+        text: 'Because the price is high.',
+        offsetMs: 70000,
+        ms: 12000,
+        section: 'valuation'
+      }
+    ]
   }
 }
 
-function view(o: Partial<ViewState> = {}): ViewState {
-  return {
-    sessionId: 's1',
-    phase: 'reviewMode',
-    card: {
-      id: 'case_99',
-      number: 99,
-      slug: 'fixturely',
-      company: 'Fixturely',
-      vertical: 'SaaS',
-      level: 2,
-      intervieweePdfPath: 'app://cases/case_99/interviewee.pdf'
-    },
-    reviewDeadline: null,
-    clockNow: 0,
-    timeScale: 1,
-    section: null,
-    transcript: [
-      { id: 'l1', speaker: 'interviewer', text: 'What is your call?' },
-      { id: 'l2', speaker: 'candidate', text: 'My call is pass.' },
-      { id: 'l3', speaker: 'interviewer', text: 'Why?' }
-    ],
-    speaking: false,
-    canTalk: false,
-    endedEarly: false,
-    reveal: reveal(),
-    deckPage: 1,
-    reviewWarned: false,
-    ...o
-  }
-}
+const view = (o: Partial<ViewState> = {}): ViewState => v2View({ reveal: reveal(), ...o })
 
 function setup(o: Partial<ViewState> = {}): { onBack: Mock<() => void> } {
   const onBack = vi.fn<() => void>()
@@ -99,69 +55,84 @@ function setup(o: Partial<ViewState> = {}): { onBack: Mock<() => void> } {
 const id = (s: string): HTMLElement => screen.getByTestId(s)
 const q = (s: string): HTMLElement | null => screen.queryByTestId(s)
 const all = (s: string): HTMLElement[] => screen.queryAllByTestId(s)
+const line = (turn: string): HTMLElement =>
+  all('transcript-line').find((l) => l.getAttribute('data-turn') === turn)!
+
+let scroll: Mock
+beforeEach(() => {
+  scroll = vi.fn()
+  Element.prototype.scrollIntoView = scroll as unknown as Element['scrollIntoView']
+})
 
 describe('ReviewMode', () => {
-  it('renders the root and six rubric rows with totals', () => {
+  it('renders the root, header and six rubric rows', () => {
     setup()
     expect(document.querySelector('main[data-screen="reviewMode"]')).not.toBeNull()
-    const rows = all('rubric-row')
-    expect(rows).toHaveLength(6)
-    rows.forEach((r, i) => {
-      expect(r.textContent).toContain(DIMS[i])
-      expect(r.querySelector('[data-testid="score"]')?.textContent).toBe('3/5')
-      expect(r.querySelector('blockquote')?.textContent).toContain(`evidence for ${DIMS[i]}`)
-      expect(r.textContent).toContain(`key for ${DIMS[i]}`)
-    })
-    expect(id('score-total').textContent).toBe('18/30')
-    expect(id('score-band').textContent).toBe('Run another')
+    expect(all('rubric-row')).toHaveLength(6)
+    expect(id('score-total').textContent).toBe('22/30')
+    expect(id('score-band').textContent).toBe('Close, one fix')
+    expect(id('review-header').textContent).toContain('Fixturely')
   })
 
-  it('renders the flag map with statuses and text labels', () => {
+  it('renders the timed transcript with speakers, times and durations', () => {
     setup()
-    const flags = all('flag-row')
-    expect(flags.map((f) => f.getAttribute('data-status'))).toEqual(['found', 'missed'])
-    expect(flags[0].textContent).toContain('Found')
-    expect(flags[1].textContent).toContain('Missed')
+    const lines = all('transcript-line')
+    expect(id('full-transcript').tagName).toBe('OL')
+    expect(id('full-transcript').querySelectorAll('li')).toHaveLength(4)
+    expect(lines.map((l) => l.getAttribute('data-turn'))).toEqual(['i0', 'c0', 'i1', 'c2'])
+    expect(lines[0].getAttribute('data-speaker')).toBe('interviewer')
+    expect(lines[0].textContent).toContain('Interviewer')
+    expect(lines[1].textContent).toContain('You')
+    expect(within(lines[1]).getByTestId('transcript-time').textContent).toBe('0:05')
+    expect(within(lines[2]).getByTestId('transcript-time').textContent).toBe('1:05')
+    expect(lines[1].textContent).toContain('(45s)')
+    expect(lines[0].textContent).not.toMatch(/\(\d+s\)/)
+    expect(lines.every((l) => l.getAttribute('data-highlighted') === 'false')).toBe(true)
   })
 
-  it('renders the checks', () => {
+  it('clicking an evidence quote highlights and scrolls to its transcript line', () => {
     setup()
-    expect(id('brevity-row').textContent).toBe('0:45 · ideal')
-    expect(id('checks').textContent).toContain('Led with a call: Yes')
-    expect(id('checks').textContent).toContain('Diligence')
+    const quote = all('evidence-quote').find((b) => b.getAttribute('data-turn') === 'c0')!
+    fireEvent.click(quote)
+    expect(line('c0').getAttribute('data-highlighted')).toBe('true')
+    expect(line('i0').getAttribute('data-highlighted')).toBe('false')
+    expect(scroll).toHaveBeenCalledTimes(1)
+    expect(scroll).toHaveBeenCalledWith({ block: 'center' })
+    expect(scroll.mock.contexts[0]).toBe(line('c0'))
   })
 
-  it('says None when nothing was omitted and No when no call led', () => {
-    const r = reveal()
-    r.checks.omitted = []
-    r.checks.ledWithCall = false
-    setup({ reveal: r })
-    expect(id('checks').textContent).toContain('Led with a call: No')
-    expect(id('checks').textContent).toContain('None')
-  })
-
-  it('renders the reveal side by side and the key numbers', () => {
+  it('search marks case-insensitive matches and counts matching lines', () => {
     setup()
-    expect(id('reveal').contains(id('ideal-answer'))).toBe(true)
-    expect(id('ideal-answer').textContent).toContain('Pass at this price…')
-    expect(id('your-opening').textContent).toContain('My call is…')
-    expect(id('key-numbers').textContent).toContain('Deal')
-    expect(id('key-numbers').textContent).toContain('$9.9M ARR at 3.4x')
+    const box = id('transcript-search')
+    expect(box.tagName).toBe('INPUT')
+    expect(id('full-transcript').querySelectorAll('mark')).toHaveLength(0)
+    fireEvent.change(box, { target: { value: 'retention' } })
+    expect(all('transcript-line')).toHaveLength(4)
+    const marks = line('c0').querySelectorAll('mark')
+    expect([...marks].map((m) => m.textContent)).toEqual(['Retention', 'RETENTION'])
+    expect(line('c0').textContent).toContain('Retention is the story. Gross RETENTION is 88%.')
+    expect(id('full-transcript').querySelectorAll('mark')).toHaveLength(2)
+    expect(screen.getByText('1 match')).not.toBeNull()
+    fireEvent.change(box, { target: { value: 'is' } })
+    expect(screen.getByText('3 matches')).not.toBeNull()
+    fireEvent.change(box, { target: { value: '' } })
+    expect(id('full-transcript').querySelectorAll('mark')).toHaveLength(0)
   })
 
-  it('lists the full transcript', () => {
+  it('search treats regex characters literally', () => {
     setup()
-    expect(id('full-transcript').querySelectorAll('li')).toHaveLength(3)
+    fireEvent.change(id('transcript-search'), { target: { value: '88%.' } })
+    expect([...line('c0').querySelectorAll('mark')].map((m) => m.textContent)).toEqual(['88%.'])
+    fireEvent.change(id('transcript-search'), { target: { value: '(' } })
+    expect(id('full-transcript').querySelectorAll('mark')).toHaveLength(0)
   })
 
   it('switches tabs by click and arrow keys', () => {
     setup()
-    expect(screen.getByRole('tablist')).not.toBeNull()
     const sc = id('tab-scorecard')
     const tr = id('tab-trends')
     expect(sc.getAttribute('role')).toBe('tab')
     expect(sc.getAttribute('aria-selected')).toBe('true')
-    expect(screen.queryByText('Trends arrive in Phase 8')).toBeNull()
     fireEvent.click(tr)
     expect(tr.getAttribute('aria-selected')).toBe('true')
     expect(screen.getByText('Trends arrive in Phase 8')).not.toBeNull()
@@ -190,9 +161,11 @@ describe('ReviewMode', () => {
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 
-  it('does not crash without a reveal', () => {
+  it('renders only back-to-library without a reveal', () => {
     const { onBack } = setup({ reveal: null })
     expect(q('rubric-row')).toBeNull()
+    expect(q('full-transcript')).toBeNull()
+    expect(q('tab-scorecard')).toBeNull()
     fireEvent.click(id('back-to-library'))
     expect(onBack).toHaveBeenCalled()
   })
