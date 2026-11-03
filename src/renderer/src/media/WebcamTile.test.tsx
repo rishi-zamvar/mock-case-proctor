@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import WebcamTile from './WebcamTile'
+import type { GetMedia } from './MicCheck'
 
 function fakeStream(): { stream: MediaStream; stop: ReturnType<typeof vi.fn> } {
   const stop = vi.fn()
@@ -16,7 +17,7 @@ describe('WebcamTile', () => {
   it('given on, when the camera opens, then a mirrored video-only 640x360 stream goes live labelled You', async () => {
     const { stream } = fakeStream()
     let resolve!: (s: MediaStream) => void
-    const gum = vi.fn(() => new Promise<MediaStream>((r) => (resolve = r)))
+    const gum = vi.fn<GetMedia>(() => new Promise<MediaStream>((r) => (resolve = r)))
     render(<WebcamTile on getUserMedia={gum} />)
     expect(tile().getAttribute('data-state')).toBe('loading')
     await act(async () => resolve(stream))
