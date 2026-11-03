@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import { mergePlan } from '../../src/main/domain/machine/sections'
 import { createSentenceSplitter } from '../../src/main/domain/text/sentenceSplitter'
 import { parseDotenv } from '../../src/main/keys/dotenv'
+import { PROMPT_VERSION } from '../../src/main/review/grader'
 import { launch, ROOT } from './launch'
 import { sessionFiles, startCase, waitPhase } from './session'
 
@@ -108,7 +109,8 @@ test('full replayed-Claude session with real TTS reaches review mode @t2', async
       ANTHROPIC_API_KEY: RECORD ? realKey() : 'e2e-' + randomUUID(),
       CASES_ROOT: process.env.E2E_CASES_ROOT!,
       LLM: 'claude',
-      TTS: 'headtts'
+      TTS: 'headtts',
+      REVIEWER: 'claude'
     }
   })
   const msgs: string[] = []
@@ -131,6 +133,10 @@ test('full replayed-Claude session with real TTS reaches review mode @t2', async
       else await page.waitForTimeout(500)
     }
     await expect(page.locator('main[data-screen="reviewMode"]')).toBeVisible({ timeout: 60_000 })
+
+    // Real (replayed) reviewer scorecard
+    await expect(page.getByTestId('score-total')).toHaveText(/^\d+\/30$/)
+    await expect(page.getByTestId('rubric-row')).toHaveCount(6)
 
     const files = sessionFiles(userData)
     expect(files).toHaveLength(1)
@@ -162,6 +168,17 @@ test('full replayed-Claude session with real TTS reaches review mode @t2', async
     expect(grillReqs.length).toBeGreaterThanOrEqual(grill.length)
     const sys0 = JSON.stringify(grillReqs[0].body.system)
     for (const p of grillReqs) expect(JSON.stringify(p.body.system)).toBe(sys0)
+
+    const sc = s.scorecard!
+    expect(sc).toBeDefined()
+    expect(sc.graderModel).toBe('claude-opus-5-5')
+    expect(sc.promptVersion).toBe(PROMPT_VERSION)
+    expect(sc.evidenceStats.verified).toBeGreaterThanOrEqual(1)
+    const reviewer = posts.filter(
+      (p) => (p.body.output_config as { format?: unknown } | undefined)?.format !== undefined
+    )
+    expect(reviewer.length).toBeGreaterThanOrEqual(1)
+    expect((reviewer.at(-1)!.body.output_config as { effort?: string }).effort).toBe('high')
 
     expect(msgs.filter((m) => BAD.test(m))).toEqual([])
   } finally {
