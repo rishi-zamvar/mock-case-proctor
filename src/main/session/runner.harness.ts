@@ -7,7 +7,7 @@ import type { SpeakEvent, ViewState } from '../../shared/ipc'
 import { createFakeLlm, type FakeLlmOptions } from '../adapters/fakeLlm'
 import { createFakeStt } from '../adapters/fakeStt'
 import { loadCase } from '../domain/cases/library'
-import type { AwakePort, ClockPort, LlmChunk, MakeLlm } from '../ports'
+import type { AwakePort, ClockPort, LlmChunk, MakeLlm, SttPort } from '../ports'
 import { createSessionStore } from '../store/sessionStore'
 import type { SessionFile } from '../store/sessionSchema'
 import { createSessionRunner } from './runner'
@@ -77,6 +77,9 @@ export function setup(
     awake?: AwakePort
     reviewWarningLine?: string
     warmupClosingLine?: string
+    stt?: SttPort
+    realNow?: () => number
+    autoStart?: boolean
   } = {}
 ) {
   const root = o.root ?? mkdtempSync(join(tmpdir(), 'runner-'))
@@ -84,23 +87,28 @@ export function setup(
   const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   const store = createSessionStore({ root, now: clock.now, log })
   const save = vi.spyOn(store, 'save')
-  const stt = createFakeStt()
-  const transcribe = vi.spyOn(stt, 'transcribe')
+  const fake = createFakeStt() // t.stt.inject only affects the default stt
+  const used: SttPort = o.stt ?? fake
+  const transcribe = vi.spyOn(used, 'transcribe')
   const views: ViewState[] = []
   const speaks: SpeakEvent[] = []
   const cancels: string[] = []
-  const h = { autoAck: o.autoAck ?? true }
+  const h = { autoAck: o.autoAck ?? true, autoStart: o.autoStart ?? false }
   let n = 0
   const runner = createSessionRunner({
     store,
     clock,
-    stt,
+    stt: used,
     makeLlm: o.makeLlm ?? createFakeLlm({ chunkDelayMs: 0 }),
     loadCase: (id) => loadCase(FIXTURE_ROOT, id, deck),
     emitView: (v) => void views.push(v),
     emitSpeak: (s) => {
       speaks.push(s)
-      if (h.autoAck) queueMicrotask(() => runner.ack(s.turnId, s.seq))
+      if (h.autoStart || h.autoAck)
+        queueMicrotask(() => {
+          if (h.autoStart) runner.started(s.turnId, s.seq)
+          if (h.autoAck) runner.ack(s.turnId, s.seq)
+        })
     },
     newId: (p) => `${p}-${++n}`,
     ackTimeoutMs: o.ackTimeoutMs,
@@ -108,6 +116,7 @@ export function setup(
     emitCancel: (t) => void cancels.push(t),
     reviewWarningLine: o.reviewWarningLine,
     warmupClosingLine: o.warmupClosingLine,
+    realNow: o.realNow,
     log
   })
   const file = (id: string): SessionFile =>
@@ -144,7 +153,7 @@ export function setup(
     log,
     store,
     save,
-    stt,
+    stt: fake,
     transcribe,
     views,
     speaks,
