@@ -1,0 +1,413 @@
+// SessionRunner: the effect executor between the pure reducer and the world (ports, store, view, speech).
+// Interview logic lives in the reducer; this file only runs its effects. Never log transcript or utterance text.
+import type { CaseCard, Intent, SpeakEvent, StartOptions, ViewState } from '../../shared/ipc'
+import type { InterviewerBrief } from '../domain/cases/brief'
+import {
+  initialState,
+  reduce,
+  type Effect,
+  type InterviewControl,
+  type InterviewEvent
+} from '../domain/machine/interviewMachine'
+import { checkUtterance } from '../domain/text/leakGuard'
+import { createSentenceSplitter } from '../domain/text/sentenceSplitter'
+import { speakable } from '../domain/text/speakable'
+import type { Logger } from '../log'
+import type { ClockPort, LlmChunk, LlmPort, MakeLlm, SttPort } from '../ports'
+import type { SessionStore } from '../store/sessionStore'
+import type { PendingTurn, SessionFile } from '../store/sessionSchema'
+import { toViewState } from './view'
+
+export type RunnerDeps = {
+  store: SessionStore
+  clock: ClockPort
+  stt: SttPort
+  makeLlm: MakeLlm
+  loadCase(id: string): { card: CaseCard; brief: InterviewerBrief }
+  emitView(v: ViewState): void
+  emitSpeak(s: SpeakEvent): void
+  /** Session ids must match /^[A-Za-z0-9_-]{1,80}$/. */
+  newId(prefix: 'session' | 'turn'): string
+  /** An unacked sentence counts as spoken after this. Default 30 s. */
+  ackTimeoutMs?: number
+  log: Logger
+}
+
+export interface SessionRunner {
+  start(caseId: string, opts: StartOptions): Promise<{ sessionId: string }>
+  resume(id: string): Promise<{ sessionId: string }>
+  discard(id: string): void
+  intent(i: Intent): Promise<void>
+  ack(turnId: string, seq: number): void
+  current(): ViewState | null
+}
+
+const TALK = ['warmup', 'presentation', 'grilling']
+const isAbort = (e: unknown): boolean => (e as Error)?.name === 'AbortError'
+
+export function createSessionRunner(d: RunnerDeps): SessionRunner {
+  const { store, clock } = d
+  const ackTimeoutMs = d.ackTimeoutMs ?? 30_000
+  let session: SessionFile | null = null
+  let card: CaseCard
+  let brief: InterviewerBrief
+  let llm: LlmPort
+  let inflight: AbortController | null = null
+  let speaking = false
+  let cancelTimer: (() => void) | null = null
+  let lastView: ViewState | null = null
+  const acks = new Map<string, () => void>()
+  let queue: Promise<unknown> = Promise.resolve()
+
+  /** Serialise every state change; a failed job never blocks the next one. */
+  function enqueue<T>(job: () => T | Promise<T>): Promise<T> {
+    const p = queue.then(job)
+    queue = p.catch(() => undefined)
+    return p
+  }
+
+  function pushView(): void {
+    if (!session) return
+    lastView = toViewState(session, card, brief, {
+      clockNow: clock.now(),
+      timeScale: clock.scale,
+      speaking
+    })
+    d.emitView(lastView)
+  }
+
+  function stopTimer(): void {
+    cancelTimer?.()
+    cancelTimer = null
+  }
+
+  function armTimer(deadline: number): void {
+    stopTimer()
+    cancelTimer = clock.setTimer(
+      deadline,
+      () => void enqueue(() => dispatch({ type: 'REVIEW_DEADLINE', now: clock.now() }))
+    )
+  }
+
+  function flushAcks(): void {
+    for (const resolve of [...acks.values()]) resolve()
+    acks.clear()
+  }
+
+  function abortInflight(): void {
+    inflight?.abort()
+    inflight = null
+    flushAcks()
+  }
+
+  function dispatch(event: InterviewEvent): void {
+    const s = session
+    if (!s) return
+    const { state, effects } = reduce(s.machineState, event)
+    s.machineState = state
+    const later: (() => void)[] = []
+    for (const e of effects) {
+      switch (e.type) {
+        case 'PHASE_CHANGED':
+          if (e.from === 'review') stopTimer()
+          if (e.to === 'reviewMode') {
+            s.status = 'completed'
+            s.endedAt = clock.now()
+          }
+          if (e.to === 'warmup') later.push(() => void runLlm({ kind: 'warmup' }))
+          break
+        case 'START_TIMER':
+          armTimer(e.deadline)
+          break
+        case 'REQUEST_LLM_TURN':
+          later.push(() => void runLlm(e))
+          break
+        case 'PERSIST':
+          store.save(s)
+          break
+        case 'INTERRUPT_SUGGESTED':
+          // ponytail: barge-in/interrupt lands in Phase 7
+          break
+      }
+    }
+    pushView()
+    // Fire-and-forget AFTER the dispatch; awaiting LLM work inside the queue would deadlock.
+    for (const f of later) f()
+  }
+
+  const history = (s: SessionFile): { speaker: 'interviewer' | 'candidate'; text: string }[] =>
+    s.transcript.map((t) => ({ speaker: t.speaker, text: t.text }))
+
+  async function speakTurn(
+    s: SessionFile,
+    stream: AsyncIterable<LlmChunk>,
+    kind: string,
+    signal: AbortSignal
+  ): Promise<{ control: InterviewControl | null; warmupComplete: boolean } | null> {
+    const turnId = d.newId('turn')
+    speaking = true
+    pushView()
+    const t0 = clock.now()
+    const splitter = createSentenceSplitter()
+    let seq = 0
+    let firstTextAt: number | undefined
+    let control: InterviewControl | null = null
+    let warmupComplete = false
+    const written: string[] = []
+    const waits: Promise<void>[] = []
+
+    const emit = (sentence: string): void => {
+      if (signal.aborted) return
+      const g = checkUtterance(sentence, brief)
+      if (!g.ok) {
+        d.log.warn('utterance blocked', g.reason)
+        return
+      }
+      written.push(sentence)
+      const n = seq++
+      const key = `${turnId}:${n}`
+      waits.push(
+        new Promise<void>((resolve) => {
+          const timer = setTimeout(done, ackTimeoutMs)
+          function done(): void {
+            clearTimeout(timer)
+            acks.delete(key)
+            resolve()
+          }
+          acks.set(key, done)
+        })
+      )
+      d.emitSpeak({ turnId, seq: n, text: speakable(sentence) })
+    }
+
+    for await (const c of stream) {
+      if (signal.aborted) break
+      if (c.type === 'text') {
+        firstTextAt ??= clock.now()
+        splitter.push(c.delta).forEach(emit)
+      } else if (c.type === 'control') control = c.payload
+      else warmupComplete = c.warmupComplete === true
+    }
+    if (!signal.aborted) {
+      splitter.flush().forEach(emit)
+      await Promise.all(waits)
+    }
+    if (signal.aborted) {
+      speaking = false
+      pushView()
+      return null
+    }
+    const m = s.machineState
+    const at = clock.now()
+    if (written.length)
+      s.transcript.push({
+        id: turnId,
+        speaker: 'interviewer',
+        phase: m.phase,
+        ...(m.current ? { section: m.current } : {}),
+        text: written.join(' '),
+        at
+      })
+    s.timings.push({
+      turnId,
+      kind,
+      startedAt: t0,
+      ...(firstTextAt ? { firstTextAt } : {}),
+      doneAt: at
+    })
+    if (control) s.controlLog.push({ at, turnId, control })
+    store.save(s)
+    return { control, warmupComplete }
+  }
+
+  async function runLlm(
+    need: PendingTurn | Extract<Effect, { type: 'REQUEST_LLM_TURN' }>
+  ): Promise<void> {
+    const s = session
+    if (!s) return
+    const pending: PendingTurn = {
+      kind: need.kind,
+      ...(need.section ? { section: need.section } : {}),
+      ...(need.hintAllowed !== undefined ? { hintAllowed: need.hintAllowed } : {})
+    }
+    s.pending = pending
+    store.save(s)
+    const ac = new AbortController()
+    inflight = ac
+    const { signal } = ac
+    let next: InterviewEvent | null = null
+    try {
+      const now = (): number => clock.now()
+      switch (pending.kind) {
+        case 'warmup': {
+          const r = await speakTurn(
+            s,
+            llm.warmupTurn({ history: history(s) }, signal),
+            'warmup',
+            signal
+          )
+          if (!r) return
+          if (r.warmupComplete) next = { type: 'WARMUP_DONE', now: now() }
+          break
+        }
+        case 'extraction': {
+          const opening =
+            s.transcript.find((t) => t.speaker === 'candidate' && t.phase === 'presentation')
+              ?.text ?? ''
+          const { order } = await llm.extractPlan(opening, signal)
+          if (signal.aborted) return
+          next = { type: 'SECTION_PLAN_SET', now: now(), order }
+          break
+        }
+        case 'grill':
+        case 'wrapup': {
+          const stream = llm.streamTurn(
+            {
+              kind: pending.kind,
+              section: pending.section,
+              hintAllowed: pending.hintAllowed,
+              turnInSection: s.machineState.turnsInSection,
+              history: history(s)
+            },
+            signal
+          )
+          const r = await speakTurn(s, stream, pending.kind, signal)
+          if (!r) return
+          next =
+            pending.kind === 'grill'
+              ? { type: 'AGENT_TURN_DONE', now: now(), control: r.control }
+              : { type: 'WRAPUP_DONE', now: now() }
+          break
+        }
+        case 'score': {
+          const card = await llm.scoreSession(
+            {
+              transcript: s.transcript,
+              controlLog: s.controlLog,
+              endedEarly: s.machineState.endedEarly,
+              omitted: s.machineState.omitted
+            },
+            signal
+          )
+          if (signal.aborted) return
+          s.scorecard = card
+          next = { type: 'SCORED', now: now() }
+          break
+        }
+      }
+    } catch (e) {
+      if (signal.aborted || isAbort(e)) return
+      // ponytail: user-facing retry lands with the real Claude adapter in Phase 6
+      d.log.error('llm turn failed', pending.kind)
+      await enqueue(() => {
+        if (inflight === ac) inflight = null
+        speaking = false
+        pushView()
+      })
+      return
+    }
+    // Finish inside the queue so no intent can slip between the turn and its event.
+    await enqueue(() => {
+      if (inflight === ac) inflight = null
+      if (session !== s || signal.aborted) return
+      speaking = false
+      s.pending = null
+      store.save(s)
+      if (next) dispatch(next)
+      else pushView()
+    })
+  }
+
+  async function onIntent(i: Intent): Promise<void> {
+    const s = session
+    if (!s) return
+    const phase = s.machineState.phase
+    const now = clock.now()
+    switch (i.type) {
+      case 'answer': {
+        if (speaking || inflight || !TALK.includes(phase)) return
+        // ponytail: Phase 7 sends real PCM
+        const { text } = await d.stt.transcribe(new Float32Array(0))
+        if (text.trim() === '' || session !== s) return
+        const m = s.machineState
+        const turn = {
+          id: d.newId('turn'),
+          speaker: 'candidate' as const,
+          phase,
+          ...(m.current ? { section: m.current } : {}),
+          text,
+          at: clock.now(),
+          ms: i.ms
+        }
+        s.transcript.push(turn)
+        store.save(s)
+        pushView()
+        if (phase === 'warmup') void runLlm({ kind: 'warmup' })
+        else if (phase === 'presentation') dispatch({ type: 'PRESENTATION_DONE', now: clock.now() })
+        else dispatch({ type: 'ANSWER_FINAL', now: clock.now(), answerId: turn.id, text, ms: i.ms })
+        return
+      }
+      case 'ready':
+        return dispatch({ type: 'READY', now })
+      case 'skipWarmup':
+        if (phase !== 'warmup') return
+        abortInflight()
+        speaking = false
+        return dispatch({ type: 'WARMUP_SKIPPED', now })
+      case 'end':
+        if (phase === 'idle' || phase === 'scoring' || phase === 'reviewMode') return
+        abortInflight()
+        speaking = false
+        return dispatch({ type: 'END_REQUESTED', now })
+    }
+  }
+
+  function bind(caseId: string): void {
+    ;({ card, brief } = d.loadCase(caseId))
+    llm = d.makeLlm(brief) // a fresh interviewer per session (INT-08)
+  }
+
+  async function start(caseId: string, opts: StartOptions): Promise<{ sessionId: string }> {
+    return enqueue(() => {
+      abortInflight()
+      stopTimer()
+      speaking = false
+      const now = clock.now()
+      for (const old of store.list())
+        if (old.status === 'active') store.save({ ...old, status: 'abandoned', endedAt: now })
+      bind(caseId)
+      const s: SessionFile = {
+        schemaVersion: 1,
+        id: d.newId('session'),
+        caseId,
+        startedAt: now,
+        status: 'active',
+        warmup: opts.warmup,
+        machineState: initialState(),
+        transcript: [],
+        controlLog: [],
+        timings: [],
+        pending: null
+      }
+      store.save(s)
+      session = s
+      dispatch({ type: 'START', now, config: { warmup: opts.warmup } })
+      return { sessionId: s.id }
+    })
+  }
+
+  return {
+    start,
+    async resume() {
+      throw new Error('not implemented')
+    },
+    discard() {
+      throw new Error('not implemented')
+    },
+    intent: (i) => enqueue(() => onIntent(i)),
+    ack(turnId, seq) {
+      acks.get(`${turnId}:${seq}`)?.()
+    },
+    current: () => lastView
+  }
+}

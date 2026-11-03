@@ -63,6 +63,7 @@ export const withGrill =
     streamTurn: (_req, signal) => lines(line, signal)
   })
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred harness shape
 export function setup(
   o: {
     root?: string
