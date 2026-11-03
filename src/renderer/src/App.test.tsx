@@ -76,15 +76,35 @@ const REVEAL: ViewState['reveal'] = {
   scorecard: {
     rubric: [],
     total: 0,
-    band: 'weak',
+    band: 'another',
     flags: [],
+    keep: '',
+    fix: '',
+    insight: { calledOut: [], missed: [] },
+    summary: '',
+    evidenceStats: { proposed: 0, verified: 0, dropped: 0 },
+    checksSummary: {
+      numbersCorrect: 0,
+      numbersWrong: 0,
+      numbersUnverifiable: 0,
+      brevity: { short: 0, brief: 0, ideal: 0, long: 0, flagged: 0 },
+      avgAnswerMs: null,
+      ledWithCall: false,
+      flagsFound: 0,
+      flagsHinted: 0,
+      flagsTotal: 0
+    },
     graderModel: 'fake',
-    promptVersion: 'v0'
+    promptVersion: 'v0',
+    scoredAt: 0
   },
   checks: { brevity: [], ledWithCall: false, omitted: [], numbers: [] },
   idealAnswer: 'ideal',
   opening: 'opening',
-  keyNumbers: []
+  keyNumbers: [],
+  intendedRead: '',
+  backSolve: [],
+  transcript: []
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred mock shape

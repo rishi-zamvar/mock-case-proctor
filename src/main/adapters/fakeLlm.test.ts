@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { DIMENSION_IDS } from '../../shared/ipc'
 import { ScorecardSchema } from '../../shared/schemas'
 import { loadCase } from '../domain/cases/library'
 import { SECTION_IDS } from '../domain/machine/sections'
@@ -161,26 +162,40 @@ describe('createFakeLlm scoreSession', () => {
     control: { section: 'retention' as const, section_status: 'continue' as const, ...extra }
   })
 
-  it('given one turn and f1 surfaced, when scored, then a valid average card with f1 found', async () => {
+  it('given one turn and f1 surfaced, when scored, then a valid v2 card with f1 found', async () => {
     const card = await createFakeLlm()(brief).scoreSession(
       {
         transcript: [turn],
         controlLog: [ctl({ flags_surfaced: ['f1'] })],
         endedEarly: false,
-        omitted: []
+        omitted: [],
+        at: 42
       },
       live()
     )
     expect(ScorecardSchema.parse(card)).toEqual(card)
     expect(card.rubric.map((r) => r.dimension)).toEqual(brief.rubric.map((r) => r.dimension))
     expect(card.rubric).toHaveLength(6)
+    expect(card.rubric.map((r) => r.id)).toEqual([...DIMENSION_IDS])
     card.rubric.forEach((r, i) => {
       expect(r.answerKey).toBe(brief.rubric[i].five)
       expect(r.score).toBe(3)
-      expect(r.evidence).toBe('My call is to pass at this price')
+      expect(r.evidence).toEqual([{ quote: 'My call is to pass at this price', turnId: 't1' }])
+      expect(r.rationale).toBe('Fake grader.')
+      expect(r.unverified).toBe(false)
     })
     expect(card.total).toBe(18)
-    expect(card.band).toBe('average')
+    expect(card.band).toBe('another')
+    expect(card.flags.find((f) => f.id === 'f1')?.where).toBe(
+      brief.flags.map.find((f) => f.id === 'f1')?.templates.join(', ')
+    )
+    expect([card.keep, card.fix, card.summary]).toEqual([
+      'Lead with the call.',
+      'Quantify retention.',
+      'Fake scorecard.'
+    ])
+    expect(card.evidenceStats).toEqual({ proposed: 6, verified: 6, dropped: 0 })
+    expect(card.scoredAt).toBe(42)
     expect(card.flags.map((f) => f.id)).toEqual(brief.flags.map.map((f) => f.id))
     expect(card.flags.find((f) => f.id === 'f1')?.status).toBe('found')
     expect(card.flags.find((f) => f.id === 'f2')?.status).toBe('missed')
@@ -194,30 +209,34 @@ describe('createFakeLlm scoreSession', () => {
         transcript: [turn],
         controlLog: [ctl({ flags_surfaced: ['f1'], hint_given: true })],
         endedEarly: false,
-        omitted: []
+        omitted: [],
+        at: 42
       },
       live()
     )
     expect(card.flags.find((f) => f.id === 'f1')?.status).toBe('hinted')
   })
 
-  it('given a long answer or none, when scored, then evidence is 12 words or (no answer)', async () => {
+  it('given a long answer or none, when scored, then evidence is 12 words or empty and unverified', async () => {
     const llm = createFakeLlm()(brief)
     const long = {
       ...turn,
       text: 'one two three four five six seven eight nine ten eleven twelve thirteen'
     }
     const a = await llm.scoreSession(
-      { transcript: [long], controlLog: [], endedEarly: false, omitted: [] },
+      { transcript: [long], controlLog: [], endedEarly: false, omitted: [], at: 0 },
       live()
     )
-    expect(a.rubric[0].evidence).toBe(
-      'one two three four five six seven eight nine ten eleven twelve'
-    )
+    expect(a.rubric[0].evidence).toEqual([
+      { quote: 'one two three four five six seven eight nine ten eleven twelve', turnId: 't1' }
+    ])
     const b = await llm.scoreSession(
-      { transcript: [], controlLog: [], endedEarly: false, omitted: [] },
+      { transcript: [], controlLog: [], endedEarly: false, omitted: [], at: 0 },
       live()
     )
-    expect(b.rubric[0].evidence).toBe('(no answer)')
+    expect(ScorecardSchema.parse(b)).toEqual(b)
+    expect(b.rubric[0].evidence).toEqual([])
+    expect(b.rubric.every((r) => r.unverified)).toBe(true)
+    expect(b.evidenceStats).toEqual({ proposed: 6, verified: 0, dropped: 0 })
   })
 })

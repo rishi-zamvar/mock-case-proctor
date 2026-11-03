@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { FlagStatus, Reveal, ViewState } from '../../../shared/ipc'
+import type { Band, FlagStatus, Reveal, ViewState } from '../../../shared/ipc'
 import s from './ReviewMode.module.css'
 
 export type ReviewModeProps = { view: ViewState; onBack(): void }
@@ -9,6 +9,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'scorecard', label: 'Scorecard' },
   { id: 'trends', label: 'Trends' }
 ]
+const BAND_TEXT: Record<Band, string> = {
+  ready: 'Ready',
+  close: 'Close, one fix',
+  another: 'Run another'
+}
 const STATUS: Record<FlagStatus, string> = { found: 'Found', hinted: 'Hinted', missed: 'Missed' }
 
 const mss = (ms: number): string => {
@@ -28,7 +33,7 @@ function Scorecard({ reveal, view }: { reveal: Reveal; view: ViewState }): React
               {`${scorecard.total}/30`}
             </span>{' '}
             <span data-testid="score-band" className={`${s.chip} ${s[scorecard.band]}`}>
-              {scorecard.band}
+              {BAND_TEXT[scorecard.band]}
             </span>
           </div>
         </div>
@@ -47,7 +52,9 @@ function Scorecard({ reveal, view }: { reveal: Reveal; view: ViewState }): React
                 <th scope="row">{r.dimension}</th>
                 <td data-testid="score" className="tabular">{`${r.score}/5`}</td>
                 <td>
-                  <blockquote className={s.quote}>{r.evidence}</blockquote>
+                  <blockquote className={s.quote}>
+                    {r.evidence.map((e) => e.quote).join(' … ')}
+                  </blockquote>
                 </td>
                 <td className={s.muted}>{r.answerKey}</td>
               </tr>

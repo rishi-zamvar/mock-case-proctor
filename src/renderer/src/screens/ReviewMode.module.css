@@ -150,17 +150,17 @@
 }
 
 .found,
-.strong {
+.ready {
   color: var(--accent);
 }
 
 .hinted,
-.average {
+.close {
   color: var(--warning);
 }
 
 .missed,
-.weak {
+.another {
   color: var(--danger);
 }
 

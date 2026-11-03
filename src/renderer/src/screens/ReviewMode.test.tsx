@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, type Mock } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import type { Reveal, ViewState } from '../../../shared/ipc'
+import { DIMENSION_IDS, type Reveal, type ViewState } from '../../../shared/ipc'
 import ReviewMode from './ReviewMode'
 
 const DIMS = ['Structure', 'Call', 'Numbers', 'Risks', 'Diligence', 'Communication']
@@ -8,20 +8,40 @@ const DIMS = ['Structure', 'Call', 'Numbers', 'Risks', 'Diligence', 'Communicati
 function reveal(): Reveal {
   return {
     scorecard: {
-      rubric: DIMS.map((d) => ({
+      rubric: DIMS.map((d, i) => ({
+        id: DIMENSION_IDS[i],
         dimension: d,
         score: 3,
-        evidence: `evidence for ${d}`,
-        answerKey: `key for ${d}`
+        evidence: [{ quote: `evidence for ${d}`, turnId: 't1' }],
+        answerKey: `key for ${d}`,
+        rationale: '',
+        unverified: false
       })),
       total: 18,
-      band: 'average',
+      band: 'another',
       flags: [
-        { id: 'f1', flag: 'Churn hidden in cohorts', status: 'found' },
-        { id: 'f2', flag: 'Customer concentration', status: 'missed' }
+        { id: 'f1', flag: 'Churn hidden in cohorts', status: 'found', where: 'S2' },
+        { id: 'f2', flag: 'Customer concentration', status: 'missed', where: '' }
       ],
+      keep: '',
+      fix: '',
+      insight: { calledOut: [], missed: [] },
+      summary: '',
+      evidenceStats: { proposed: 0, verified: 0, dropped: 0 },
+      checksSummary: {
+        numbersCorrect: 0,
+        numbersWrong: 0,
+        numbersUnverifiable: 0,
+        brevity: { short: 0, brief: 0, ideal: 0, long: 0, flagged: 0 },
+        avgAnswerMs: null,
+        ledWithCall: false,
+        flagsFound: 0,
+        flagsHinted: 0,
+        flagsTotal: 0
+      },
       graderModel: 'fake',
-      promptVersion: 'v0'
+      promptVersion: 'v0',
+      scoredAt: 0
     },
     checks: {
       brevity: [{ turnId: 't1', ms: 45000, band: 'ideal' }],
@@ -31,7 +51,10 @@ function reveal(): Reveal {
     },
     idealAnswer: 'Pass at this price…',
     opening: 'My call is…',
-    keyNumbers: [{ label: 'Deal', text: '$9.9M ARR at 3.4x' }]
+    keyNumbers: [{ label: 'Deal', text: '$9.9M ARR at 3.4x' }],
+    intendedRead: '',
+    backSolve: [],
+    transcript: []
   }
 }
 
@@ -90,7 +113,7 @@ describe('ReviewMode', () => {
       expect(r.textContent).toContain(`key for ${DIMS[i]}`)
     })
     expect(id('score-total').textContent).toBe('18/30')
-    expect(id('score-band').textContent).toBe('average')
+    expect(id('score-band').textContent).toBe('Run another')
   })
 
   it('renders the flag map with statuses and text labels', () => {

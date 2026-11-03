@@ -12,7 +12,7 @@ import {
 } from '../domain/machine/interviewMachine'
 import { checkUtterance } from '../domain/text/leakGuard'
 import type { SessionFile, Turn } from '../store/sessionSchema'
-import { buildReveal, toViewState, type ViewExtras } from './view'
+import { backSolveLines, buildReveal, toViewState, type ViewExtras } from './view'
 
 const FIXTURE_ROOT = join(__dirname, '../../../tests/fixtures/cases')
 const deck = readFileSync(join(FIXTURE_ROOT, 'case_99_fixture/deck.txt'), 'utf8')
@@ -20,12 +20,39 @@ const { card, brief } = loadCase(FIXTURE_ROOT, '99', deck)
 const X: ViewExtras = { clockNow: 1_000, timeScale: 1, speaking: false }
 
 const SCORECARD: Scorecard = {
-  rubric: [{ dimension: 'Clear call', score: 4, evidence: 'led with pass', answerKey: 'k' }],
+  rubric: [
+    {
+      id: 'clear_call',
+      dimension: 'Clear call',
+      score: 4,
+      evidence: [{ quote: 'led with pass', turnId: 't1' }],
+      answerKey: 'k',
+      rationale: 'r',
+      unverified: false
+    }
+  ],
   total: 20,
-  band: 'average',
-  flags: [{ id: 'f1', flag: 'churn', status: 'found' }],
+  band: 'close',
+  flags: [{ id: 'f1', flag: 'churn', status: 'found', where: 'S2' }],
+  keep: 'k',
+  fix: 'f',
+  insight: { calledOut: [], missed: [] },
+  summary: 's',
+  evidenceStats: { proposed: 1, verified: 1, dropped: 0 },
+  checksSummary: {
+    numbersCorrect: 0,
+    numbersWrong: 0,
+    numbersUnverifiable: 0,
+    brevity: { short: 0, brief: 0, ideal: 0, long: 0, flagged: 0 },
+    avgAnswerMs: null,
+    ledWithCall: true,
+    flagsFound: 1,
+    flagsHinted: 0,
+    flagsTotal: 1
+  },
   graderModel: 'fake',
-  promptVersion: 'v1'
+  promptVersion: 'v1',
+  scoredAt: 6
 }
 
 const fold = (events: InterviewEvent[]): InterviewState =>
@@ -142,7 +169,7 @@ describe('toViewState barrier (BAR-01)', () => {
     for (const leaf of strings(v)) expect(checkUtterance(leaf, brief)).toEqual({ ok: true })
   })
 
-  it('has exactly the 15 ViewState keys', () => {
+  it('has exactly the 16 ViewState keys', () => {
     const v = toViewState(atPhase('grilling'), card, brief, X)
     expect(Object.keys(v).sort()).toEqual(
       [
@@ -160,7 +187,8 @@ describe('toViewState barrier (BAR-01)', () => {
         'reveal',
         'deckPage',
         'reviewWarned',
-        'transcribing'
+        'transcribing',
+        'scoringFailed'
       ].sort()
     )
   })
@@ -270,6 +298,41 @@ describe('reveal', () => {
     expect(buildReveal(s, brief).checks.ledWithCall).toBe(false)
   })
 
+  it('given reviewMode, then reveal carries the intended read, back-solve and a timed transcript', () => {
+    const transcript: Turn[] = [
+      {
+        id: 'a',
+        speaker: 'interviewer',
+        phase: 'grilling',
+        section: 'retention',
+        text: 'Q?',
+        at: 1_500
+      },
+      { id: 'b', speaker: 'candidate', phase: 'grilling', text: 'A.', at: 4_000, ms: 2_000 }
+    ]
+    const s = atPhase('reviewMode', { scorecard: SCORECARD, transcript, startedAt: 1_000 })
+    const r = buildReveal(s, brief)
+    expect(r.intendedRead).toBe(brief.intendedRead.sentence)
+    expect(r.backSolve.slice(0, 2)).toEqual(['Post-money: $34M', 'Exit equity needed: $102M'])
+    expect(r.transcript).toEqual([
+      {
+        id: 'a',
+        speaker: 'interviewer',
+        text: 'Q?',
+        offsetMs: 500,
+        ms: null,
+        section: 'retention'
+      },
+      { id: 'b', speaker: 'candidate', text: 'A.', offsetMs: 3_000, ms: 2_000, section: null }
+    ])
+  })
+
+  it('given extras, then scoringFailed defaults false and mirrors extras', () => {
+    expect(toViewState(atPhase('scoring'), card, brief, X).scoringFailed).toBe(false)
+    const v = toViewState(atPhase('scoring'), card, brief, { ...X, scoringFailed: true })
+    expect(v.scoringFailed).toBe(true)
+  })
+
   it('given no presentation turn, then opening empty', () => {
     const s = atPhase('reviewMode', { scorecard: SCORECARD, transcript: [] })
     expect(buildReveal(s, brief).opening).toBe('')
@@ -279,5 +342,28 @@ describe('reveal', () => {
     const s = atPhase('reviewMode')
     expect(toViewState(s, card, brief, X).reveal).toBeNull()
     expect(() => buildReveal(s, brief)).toThrow()
+  })
+})
+
+describe('backSolveLines', () => {
+  it.each([
+    [{ label: 'Post', v: 34, fmt: '$M' }, 'Post: $34M'],
+    [{ label: 'Rev', v: 9.9, fmt: 'm' }, 'Rev: $9.9M'],
+    [{ label: 'Val', v: 120, fmt: 'val' }, 'Val: $120M'],
+    [{ label: 'CAGR', v: 0.314, fmt: 'pct1' }, 'CAGR: 31.4%'],
+    [{ label: 'GRR', v: 0.9, fmt: 'pct' }, 'GRR: 90%'],
+    [{ label: 'G', v: 0.25, fmt: 'growth' }, 'G: 25%'],
+    [{ label: 'Mult', v: 4, fmt: 'x' }, 'Mult: 4x'],
+    [{ label: 'Yrs', v: 5, fmt: 'years' }, 'Yrs: 5']
+  ])('given step %j, then %s', (step, line) => {
+    expect(backSolveLines({ steps: [{ id: 's', ...step }] })).toEqual([line])
+  })
+  it('given band check and underwrite text, then they follow the steps', () => {
+    expect(
+      backSolveLines({ steps: [], le_band_check: 'above', underwrite_path_text: 'path' })
+    ).toEqual(['above', 'path'])
+  })
+  it.each([null, 'x', 3, undefined])('given non-object %j, then []', (v) => {
+    expect(backSolveLines(v)).toEqual([])
   })
 })

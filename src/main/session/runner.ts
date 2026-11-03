@@ -413,7 +413,9 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
               transcript: s.transcript,
               controlLog: s.controlLog,
               endedEarly: s.machineState.endedEarly,
-              omitted: s.machineState.omitted
+              omitted: s.machineState.omitted,
+              openingPlan: s.openingPlan,
+              at: clock.now()
             },
             signal
           )

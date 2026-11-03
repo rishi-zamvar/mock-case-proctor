@@ -353,7 +353,7 @@ describe('createClaudeLlm scoreSession + isolation', () => {
   it('scoreSession delegates to the fake scorer (Phase 8 stub)', async () => {
     const { make } = setup([])
     const card = await make().scoreSession(
-      { transcript: [], controlLog: [], endedEarly: false, omitted: [] },
+      { transcript: [], controlLog: [], endedEarly: false, omitted: [], at: 0 },
       live()
     )
     expect(ScorecardSchema.parse(card)).toEqual(card)

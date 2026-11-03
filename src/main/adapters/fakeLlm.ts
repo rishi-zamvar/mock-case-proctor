@@ -1,5 +1,5 @@
 // Scripted, deterministic LLM for tests and Tier-1 E2E (QA-02). Spoken lines never use the brief.
-import type { FlagStatus, Scorecard } from '../../shared/ipc'
+import { DIMENSION_IDS, DIMENSION_LABELS, type FlagStatus, type Scorecard } from '../../shared/ipc'
 import { ScorecardSchema } from '../../shared/schemas'
 import { SECTION_CATALOG, SECTION_IDS } from '../domain/machine/sections'
 import type { LlmChunk, LlmPort, MakeLlm } from '../ports'
@@ -78,29 +78,51 @@ export function createFakeLlm(o: FakeLlmOptions = {}): MakeLlm {
 
     async scoreSession(input) {
       const first = input.transcript.find((t) => t.speaker === 'candidate')
-      const evidence = first ? first.text.split(/\s+/).slice(0, 12).join(' ') : '(no answer)'
+      const evidence = first
+        ? [{ quote: first.text.split(/\s+/).slice(0, 12).join(' '), turnId: first.id }]
+        : []
       const status = new Map<string, FlagStatus>()
       for (const { control } of input.controlLog)
         for (const id of control.flags_surfaced ?? [])
           if (status.get(id) !== 'hinted') status.set(id, control.hint_given ? 'hinted' : 'found')
-      const rubric = brief.rubric.map((r) => ({
-        dimension: r.dimension,
+      const rubric = DIMENSION_IDS.map((id, i) => ({
+        id,
+        dimension: brief.rubric[i]?.dimension ?? DIMENSION_LABELS[id],
         score: 3,
         evidence,
-        answerKey: r.five
+        answerKey: brief.rubric[i]?.five ?? '',
+        rationale: 'Fake grader.',
+        unverified: evidence.length === 0
       }))
-      const total = rubric.reduce((n, r) => n + r.score, 0)
       const card: Scorecard = {
         rubric,
-        total,
-        band: total >= 24 ? 'strong' : total >= 15 ? 'average' : 'weak',
+        total: 18,
+        band: 'another',
         flags: brief.flags.map.map((f) => ({
           id: f.id,
           flag: f.flag,
-          status: status.get(f.id) ?? 'missed'
+          status: status.get(f.id) ?? 'missed',
+          where: f.templates.join(', ')
         })),
+        keep: 'Lead with the call.',
+        fix: 'Quantify retention.',
+        insight: { calledOut: [], missed: [] },
+        summary: 'Fake scorecard.',
+        evidenceStats: { proposed: 6, verified: evidence.length ? 6 : 0, dropped: 0 },
+        checksSummary: {
+          numbersCorrect: 0,
+          numbersWrong: 0,
+          numbersUnverifiable: 0,
+          brevity: { short: 0, brief: 0, ideal: 0, long: 0, flagged: 0 },
+          avgAnswerMs: null,
+          ledWithCall: false,
+          flagsFound: 0,
+          flagsHinted: 0,
+          flagsTotal: 0
+        },
         graderModel: 'fake',
-        promptVersion: 'fake-1'
+        promptVersion: 'fake-1',
+        scoredAt: input.at
       }
       return ScorecardSchema.parse(card)
     }
