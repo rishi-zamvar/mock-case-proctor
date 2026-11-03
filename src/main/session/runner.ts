@@ -14,7 +14,7 @@ import { checkUtterance } from '../domain/text/leakGuard'
 import { createSentenceSplitter } from '../domain/text/sentenceSplitter'
 import { speakable } from '../domain/text/speakable'
 import type { Logger } from '../log'
-import { createTurnFilter, pickInterruptLine } from '../agent/turnText'
+import { createTurnFilter, pickInterruptLine, SORRY_LINE } from '../agent/turnText'
 import type { AwakePort, ClockPort, LlmChunk, LlmPort, LlmUsage, MakeLlm, SttPort } from '../ports'
 import type { SessionStore } from '../store/sessionStore'
 import type { PendingTurn, SessionFile } from '../store/sessionSchema'
@@ -298,7 +298,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   }
 
   async function runLlm(
-    need: PendingTurn | Extract<Effect, { type: 'REQUEST_LLM_TURN' }>
+    need: PendingTurn | Extract<Effect, { type: 'REQUEST_LLM_TURN' }>,
+    attempt = 0
   ): Promise<void> {
     const s = session
     if (!s) return
@@ -376,12 +377,22 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       }
     } catch (e) {
       if (signal.aborted || isAbort(e)) return
-      // ponytail: user-facing retry lands with the real Claude adapter in Phase 6
-      d.log.error('llm turn failed', pending.kind)
+      // ponytail: one silent retry; a visible retry control if failures prove common
+      if (attempt > 0) d.log.error('llm turn failed', pending.kind)
       await enqueue(() => {
         if (inflight === ac) inflight = null
+        if (session !== s) return
         speaking = false
-        pushView()
+        if (attempt === 0) {
+          sayLine(SORRY_LINE)
+          pushView()
+          void runLlm(need, 1)
+        } else if (pending.kind === 'extraction') {
+          // Default section order so the session never sticks in extraction.
+          s.pending = null
+          store.save(s)
+          dispatch({ type: 'SECTION_PLAN_SET', now: clock.now(), order: [] })
+        } else pushView()
       })
       return
     }

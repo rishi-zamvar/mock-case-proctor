@@ -139,7 +139,7 @@ describe('SessionRunner failure path (G9)', () => {
 
   it('given a grill turn that fails once, when retried, then sorry is said once and the retried turn is spoken', async () => {
     let fails = 0
-    const { makeLlm } = recording((req, signal, n) =>
+    const { makeLlm } = recording((_req, signal, n) =>
       n === 2 && fails++ === 0 ? boom() : lines('Walk me through the margin bridge.', signal)
     )
     const t = setup({ makeLlm })
@@ -158,7 +158,7 @@ describe('SessionRunner failure path (G9)', () => {
   })
 
   it('given a grill turn that fails twice, when giving up, then sorry once, one error log, not speaking, and end still works', async () => {
-    const { makeLlm } = recording((req, signal, n) => (n >= 2 ? boom() : lines('Hi.', signal)))
+    const { makeLlm } = recording((_req, signal, n) => (n >= 2 ? boom() : lines('Hi.', signal)))
     const t = setup({ makeLlm })
     await t.toGrilling()
     await t.idle()
@@ -192,7 +192,7 @@ describe('SessionRunner failure path (G9)', () => {
   })
 
   it('given an abort during the retry, when ending, then the retry speaks nothing and nothing is logged as an error', async () => {
-    const { makeLlm } = recording((req, signal, n) =>
+    const { makeLlm } = recording((_req, signal, n) =>
       n === 2
         ? boom()
         : n === 3
