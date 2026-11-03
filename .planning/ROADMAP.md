@@ -157,7 +157,7 @@ Plans:
 - [x] 06-07-PLAN.md — Runner 90 s interject, uninterrupted presentation, warm-up closing line, one-retry failure path
 - [x] 06-08-PLAN.md — compose LLM=claude/auto + INTERVIEWER_MODEL, per-session client, lazy key getter
 - [x] 06-09-PLAN.md — Record case_99 SSE fixtures; replay integration test through the real SDK
-- [ ] 06-10-PLAN.md — LIVE=1 eval suite, T2 replayed full session E2E, phase gate + latency recommendation
+- [x] 06-10-PLAN.md — LIVE=1 eval suite, T2 replayed full session E2E, phase gate + latency recommendation
 
 ### Phase 7: Voice In & Barge-In
 **Goal**: The core loop works by voice. Rishi presses Talk, speaks, presses stop, sees his words, and hears the partner reply within about 3 s. He can cut the partner off at any time.

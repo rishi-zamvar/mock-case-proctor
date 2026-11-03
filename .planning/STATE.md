@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 07-06-PLAN.md
-last_updated: "2026-11-03T11:06:57.239Z"
+stopped_at: Completed 06-10-PLAN.md
+last_updated: "2026-11-03T11:09:05.932Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 61
-  completed_plans: 56
+  completed_plans: 57
   percent: 0
 ---
 
@@ -107,6 +107,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 07 P02 | 4min | 2 tasks | 9 files |
 | Phase 07 P04 | 5min | 2 tasks | 5 files |
 | Phase 07 P06 | 12min | 2 tasks | 11 files |
+| Phase 06 P10 | 64min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -191,6 +192,9 @@ Recent decisions affecting current work:
 - [Phase 07]: whisperStt: electron-vite 6 main inputs via build.rolldownOptions.input; init_failed sticky, exit/timeout respawn lazily
 - [Phase 07]: claudeLlm.interrupted rewrites the last turn to spoken text + [interrupted]; aborted turns stay forgotten without the call
 - [Phase 07]: 07-06: canTalk false while transcribing; latency stamps on unscaled realNow; sttChunk bypasses the runner queue
+- [Phase 06]: pushback_done is a per-turn event: persona sets it true only on the delivering turn (live eval caught 3x)
+- [Phase 06]: wrap_section maps to status=sufficient so sections close on the partner's call, not only the hard cap
+- [Phase 06]: Interviewer stays claude-opus-5-5; pooled median TTFT 1.74s (n=54, p90 4.8s); haiku/prefix-trim is Rishi's call
 
 ### Pending Todos
 
@@ -205,6 +209,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T11:06:57.235Z
-Stopped at: Completed 07-06-PLAN.md
+Last session: 2026-11-03T11:09:05.928Z
+Stopped at: Completed 06-10-PLAN.md
 Resume file: None
