@@ -127,7 +127,7 @@ Plans:
 
 Plans:
 - [ ] 05-01-PLAN.md — Main voice plumbing: TTS=headtts|fake config, --tts arg + autoplay, ack spoken flag, speak:cancel push, spoken T-10 line, VoiceProbe contract (wave 1)
-- [ ] 05-02-PLAN.md — app:// Content-Length/MIME + same-origin /res route, CSP connect-src blob:, pinned devDeps + vendor copy plugin + tf-shim, idempotent model/voice/GLB fetch script (wave 1)
+- [x] 05-02-PLAN.md — app:// Content-Length/MIME + same-origin /res route, CSP connect-src blob:, pinned devDeps + vendor copy plugin + tf-shim, idempotent model/voice/GLB fetch script (wave 1)
 - [x] 05-03-PLAN.md — TDD speech queue: seq order, pre-synthesis, marker acks, cancel by turn with spoken:false (wave 1)
 - [x] 05-04-PLAN.md — TDD HeadTTS adapter (WebGPU detection, wasm fallback, timeouts, PCM audition) + avatar behaviour map/AvatarBinding (wave 1)
 - [ ] 05-05-PLAN.md — TalkingHead engine singleton (30 fps, run gating, states, readback) + voice runtime (warm-up, window.__voice probe) (wave 2)
