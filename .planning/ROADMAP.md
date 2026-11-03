@@ -223,7 +223,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — latencyStages/p90 (TDD), shared E2E drivers + tap, case-02/wrong-GRR WAVs, @t3 packaged live + offline + soak spec
 - [x] 09-02-PLAN.md — package + run @t3 (live case_99 + case 02, net tap, 3-session soak), test:live evals, LATENCY.md
-- [ ] 09-03-PLAN.md — README, docs/SIGNOFF.md (requirements + Looks-Done checklist + TCC human item), final gate, push
+- [x] 09-03-PLAN.md — README, docs/SIGNOFF.md (requirements + Looks-Done checklist + TCC human item), final gate, push
 
 ## Progress
 
