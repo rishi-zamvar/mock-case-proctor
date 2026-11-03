@@ -8,7 +8,12 @@ import { SessionFileSchema, type SessionFile } from '../../src/main/store/sessio
 import { launch } from './launch'
 
 export async function launchLibrary(
-  o: { userData?: string; casesRoot?: string; timeScale?: number } = {}
+  o: {
+    userData?: string
+    casesRoot?: string
+    timeScale?: number
+    env?: Record<string, string>
+  } = {}
 ): Promise<Awaited<ReturnType<typeof launch>>> {
   const l = await launch({
     scenario: 'probe-ok',
@@ -16,7 +21,8 @@ export async function launchLibrary(
     env: {
       ANTHROPIC_API_KEY: 'e2e-' + randomUUID(),
       CASES_ROOT: o.casesRoot ?? process.env.E2E_CASES_ROOT!,
-      ...(o.timeScale ? { E2E_TIME_SCALE: String(o.timeScale) } : {})
+      ...(o.timeScale ? { E2E_TIME_SCALE: String(o.timeScale) } : {}),
+      ...o.env
     }
   })
   try {
@@ -108,4 +114,16 @@ export function sessionFiles(userData: string): SessionFile[] {
     .filter((p) => existsSync(p))
     .map((p) => SessionFileSchema.parse(JSON.parse(readFileSync(p, 'utf8'))))
     .sort((a, b) => a.startedAt - b.startedAt)
+}
+
+// First main-page canvas has a size and at least one non-white pixel.
+export async function deckCanvasPainted(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>('[data-testid="deck-pages"] canvas')
+    if (!c || c.width === 0 || c.height === 0) return false
+    const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data
+    for (let i = 0; i < d.length; i += 4)
+      if (d[i] < 250 || d[i + 1] < 250 || d[i + 2] < 250) return true
+    return false
+  })
 }

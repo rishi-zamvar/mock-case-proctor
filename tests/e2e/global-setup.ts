@@ -1,6 +1,14 @@
 // WAV fixture generation + replay server lifecycle for the whole E2E run.
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DEFAULT_LIBRARY_ROOT } from '../../src/main/domain/cases/library'
@@ -30,6 +38,26 @@ function buildCasesRoot(): { root: string; real: boolean } {
   return { root, real }
 }
 
+// 2 s of 16-bit mono 48 kHz zeros: the "can't hear you" mic fixture.
+function writeSilence(path: string): void {
+  const data = 48_000 * 2 * 2
+  const b = Buffer.alloc(44 + data)
+  b.write('RIFF', 0)
+  b.writeUInt32LE(36 + data, 4)
+  b.write('WAVE', 8)
+  b.write('fmt ', 12)
+  b.writeUInt32LE(16, 16)
+  b.writeUInt16LE(1, 20) // PCM
+  b.writeUInt16LE(1, 22) // mono
+  b.writeUInt32LE(48_000, 24)
+  b.writeUInt32LE(48_000 * 2, 28)
+  b.writeUInt16LE(2, 32)
+  b.writeUInt16LE(16, 34)
+  b.write('data', 36)
+  b.writeUInt32LE(data, 40)
+  writeFileSync(path, b)
+}
+
 export default async function globalSetup(): Promise<() => Promise<void>> {
   const cases = buildCasesRoot()
   process.env.E2E_CASES_ROOT = cases.root
@@ -46,6 +74,8 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     ])
     execFileSync('afconvert', ['-f', 'WAVE', '-d', 'LEI16@48000', aiff, wav])
   }
+  const silence = join(audio, 'silence.wav')
+  if (!existsSync(silence)) writeSilence(silence)
   const server = await startReplayServer({
     fixturesDir: join(ROOT, 'tests', 'fixtures', 'claude'),
     logDir: join(ROOT, 'test-results', 'replay'),

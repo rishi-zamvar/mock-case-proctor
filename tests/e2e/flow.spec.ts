@@ -81,7 +81,7 @@ test('full session walks every screen', async () => {
 
     // Review
     await waitPhase(page, 'review')
-    await expect(page.getByTestId('deck-placeholder')).toBeVisible()
+    await expect(page.getByTestId('deck-viewer')).toBeVisible()
     await expect(page.getByTestId('countdown')).toHaveText(/^4[45]:\d\d$/)
     await expect(page.getByTestId('webcam-tile')).toBeVisible()
     await page.getByTestId('ready-btn').click()
