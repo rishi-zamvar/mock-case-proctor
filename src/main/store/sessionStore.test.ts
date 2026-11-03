@@ -10,7 +10,9 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createSessionStore } from './sessionStore'
+import { createSessionStore, type SessionStore } from './sessionStore'
+import { LibraryViewSchema } from '../../shared/schemas'
+import type { CaseCard, Scorecard } from '../../shared/ipc'
 import type { SessionFile } from './sessionSchema'
 import { initialState } from '../domain/machine/interviewMachine'
 import type { Logger } from '../log'
@@ -35,14 +37,18 @@ function session(o: Partial<SessionFile> = {}): SessionFile {
   }
 }
 
-function setup(fs?: Parameters<typeof createSessionStore>[0]['fs']) {
+function setup(fs?: Parameters<typeof createSessionStore>[0]['fs']): {
+  root: string
+  log: Logger
+  store: SessionStore
+} {
   const root = mkdtempSync(join(tmpdir(), 'mcp-store-'))
   const log: Logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   const store = createSessionStore({ root, now: () => NOW, log, fs })
   return { root, log, store }
 }
 
-function plant(root: string, id: string, body: string) {
+function plant(root: string, id: string, body: string): void {
   mkdirSync(join(root, id), { recursive: true })
   writeFileSync(join(root, id, 'session.json'), body)
 }
@@ -156,5 +162,90 @@ describe('SessionStore save/load', () => {
       (f) => (f as ReturnType<typeof vi.fn>).mock.calls
     )
     expect(JSON.stringify(all)).not.toContain(SECRET)
+  })
+})
+
+const card = (id: string, company: string, slug: string): CaseCard => ({
+  id,
+  number: Number(id),
+  slug,
+  company,
+  vertical: 'SaaS',
+  level: 2,
+  intervieweePdfPath: `/cases/${id}_${slug}_interviewee_package.pdf`
+})
+const cards = [card('01', 'Acme', 'acme'), card('99', 'Fixturely', 'fixturely')]
+const scored = (total: number): Scorecard => ({
+  rubric: [],
+  total,
+  band: 'average',
+  flags: [],
+  graderModel: 'fake',
+  promptVersion: 'v0'
+})
+const grilling = { ...initialState(), phase: 'grilling' as const }
+
+describe('SessionStore libraryView', () => {
+  it('given no sessions when viewing then every case is open and nothing is resumable', () => {
+    const v = setup().store.libraryView(cards)
+    expect(v).toEqual({
+      cases: cards.map((c) => ({ card: c, completed: null })),
+      resumable: null,
+      quarantined: 0,
+      error: null
+    })
+  })
+
+  it('given two completed sessions and one abandoned when viewing then the latest completed wins', () => {
+    const { store } = setup()
+    store.save(session({ id: 'a', status: 'completed', endedAt: 100, scorecard: scored(12) }))
+    store.save(session({ id: 'b', status: 'completed', endedAt: 200, scorecard: scored(20) }))
+    store.save(session({ id: 'c', status: 'abandoned', endedAt: 300 }))
+    const v = store.libraryView(cards)
+    expect(v.cases[1].completed).toEqual({ at: 200, score: 20 })
+    expect(v.cases[0].completed).toBeNull()
+  })
+
+  it('given a completed session without a scorecard when viewing then it is ignored', () => {
+    const { store } = setup()
+    store.save(session({ status: 'completed', endedAt: 100 }))
+    expect(store.libraryView(cards).cases[1].completed).toBeNull()
+  })
+
+  it('given two active sessions when viewing then the newest is resumable', () => {
+    const { store } = setup()
+    store.save(session({ id: 'old', caseId: '01', startedAt: 10, machineState: grilling }))
+    store.save(session({ id: 'new', caseId: '01', startedAt: 20, machineState: grilling }))
+    expect(store.libraryView(cards).resumable).toEqual({
+      sessionId: 'new',
+      caseId: '01',
+      company: 'Acme',
+      phase: 'grilling'
+    })
+  })
+
+  it('given an active session for an unknown case when viewing then nothing is resumable', () => {
+    const { store } = setup()
+    store.save(session({ caseId: '42' }))
+    expect(store.libraryView(cards).resumable).toBeNull()
+  })
+
+  it('given an active session in idle when viewing then resumable phase is warmup', () => {
+    const { store } = setup()
+    store.save(session())
+    expect(store.libraryView(cards).resumable?.phase).toBe('warmup')
+  })
+
+  it('given a corrupt file when viewing twice then quarantined is reported once', () => {
+    const { root, store } = setup()
+    plant(root, 'bad', '{not json')
+    expect(store.libraryView(cards).quarantined).toBe(1)
+    expect(store.libraryView(cards).quarantined).toBe(0)
+  })
+
+  it('given sessions when viewing then the output passes LibraryViewSchema', () => {
+    const { store } = setup()
+    store.save(session({ id: 'a', status: 'completed', endedAt: 100, scorecard: scored(12) }))
+    expect(() => LibraryViewSchema.parse(store.libraryView(cards))).not.toThrow()
   })
 })
