@@ -134,7 +134,7 @@ describe('SessionRunner resume', () => {
     const b = setup({ root: a.root })
     await b.runner.resume(id)
     await b.until(() => b.view().phase === 'reviewMode')
-    expect(b.file(id).scorecard?.total).toBe(18)
+    expect(b.file(id).scorecard?.total).toBe(12) // no candidate turn: all unverified, capped at 2
     expect(b.file(id).status).toBe('completed')
   })
 

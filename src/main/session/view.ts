@@ -1,10 +1,10 @@
 // BAR-01: the ONLY projection from a session to what the renderer sees. Pure: no fs, electron or clock.
 // Every object is an explicit literal; never spread session, brief or card into the view.
-import type { CaseCard, Checks, Reveal, SectionView, ViewPhase, ViewState } from '../../shared/ipc'
+import type { CaseCard, Reveal, SectionView, ViewPhase, ViewState } from '../../shared/ipc'
 import { ViewStateSchema } from '../../shared/schemas'
 import type { InterviewerBrief } from '../domain/cases/brief'
 import { SECTION_CATALOG } from '../domain/machine/sections'
-import { brevityBand } from '../domain/metrics'
+import { computeChecks } from '../review/scorecard'
 import type { SessionFile } from '../store/sessionSchema'
 
 export type ViewExtras = {
@@ -16,7 +16,6 @@ export type ViewExtras = {
 }
 
 const TALK_PHASES: readonly ViewPhase[] = ['warmup', 'presentation', 'grilling']
-const CALL_RE = /\b(invest|pass|buy|my call)\b/i
 
 const label = (id: string): string => SECTION_CATALOG.find((c) => c.id === id)?.label ?? id
 
@@ -58,20 +57,10 @@ export function buildReveal(s: SessionFile, brief: InterviewerBrief): Reveal {
   if (!s.scorecard) throw new Error('buildReveal: session has no scorecard')
   const opening =
     s.transcript.find((t) => t.speaker === 'candidate' && t.phase === 'presentation')?.text ?? ''
-  const firstSentence = opening.split(/(?<=[.!?])\s/)[0] ?? ''
-  const checks: Checks = {
-    brevity: s.transcript
-      .filter(
-        (t) =>
-          t.speaker === 'candidate' &&
-          t.ms !== undefined &&
-          (t.phase === 'presentation' || t.phase === 'grilling')
-      )
-      .map((t) => ({ turnId: t.id, ms: t.ms as number, band: brevityBand(t.ms as number) })),
-    ledWithCall: CALL_RE.test(firstSentence),
-    omitted: s.machineState.omitted.map(label),
-    numbers: [] // ponytail: numbers check is empty until Phase 8's tolerance parser (REV-03)
-  }
+  const checks = computeChecks(
+    { transcript: s.transcript, omitted: s.machineState.omitted, openingPlan: s.openingPlan },
+    brief
+  )
   return {
     scorecard: s.scorecard,
     checks,
