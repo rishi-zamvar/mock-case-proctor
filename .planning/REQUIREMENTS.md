@@ -88,7 +88,7 @@
 - [x] **VOUT-02**: Text is normalised for speech before it reaches the voice: $184M, 4.1x, 48.2%, bps, acronyms such as ARR, NRR, GRR, CAGR.
 - [x] **VOUT-03**: A 3D talking-head avatar (TalkingHead.js) lip-syncs to the voice and has idle, listening and thinking behaviour.
 - [x] **VOUT-04**: Claude's reply streams one sentence at a time into the voice. Measured over a session, the median time from Rishi pressing stop to the avatar's first word is at most 3 s, logged per stage.
-- [ ] **VOUT-05**: Barge-in. Pressing Talk while the avatar is speaking stops it immediately and cancels the stream. Only what was actually spoken is kept in the history.
+- [x] **VOUT-05**: Barge-in. Pressing Talk while the avatar is speaking stops it immediately and cancels the stream. Only what was actually spoken is kept in the history.
 - [x] **VOUT-06**: A webcam self-view tile (mirrored, never recorded) appears Zoom-style next to the avatar.
 
 ### Review Mode (REV)
@@ -177,7 +177,7 @@
 | VOUT-02 | Phase 2 | Complete |
 | VOUT-03 | Phase 5 | Complete |
 | VOUT-04 | Phase 7 | Complete |
-| VOUT-05 | Phase 7 | Pending |
+| VOUT-05 | Phase 7 | Complete |
 | VOUT-06 | Phase 4 | Complete |
 | REV-01 | Phase 8 | Pending |
 | REV-02 | Phase 8 | Pending |
