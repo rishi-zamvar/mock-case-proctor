@@ -19,7 +19,9 @@ export function registerAppProtocol(
   protocol.handle('app', async (req) => {
     const file = resolveAppRequest(req.url, roots)
     if (!file) return new Response('Not found', { status: 404 })
-    const res = await net.fetch(pathToFileURL(file).toString())
+    // net.fetch rejects on a missing file; that is a 404, not a handler crash.
+    const res = await net.fetch(pathToFileURL(file).toString()).catch(() => null)
+    if (!res) return new Response('Not found', { status: 404 })
     const headers = new Headers(res.headers)
     headers.set('Content-Security-Policy', CSP)
     return new Response(res.body, { status: res.status, headers })
