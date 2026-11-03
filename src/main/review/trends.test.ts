@@ -137,8 +137,7 @@ const raw = (o: Record<string, unknown> = {}): Record<string, unknown> => ({
   recurring_weaknesses: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
   progress_by_dimension: [
     { id: 'valuation', direction: 'up', note: 'better comps' },
-    { id: 'valuation', direction: 'down', note: 'dup' },
-    { id: 'bogus', direction: 'up', note: 'x' }
+    { id: 'valuation', direction: 'down', note: 'dup' }
   ],
   carried_forward_fix: { fix: 'lead with the call', improved: 'yes', note: 'led with it' },
   next_case_suggestion: { case_id: '07', why: 'retention-heavy' },
@@ -197,17 +196,23 @@ describe('createTrendsAgent', () => {
 
   it('given a suggestion outside the unseen list when mapped then nextCase is null and a code is logged', async () => {
     const { agent, log } = agentWith([
-      jsonMessage(JSON.stringify(raw({ next_case_suggestion: { case_id: '03', why: 'seen' } })))
+      jsonMessage(JSON.stringify(raw({ next_case_suggestion: { case_id: '03', why: 'why-secret' } })))
     ])
     const out = await agent(input, new AbortController().signal)
     expect(out.nextCase).toBeNull()
     expect(log.warn).toHaveBeenCalled()
-    expect(JSON.stringify((log.warn as ReturnType<typeof vi.fn>).mock.calls)).not.toContain('seen')
+    expect(JSON.stringify((log.warn as ReturnType<typeof vi.fn>).mock.calls)).not.toContain('why-secret')
   })
 
   it('given unparsable output when called then it throws trends unparsable', async () => {
     const { agent } = agentWith([jsonMessage('not json at all')])
-    await expect(agent(input, new AbortController().signal)).rejects.toThrow()
+    await expect(agent(input, new AbortController().signal)).rejects.toThrow('trends unparsable')
+  })
+
+  it('given an unknown dimension id when called then it is rejected as unparsable', async () => {
+    const bad = raw({ progress_by_dimension: [{ id: 'bogus', direction: 'up', note: 'x' }] })
+    const { agent } = agentWith([jsonMessage(JSON.stringify(bad))])
+    await expect(agent(input, new AbortController().signal)).rejects.toThrow('trends unparsable')
   })
 
   it('given an API error when called then it rethrows the APIError', async () => {

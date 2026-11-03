@@ -2,9 +2,10 @@
 import * as nodeFs from 'node:fs'
 import { join } from 'node:path'
 import { SessionFileSchema, type SessionFile } from './sessionSchema'
-import type { CaseCard, LibraryView } from '../../shared/ipc'
+import type { CaseCard, LibraryView, SessionSummary } from '../../shared/ipc'
 import type { Logger } from '../log'
 import { LibraryViewSchema } from '../../shared/schemas'
+import { toSummary } from '../review/trends'
 
 export interface SessionStore {
   save(s: SessionFile): void
@@ -12,6 +13,7 @@ export interface SessionStore {
   list(): SessionFile[]
   takeQuarantined(): number
   libraryView(cards: CaseCard[]): LibraryView
+  listSummaries(): SessionSummary[]
 }
 
 type Fs = typeof nodeFs
@@ -141,5 +143,13 @@ export function createSessionStore(o: {
     })
   }
 
-  return { save, load, list, takeQuarantined, libraryView }
+  // Completed + scored only, oldest first (REV-06 trends input).
+  function listSummaries(): SessionSummary[] {
+    return list()
+      .filter((s) => s.status === 'completed' && s.scorecard)
+      .map(toSummary)
+      .sort((a, b) => a.at - b.at)
+  }
+
+  return { save, load, list, takeQuarantined, libraryView, listSummaries }
 }
