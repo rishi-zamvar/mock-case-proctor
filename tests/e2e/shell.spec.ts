@@ -24,7 +24,20 @@ test('renderer has no Node and a minimal api', async () => {
       'undefined',
       'undefined'
     ])
-    expect(await page.evaluate(() => Object.keys(window.api))).toEqual(['key'])
+    expect(await page.evaluate(() => Object.keys(window.api).sort())).toEqual([
+      'key',
+      'library',
+      'onSpeak',
+      'onView',
+      'session',
+      'speak'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.api.session).sort())).toEqual([
+      'discard',
+      'intent',
+      'resume',
+      'start'
+    ])
     expect(await page.evaluate(() => Object.keys(window.api.key).sort())).toEqual([
       'clear',
       'save',

@@ -1,20 +1,54 @@
 // Sandboxed preload: may import only `electron` and relative files (bundled).
 import { contextBridge, ipcRenderer } from 'electron'
-import { CH, type Api, type E2EHooks } from '../shared/ipc'
+import type { IpcRendererEvent } from 'electron'
+import { CH, type Api, type E2EHooks, type IpcTapEntry } from '../shared/ipc'
 
-// ponytail: Pick until 03-10 wires the session API; then back to full Api.
-const api: Pick<Api, 'key'> = {
-  key: {
-    status: () => ipcRenderer.invoke(CH.keyStatus),
-    save: (key, opts) => ipcRenderer.invoke(CH.keySave, key, opts ?? {}),
-    clear: () => ipcRenderer.invoke(CH.keyClear)
+const E2E = process.argv.includes('--e2e')
+// E2E redaction tap: every main->renderer payload (invoke results + pushes) is recorded under --e2e only.
+const tap: IpcTapEntry[] = []
+const record = (channel: string, payload: unknown): void => {
+  if (E2E) tap.push({ channel, payload: structuredClone(payload) })
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each Api method narrows the result
+const inv = (ch: string, ...a: unknown[]): Promise<any> =>
+  ipcRenderer.invoke(ch, ...a).then((p) => {
+    record(ch, p)
+    return p
+  })
+const subscribe =
+  <T>(ch: string) =>
+  (cb: (p: T) => void): (() => void) => {
+    const h = (_e: IpcRendererEvent, p: T): void => cb(p)
+    ipcRenderer.on(ch, h)
+    return () => void ipcRenderer.removeListener(ch, h)
   }
+
+const api: Api = {
+  key: {
+    status: () => inv(CH.keyStatus),
+    save: (key, opts) => inv(CH.keySave, key, opts ?? {}),
+    clear: () => inv(CH.keyClear)
+  },
+  library: { list: () => inv(CH.libraryList) },
+  session: {
+    start: (caseId, opts) => inv(CH.sessionStart, caseId, opts),
+    intent: (i) => inv(CH.sessionIntent, i),
+    resume: (id) => inv(CH.sessionResume, id),
+    discard: (id) => inv(CH.sessionDiscard, id)
+  },
+  speak: { ack: (turnId, seq) => inv(CH.speakAck, turnId, seq) },
+  onView: subscribe(CH.view),
+  onSpeak: subscribe(CH.speak)
 }
 
 contextBridge.exposeInMainWorld('api', api)
 
-if (process.argv.includes('--e2e')) {
-  const hooks: Pick<E2EHooks, 'micPeak'> = {
+if (E2E) {
+  // Permanent listeners so the tap sees pushes even when no screen is subscribed.
+  for (const ch of [CH.view, CH.speak]) ipcRenderer.on(ch, (_e, p) => record(ch, p))
+  const hooks: E2EHooks = {
+    say: (text) => inv(CH.e2eSay, text),
+    ipcLog: () => structuredClone(tap),
     micPeak: async (ms) => {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }

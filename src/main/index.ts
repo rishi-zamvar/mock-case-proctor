@@ -6,6 +6,7 @@ import { applyE2ESwitches } from './e2e'
 import { APP_SCHEME_PRIVILEGES, registerAppProtocol } from './appProtocol'
 import { isAppOrigin } from './protocol'
 import { registerIpc } from './ipc'
+import { compose } from './compose'
 import { log } from './log'
 import { createKeyStore } from './keys/keyStore'
 import { createSafeStorageCipher } from './keys/cipher'
@@ -20,7 +21,7 @@ process.on('unhandledRejection', (e) => log.error('unhandled', e))
 
 const devUrl = process.env.ELECTRON_RENDERER_URL
 
-function createWindow(e2e: boolean): void {
+function createWindow(e2e: boolean): BrowserWindow {
   const win = new BrowserWindow({
     show: false,
     width: 1280,
@@ -45,13 +46,24 @@ function createWindow(e2e: boolean): void {
     if (!isAppOrigin(url, devUrl)) ev.preventDefault()
   })
   void win.loadURL(devUrl ?? 'app://bundle/index.html')
+  return win
 }
 
+let win: BrowserWindow | null = null
+
 app.whenReady().then(async () => {
-  registerAppProtocol(protocol, net, {
+  const core = compose(process.env, {
+    userData: app.getPath('userData'),
+    log,
+    send: (ch, p) => {
+      if (win && !win.isDestroyed()) win.webContents.send(ch, p)
+    }
+  })
+  const roots = {
     bundle: join(__dirname, '../renderer'),
     assets: join(app.getAppPath(), 'resources', 'assets')
-  })
+  }
+  registerAppProtocol(protocol, net, roots, core.casePdf)
   session.defaultSession.setPermissionRequestHandler((_wc, perm, cb, d) =>
     cb(perm === 'media' && isAppOrigin(d.requestingUrl, devUrl))
   )
@@ -75,8 +87,12 @@ app.whenReady().then(async () => {
   const status = await keyStore.init()
   log.info('key status', status)
 
-  registerIpc(ipcMain, keyStore, devUrl)
-  createWindow(e2e)
+  registerIpc(
+    ipcMain,
+    { keyStore, runner: core.runner, library: core.library, e2eSay: core.e2eSay },
+    devUrl
+  )
+  win = createWindow(e2e)
 })
 
 app.on('window-all-closed', () => app.quit())

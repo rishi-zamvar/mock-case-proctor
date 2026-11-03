@@ -1,5 +1,5 @@
-// The only module that constructs adapters or reads config env (it reads its `env` argument,
-// never process.env). Real adapters swap in here: TTS Phase 5, LLM Phase 6, STT Phase 7.
+// The only module that constructs adapters or reads config env (only its `env` argument,
+// never the global). Real adapters swap in here: TTS Phase 5, LLM Phase 6, STT Phase 7.
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { CH, type LibraryView } from '../shared/ipc'
