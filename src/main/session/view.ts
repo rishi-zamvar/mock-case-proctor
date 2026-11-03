@@ -7,7 +7,12 @@ import { SECTION_CATALOG } from '../domain/machine/sections'
 import { brevityBand } from '../domain/metrics'
 import type { SessionFile } from '../store/sessionSchema'
 
-export type ViewExtras = { clockNow: number; timeScale: number; speaking: boolean }
+export type ViewExtras = {
+  clockNow: number
+  timeScale: number
+  speaking: boolean
+  transcribing?: boolean
+}
 
 const TALK_PHASES: readonly ViewPhase[] = ['warmup', 'presentation', 'grilling']
 const CALL_RE = /\b(invest|pass|buy|my call)\b/i
@@ -38,11 +43,12 @@ export function toViewState(
     section: sectionView(s, phase),
     transcript: s.transcript.map((t) => ({ id: t.id, speaker: t.speaker, text: t.text })),
     speaking: x.speaking,
-    canTalk: !x.speaking && TALK_PHASES.includes(phase),
+    canTalk: !x.speaking && !x.transcribing && TALK_PHASES.includes(phase),
     endedEarly: m.endedEarly,
     reveal: phase === 'reviewMode' && s.scorecard ? buildReveal(s, brief) : null,
     deckPage: s.deckPage ?? 1,
-    reviewWarned: m.reviewWarned
+    reviewWarned: m.reviewWarned,
+    transcribing: x.transcribing ?? false
   })
 }
 

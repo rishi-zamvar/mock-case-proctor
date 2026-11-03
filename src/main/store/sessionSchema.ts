@@ -134,7 +134,20 @@ export const SessionFileSchema = z
               stopReason: z.string().nullable()
             })
             .strict()
-            .optional()
+            .optional(),
+          // REAL-clock ms (never the scaled app clock)
+          latency: z
+            .object({
+              stopAt: z.number(),
+              transcriptAt: z.number(),
+              requestAt: z.number(),
+              firstDeltaAt: z.number().optional(),
+              firstSentenceAt: z.number().optional(),
+              firstAudioAt: z.number().optional()
+            })
+            .strict()
+            .optional(),
+          interrupted: z.boolean().optional()
         })
         .strict()
     ),

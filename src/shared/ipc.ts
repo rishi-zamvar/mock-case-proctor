@@ -13,7 +13,10 @@ export const CH = {
   speakCancel: 'speak:cancel',
   view: 'view:state',
   speak: 'speak:sentence',
-  e2eSay: 'e2e:say'
+  e2eSay: 'e2e:say',
+  sttChunk: 'stt:chunk',
+  sttStatus: 'stt:status',
+  speakStarted: 'speak:started'
 } as const
 export type KeySource = 'stored' | 'env' | 'dotenv' | 'none'
 export type KeyStatus = { hasKey: boolean; source: KeySource }
@@ -34,8 +37,15 @@ export interface Api {
     resume(id: string): Promise<{ sessionId: string }>
     discard(id: string): Promise<void>
   }
-  config: { tts: TtsMode }
-  speak: { ack(turnId: string, seq: number, spoken?: boolean): Promise<void> }
+  config: { tts: TtsMode; stt?: SttMode } // stt optional: old renderer test mocks omit it
+  stt?: {
+    chunk(answerId: string, idx: number, pcm: Float32Array): Promise<void>
+    status(): Promise<SttStatus>
+  }
+  speak: {
+    ack(turnId: string, seq: number, spoken?: boolean): Promise<void>
+    started?(turnId: string, seq: number): Promise<void>
+  }
   onView(cb: (v: ViewState) => void): () => void
   onSpeak(cb: (s: SpeakEvent) => void): () => void
   onSpeakCancel(cb: (c: SpeakCancel) => void): () => void
@@ -110,6 +120,7 @@ export type ViewState = {
   reveal: Reveal | null // non-null ONLY when phase === 'reviewMode'
   deckPage: number // 1-based PDF page of the interviewee deck; 1 when unset
   reviewWarned: boolean
+  transcribing?: boolean // optional for test literals; toViewState always sets it
 }
 export type LibraryEntry = { card: CaseCard; completed: { at: number; score: number } | null }
 export type ResumableSession = {
@@ -125,7 +136,8 @@ export type LibraryView = {
   error: string | null
 }
 export type Intent =
-  | { type: 'answer'; ms: number }
+  | { type: 'answer'; ms: number; answerId?: string; chunks?: number }
+  | { type: 'bargeIn' }
   | { type: 'ready' }
   | { type: 'skipWarmup' }
   | { type: 'end' }
@@ -133,6 +145,8 @@ export type Intent =
 export type StartOptions = { warmup: boolean }
 export type SpeakEvent = { turnId: string; seq: number; text: string }
 export type TtsMode = 'headtts' | 'fake'
+export type SttMode = 'whisper' | 'fake'
+export type SttStatus = 'metal' | 'cpu' | 'failed' | 'off'
 export type TtsDevice = 'webgpu' | 'wasm' | 'none'
 export type SpeakCancel = { turnId: string }
 export type AvatarStateName = 'idle' | 'listening' | 'thinking' | 'speaking'

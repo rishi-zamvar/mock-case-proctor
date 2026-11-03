@@ -9,6 +9,7 @@ import type {
   Scorecard,
   SpeakCancel,
   SpeakEvent,
+  SttStatus,
   ViewState
 } from './ipc'
 
@@ -126,7 +127,8 @@ export const ViewStateSchema = z
     endedEarly: z.boolean(),
     reveal: RevealSchema.nullable(),
     deckPage: z.number().int().min(1),
-    reviewWarned: z.boolean()
+    reviewWarned: z.boolean(),
+    transcribing: z.boolean().optional()
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -158,8 +160,18 @@ export const LibraryViewSchema = z
   })
   .strict()
 
+const AnswerIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/)
+
 export const IntentSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('answer'), ms: z.number().int().min(0).max(600_000) }).strict(),
+  z
+    .object({
+      type: z.literal('answer'),
+      ms: z.number().int().min(0).max(600_000),
+      answerId: AnswerIdSchema.optional(),
+      chunks: z.number().int().min(0).max(32).optional()
+    })
+    .strict(),
+  z.object({ type: z.literal('bargeIn') }).strict(),
   z.object({ type: z.literal('ready') }).strict(),
   z.object({ type: z.literal('skipWarmup') }).strict(),
   z.object({ type: z.literal('end') }).strict(),
@@ -176,6 +188,14 @@ export const AckArgsSchema = z.tuple([
   z.number().int().min(0),
   z.boolean().optional()
 ])
+export const StartedArgsSchema = z.tuple([z.string().min(1).max(80), z.number().int().min(0)])
+// ponytail: 310 s cap per chunk (renderer sends ~20 s chunks); 32 chunks bounds one answer.
+export const SttChunkArgsSchema = z.tuple([
+  AnswerIdSchema,
+  z.number().int().min(0).max(31),
+  z.instanceof(Float32Array).refine((a) => a.length > 0 && a.length <= 16000 * 310)
+])
+export const SttStatusSchema = z.enum(['metal', 'cpu', 'failed', 'off'])
 export const SpeakCancelSchema = z.object({ turnId: z.string().min(1).max(80) }).strict()
 
 export const SpeakEventSchema = z
@@ -201,7 +221,11 @@ const _sc: Scorecard = {} as z.infer<typeof ScorecardSchema>
 const _sc2: z.infer<typeof ScorecardSchema> = {} as Scorecard
 const _sx: SpeakCancel = {} as z.infer<typeof SpeakCancelSchema>
 const _sx2: z.infer<typeof SpeakCancelSchema> = {} as SpeakCancel
+const _st: SttStatus = {} as z.infer<typeof SttStatusSchema>
+const _st2: z.infer<typeof SttStatusSchema> = {} as SttStatus
 void [
+  _st,
+  _st2,
   _sx,
   _sx2,
   _ks,
