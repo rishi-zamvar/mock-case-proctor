@@ -2,7 +2,33 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { KeyStatus, LibraryView, SaveResult, SpeakEvent, ViewState } from '../../shared/ipc'
+import type { TtsDevice, TtsMode } from '../../shared/ipc'
 import App from './App'
+import { getVoice } from './speech/voice'
+
+const fakeVoice = vi.hoisted(() => {
+  const deviceCbs = new Set<(d: string) => void>()
+  return {
+    host: document.createElement('div'),
+    setVisible: vi.fn(),
+    setState: vi.fn(),
+    isPlaying: vi.fn(() => false),
+    onPlaying: vi.fn(() => () => {}),
+    enqueue: vi.fn(),
+    cancel: vi.fn(),
+    clear: vi.fn(),
+    warm: vi.fn(async () => {}),
+    resume: vi.fn(),
+    device: vi.fn(() => null),
+    onDevice: vi.fn((cb: (d: string) => void) => {
+      deviceCbs.add(cb)
+      return (): void => void deviceCbs.delete(cb)
+    }),
+    emitDevice: (d: string): void => deviceCbs.forEach((cb) => cb(d)),
+    deviceCbs
+  }
+})
+vi.mock('./speech/voice', () => ({ getVoice: vi.fn(() => fakeVoice) }))
 
 const KEY = 'paste-key-' + 'q'.repeat(6)
 
@@ -62,11 +88,21 @@ const REVEAL: ViewState['reveal'] = {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred mock shape
-function mockApi(status: KeyStatus, lib: () => Promise<LibraryView> = async () => libraryView()) {
-  const cb: { view?: (v: ViewState) => void; speak?: (s: SpeakEvent) => void } = {}
+function mockApi(
+  status: KeyStatus,
+  lib: () => Promise<LibraryView> = async () => libraryView(),
+  tts?: TtsMode
+) {
+  const cb: {
+    view?: (v: ViewState) => void
+    speak?: (s: SpeakEvent) => void
+    cancel?: (c: { turnId: string }) => void
+  } = {}
   const offView = vi.fn()
   const offSpeak = vi.fn()
+  const offCancel = vi.fn()
   const api = {
+    ...(tts ? { config: { tts } } : {}),
     key: {
       status: vi.fn(async () => status),
       save: vi.fn<(k: string, o?: { force?: boolean }) => Promise<SaveResult>>(),
@@ -87,10 +123,14 @@ function mockApi(status: KeyStatus, lib: () => Promise<LibraryView> = async () =
     onSpeak: vi.fn((f: (s: SpeakEvent) => void) => {
       cb.speak = f
       return offSpeak
+    }),
+    onSpeakCancel: vi.fn((f: (c: { turnId: string }) => void) => {
+      cb.cancel = f
+      return offCancel
     })
   }
   window.api = api as unknown as Window['api']
-  return { api, cb, offView, offSpeak }
+  return { api, cb, offView, offSpeak, offCancel }
 }
 
 const main = (s: string): Element | null => document.querySelector(`main[data-screen="${s}"]`)
@@ -213,5 +253,121 @@ describe('App routing', () => {
     await userEvent.click(screen.getByTestId('discard-btn'))
     expect(api.session.discard).toHaveBeenCalledWith('s9')
     await vi.waitFor(() => expect(api.library.list.mock.calls.length).toBe(calls + 1))
+  })
+})
+
+describe('App voice wiring', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    fakeVoice.deviceCbs.clear()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const banner = (): HTMLElement | null => screen.queryByTestId('voice-banner')
+
+  it('given tts fake, when a speak event arrives, then getVoice is never called and the fake queue acks', async () => {
+    const { api, cb } = mockApi({ hasKey: true, source: 'stored' }, undefined, 'fake')
+    render(<App />)
+    await home()
+    vi.useFakeTimers()
+    act(() => cb.speak!({ turnId: 't', seq: 0, text: 'hi' }))
+    vi.advanceTimersByTime(120)
+    expect(api.speak.ack).toHaveBeenCalledWith('t', 0)
+    expect(getVoice).not.toHaveBeenCalled()
+    expect(api.onSpeakCancel).not.toHaveBeenCalled()
+  })
+
+  it('given no config (old mock), when opened, then getVoice is never called', async () => {
+    mockApi({ hasKey: true, source: 'stored' })
+    render(<App />)
+    await home()
+    expect(getVoice).not.toHaveBeenCalled()
+  })
+
+  it('given tts headtts, when mounted, then creates one voice with a forwarding ack and warms it', async () => {
+    const { api } = mockApi({ hasKey: true, source: 'stored' }, undefined, 'headtts')
+    render(<App />)
+    await home()
+    expect(getVoice).toHaveBeenCalledTimes(1)
+    expect(fakeVoice.warm).toHaveBeenCalledTimes(1)
+    const { ack } = vi.mocked(getVoice).mock.calls[0][0]
+    ack('t1', 2, false)
+    expect(api.speak.ack).toHaveBeenCalledWith('t1', 2, false)
+  })
+
+  it('given tts headtts, when speak and cancel events arrive, then routes them to the voice', async () => {
+    const { api, cb } = mockApi({ hasKey: true, source: 'stored' }, undefined, 'headtts')
+    render(<App />)
+    await home()
+    const ev = { turnId: 't', seq: 0, text: 'hi' }
+    act(() => cb.speak!(ev))
+    expect(fakeVoice.enqueue).toHaveBeenCalledWith(ev)
+    act(() => cb.cancel!({ turnId: 't' }))
+    expect(fakeVoice.cancel).toHaveBeenCalledWith('t')
+    expect(api.speak.ack).not.toHaveBeenCalled()
+  })
+
+  it.each<[TtsDevice, string | null]>([
+    ['wasm', 'Voice is running on CPU — replies will be slow'],
+    ['none', 'Voice failed to load — interviewer lines will appear as captions only'],
+    ['webgpu', null]
+  ])('given device %s, when reported, then the banner is %s', async (device, text) => {
+    mockApi({ hasKey: true, source: 'stored' }, undefined, 'headtts')
+    render(<App />)
+    await home()
+    expect(banner()).toBeNull()
+    act(() => fakeVoice.emitDevice(device))
+    if (text === null) expect(banner()).toBeNull()
+    else {
+      expect(banner()!.getAttribute('role')).toBe('alert')
+      expect(banner()!.textContent).toBe(text)
+    }
+  })
+
+  it('given headtts, when Start is clicked, then resumes audio before session.start', async () => {
+    const { api } = mockApi({ hasKey: true, source: 'stored' }, undefined, 'headtts')
+    let resumedFirst = false
+    api.session.start.mockImplementation(async () => {
+      resumedFirst = fakeVoice.resume.mock.calls.length === 1
+      return { sessionId: 's1' }
+    })
+    render(<App />)
+    await home()
+    await userEvent.click(screen.getByTestId('start-01'))
+    await userEvent.click(screen.getByTestId('sheet-start'))
+    expect(api.session.start).toHaveBeenCalled()
+    expect(resumedFirst).toBe(true)
+  })
+
+  it('given headtts, when the session shows, then the avatar stage hosts the voice', async () => {
+    const { cb } = mockApi({ hasKey: true, source: 'stored' }, undefined, 'headtts')
+    render(<App />)
+    await home()
+    act(() => cb.view!(viewState()))
+    expect(screen.getByTestId('avatar-slot').contains(fakeVoice.host)).toBe(true)
+  })
+
+  it('given fake mode, when the session shows, then no avatar slot is mounted', async () => {
+    const { cb } = mockApi({ hasKey: true, source: 'stored' }, undefined, 'fake')
+    render(<App />)
+    await home()
+    act(() => cb.view!(viewState()))
+    expect(screen.queryByTestId('avatar-slot')).toBeNull()
+  })
+
+  it('given headtts, when unmounted, then unsubscribes everything and clears the voice', async () => {
+    const { offView, offSpeak, offCancel } = mockApi(
+      { hasKey: true, source: 'stored' },
+      undefined,
+      'headtts'
+    )
+    const r = render(<App />)
+    await home()
+    r.unmount()
+    expect(offView).toHaveBeenCalled()
+    expect(offSpeak).toHaveBeenCalled()
+    expect(offCancel).toHaveBeenCalled()
+    expect(fakeVoice.clear).toHaveBeenCalled()
+    expect(fakeVoice.deviceCbs.size).toBe(0)
   })
 })
