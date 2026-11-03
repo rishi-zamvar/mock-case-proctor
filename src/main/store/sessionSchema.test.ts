@@ -21,7 +21,42 @@ const minimal = (): Record<string, unknown> => ({
   pending: null as unknown
 })
 
+const DIMS = ['clear_call', 'lead_edge_8', 'retention', 'valuation', 'back_solve', 'quality_poise']
+const brevity0 = { short: 0, brief: 0, ideal: 0, long: 0, flagged: 0 }
 const scorecard = {
+  rubric: DIMS.map((id) => ({
+    id,
+    dimension: id,
+    score: 3,
+    evidence: [{ quote: 'quote', turnId: 't1' }],
+    answerKey: 'key',
+    rationale: 'r',
+    unverified: false
+  })),
+  total: 18,
+  band: 'another',
+  flags: [{ id: 'f1', flag: 'churn', status: 'missed', where: '' }],
+  keep: 'k',
+  fix: 'f',
+  insight: { calledOut: [], missed: [] },
+  summary: 's',
+  evidenceStats: { proposed: 6, verified: 6, dropped: 0 },
+  checksSummary: {
+    numbersCorrect: 0,
+    numbersWrong: 0,
+    numbersUnverifiable: 0,
+    brevity: brevity0,
+    avgAnswerMs: null,
+    ledWithCall: false,
+    flagsFound: 0,
+    flagsHinted: 0,
+    flagsTotal: 1
+  },
+  graderModel: 'fake',
+  promptVersion: 'v0',
+  scoredAt: 99
+}
+const legacyScorecard = {
   rubric: Array.from({ length: 6 }, (_, i) => ({
     dimension: `d${i}`,
     score: 3,
@@ -34,6 +69,69 @@ const scorecard = {
   graderModel: 'fake',
   promptVersion: 'v0'
 }
+
+describe('SessionFileSchema legacy scorecard upgrade', () => {
+  const completed = (
+    sc: unknown,
+    extra: Record<string, unknown> = {}
+  ): Record<string, unknown> => ({
+    ...minimal(),
+    status: 'completed',
+    endedAt: 77,
+    scorecard: sc,
+    ...extra
+  })
+  it('given a pre-Phase-8 scorecard when parsed then it is upgraded to v2, not rejected', () => {
+    const sc = SessionFileSchema.parse(completed(legacyScorecard)).scorecard!
+    expect(sc.rubric.map((r) => r.id)).toEqual(DIMS)
+    expect(sc.rubric[0]).toEqual({
+      id: 'clear_call',
+      dimension: 'd0',
+      score: 3,
+      evidence: [],
+      answerKey: 'key',
+      rationale: '',
+      unverified: true
+    })
+    expect(sc.band).toBe('another')
+    expect(sc.flags).toEqual([{ id: 'f1', flag: 'churn', status: 'missed', where: '' }])
+    expect([sc.keep, sc.fix, sc.summary]).toEqual(['', '', ''])
+    expect(sc.insight).toEqual({ calledOut: [], missed: [] })
+    expect(sc.evidenceStats).toEqual({ proposed: 0, verified: 0, dropped: 0 })
+    expect(sc.checksSummary).toEqual({
+      numbersCorrect: 0,
+      numbersWrong: 0,
+      numbersUnverifiable: 0,
+      brevity: brevity0,
+      avgAnswerMs: null,
+      ledWithCall: false,
+      flagsFound: 0,
+      flagsHinted: 0,
+      flagsTotal: 0
+    })
+    expect([sc.graderModel, sc.promptVersion, sc.scoredAt]).toEqual(['fake', 'v0', 77])
+  })
+  it.each([
+    [27, 'ready'],
+    [22, 'close'],
+    [18, 'another']
+  ])('given a legacy total of %i when parsed then band is %s', (total, band) => {
+    const sc = SessionFileSchema.parse(completed({ ...legacyScorecard, total })).scorecard!
+    expect(sc.band).toBe(band)
+  })
+  it('given a legacy scorecard and no endedAt when parsed then scoredAt is startedAt', () => {
+    const f = completed(legacyScorecard)
+    delete f.endedAt
+    expect(SessionFileSchema.parse(f).scorecard!.scoredAt).toBe(1)
+  })
+  it('given a v2 scorecard when parsed then it passes through unchanged', () => {
+    expect(SessionFileSchema.parse(completed(scorecard)).scorecard).toEqual(scorecard)
+  })
+  it('given a garbage scorecard when parsed then it throws', () => {
+    expect(() => SessionFileSchema.parse(completed({ rubric: 'nope', band: 'average' }))).toThrow()
+    expect(() => SessionFileSchema.parse(completed(42))).toThrow()
+  })
+})
 
 describe('SessionFileSchema', () => {
   it('given a minimal active session when parsed then it passes', () => {

@@ -10,8 +10,11 @@ import type {
   SpeakCancel,
   SpeakEvent,
   SttStatus,
-  ViewState
+  ViewState,
+  TrendsView,
+  SessionSummary
 } from './ipc'
+import { DIMENSION_IDS } from './ipc'
 
 export const KeyStatusSchema = z
   .object({ hasKey: z.boolean(), source: z.enum(['stored', 'env', 'dotenv', 'none']) })
@@ -60,12 +63,23 @@ export const SectionViewSchema = z
   .object({ id: z.string(), label: z.string(), index: z.number().int(), total: z.number().int() })
   .strict()
 
+const DimensionIdEnum = z.enum(DIMENSION_IDS)
+const BandEnum = z.enum(['ready', 'close', 'another'])
+const BrevityBandEnum = z.enum(['short', 'brief', 'ideal', 'long', 'flagged'])
+const count = z.number().int().nonnegative()
+const BrevityCountsSchema = z
+  .object({ short: count, brief: count, ideal: count, long: count, flagged: count })
+  .strict()
+
 export const RubricRowSchema = z
   .object({
+    id: DimensionIdEnum,
     dimension: z.string(),
     score: z.number().int().min(1).max(5),
-    evidence: z.string(),
-    answerKey: z.string()
+    evidence: z.array(z.object({ quote: z.string(), turnId: z.string() }).strict()).max(3),
+    answerKey: z.string(),
+    rationale: z.string(),
+    unverified: z.boolean()
   })
   .strict()
 
@@ -73,31 +87,58 @@ export const ScorecardSchema = z
   .object({
     rubric: z.array(RubricRowSchema),
     total: z.number().int().min(0).max(30),
-    band: z.enum(['strong', 'average', 'weak']),
+    band: BandEnum,
     flags: z.array(
       z
-        .object({ id: z.string(), flag: z.string(), status: z.enum(['found', 'hinted', 'missed']) })
+        .object({
+          id: z.string(),
+          flag: z.string(),
+          status: z.enum(['found', 'hinted', 'missed']),
+          where: z.string()
+        })
         .strict()
     ),
+    keep: z.string(),
+    fix: z.string(),
+    insight: z.object({ calledOut: z.array(z.string()), missed: z.array(z.string()) }).strict(),
+    summary: z.string(),
+    evidenceStats: z.object({ proposed: count, verified: count, dropped: count }).strict(),
+    checksSummary: z
+      .object({
+        numbersCorrect: count,
+        numbersWrong: count,
+        numbersUnverifiable: count,
+        brevity: BrevityCountsSchema,
+        avgAnswerMs: z.number().nonnegative().nullable(),
+        ledWithCall: z.boolean(),
+        flagsFound: count,
+        flagsHinted: count,
+        flagsTotal: count
+      })
+      .strict(),
     graderModel: z.string(),
-    promptVersion: z.string()
+    promptVersion: z.string(),
+    scoredAt: z.number()
   })
   .strict()
 
 export const ChecksSchema = z
   .object({
     brevity: z.array(
-      z
-        .object({
-          turnId: z.string(),
-          ms: z.number(),
-          band: z.enum(['short', 'brief', 'ideal', 'long', 'flagged'])
-        })
-        .strict()
+      z.object({ turnId: z.string(), ms: z.number(), band: BrevityBandEnum }).strict()
     ),
     ledWithCall: z.boolean(),
     omitted: z.array(z.string()),
-    numbers: z.array(z.object({ said: z.string(), expected: z.string(), ok: z.boolean() }).strict())
+    numbers: z.array(
+      z
+        .object({
+          claim: z.string(),
+          matched: z.string().nullable(),
+          expected: z.string().nullable(),
+          correct: z.union([z.boolean(), z.literal('unverifiable')])
+        })
+        .strict()
+    )
   })
   .strict()
 
@@ -107,7 +148,76 @@ export const RevealSchema = z
     checks: ChecksSchema,
     idealAnswer: z.string(),
     opening: z.string(),
-    keyNumbers: z.array(z.object({ label: z.string(), text: z.string() }).strict())
+    keyNumbers: z.array(z.object({ label: z.string(), text: z.string() }).strict()),
+    intendedRead: z.string(),
+    backSolve: z.array(z.string()),
+    transcript: z.array(
+      z
+        .object({
+          id: z.string(),
+          speaker: z.enum(['interviewer', 'candidate']),
+          text: z.string(),
+          offsetMs: z.number(),
+          ms: z.number().nullable(),
+          section: z.string().nullable()
+        })
+        .strict()
+    )
+  })
+  .strict()
+
+const ratio = z.number().min(0).max(1).nullable()
+export const SessionSummarySchema = z
+  .object({
+    sessionId: z.string(),
+    caseId: z.string(),
+    at: z.number(),
+    total: z.number().int().min(0).max(30),
+    band: BandEnum,
+    dims: z
+      .object({
+        clear_call: z.number(),
+        lead_edge_8: z.number(),
+        retention: z.number(),
+        valuation: z.number(),
+        back_solve: z.number(),
+        quality_poise: z.number()
+      })
+      .strict(),
+    flagFoundRate: ratio,
+    avgAnswerMs: z.number().nonnegative().nullable(),
+    numberAccuracy: ratio,
+    brevity: BrevityCountsSchema,
+    fix: z.string()
+  })
+  .strict()
+
+export const TrendsInsightsSchema = z
+  .object({
+    recurringWeaknesses: z.array(z.string()),
+    progress: z.array(
+      z
+        .object({
+          id: DimensionIdEnum,
+          direction: z.enum(['up', 'flat', 'down']),
+          note: z.string()
+        })
+        .strict()
+    ),
+    carriedForwardFix: z
+      .object({ fix: z.string(), improved: z.enum(['yes', 'no', 'unclear']), note: z.string() })
+      .strict()
+      .nullable(),
+    nextCase: z.object({ caseId: z.string(), why: z.string() }).strict().nullable(),
+    readiness: z.string()
+  })
+  .strict()
+
+export const TrendsViewSchema = z
+  .object({
+    status: z.enum(['insufficient', 'ready', 'failed']),
+    summaries: z.array(SessionSummarySchema),
+    insights: TrendsInsightsSchema.nullable()
   })
   .strict()
 
@@ -128,7 +238,8 @@ export const ViewStateSchema = z
     reveal: RevealSchema.nullable(),
     deckPage: z.number().int().min(1),
     reviewWarned: z.boolean(),
-    transcribing: z.boolean().optional()
+    transcribing: z.boolean().optional(),
+    scoringFailed: z.boolean().optional()
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -175,7 +286,8 @@ export const IntentSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }).strict(),
   z.object({ type: z.literal('skipWarmup') }).strict(),
   z.object({ type: z.literal('end') }).strict(),
-  z.object({ type: z.literal('deckPage'), page: z.number().int().min(1).max(500) }).strict()
+  z.object({ type: z.literal('deckPage'), page: z.number().int().min(1).max(500) }).strict(),
+  z.object({ type: z.literal('retryScore') }).strict()
 ])
 
 export const StartArgsSchema = z.tuple([
@@ -223,7 +335,15 @@ const _sx: SpeakCancel = {} as z.infer<typeof SpeakCancelSchema>
 const _sx2: z.infer<typeof SpeakCancelSchema> = {} as SpeakCancel
 const _st: SttStatus = {} as z.infer<typeof SttStatusSchema>
 const _st2: z.infer<typeof SttStatusSchema> = {} as SttStatus
+const _tv: TrendsView = {} as z.infer<typeof TrendsViewSchema>
+const _tv2: z.infer<typeof TrendsViewSchema> = {} as TrendsView
+const _ss: SessionSummary = {} as z.infer<typeof SessionSummarySchema>
+const _ss2: z.infer<typeof SessionSummarySchema> = {} as SessionSummary
 void [
+  _tv,
+  _tv2,
+  _ss,
+  _ss2,
   _st,
   _st2,
   _sx,

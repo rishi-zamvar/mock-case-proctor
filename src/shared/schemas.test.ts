@@ -11,7 +11,11 @@ import {
   IdArgsSchema,
   AckArgsSchema,
   SpeakEventSchema,
-  SpeakCancelSchema
+  SpeakCancelSchema,
+  ScorecardSchema,
+  ChecksSchema,
+  RevealSchema,
+  TrendsViewSchema
 } from './schemas'
 
 describe('KeyStatusSchema', () => {
@@ -115,30 +119,144 @@ const baseView = {
   deckPage: 1,
   reviewWarned: false
 }
-const reveal = {
-  scorecard: {
-    rubric: Array.from({ length: 6 }, (_, i) => ({
-      dimension: `d${i}`,
-      score: 3,
-      evidence: 'quote',
-      answerKey: 'key'
-    })),
-    total: 18,
-    band: 'average',
-    flags: [{ id: 'f1', flag: 'churn', status: 'found' }],
-    graderModel: 'fake',
-    promptVersion: 'v0'
+const DIMS = ['clear_call', 'lead_edge_8', 'retention', 'valuation', 'back_solve', 'quality_poise']
+const brevity0 = { short: 0, brief: 0, ideal: 0, long: 0, flagged: 0 }
+const scorecardV2 = {
+  rubric: DIMS.map((id) => ({
+    id,
+    dimension: id,
+    score: 3,
+    evidence: [{ quote: 'we invest at a price', turnId: 't1' }],
+    answerKey: 'key',
+    rationale: 'ok',
+    unverified: false
+  })),
+  total: 18,
+  band: 'another',
+  flags: [{ id: 'f1', flag: 'churn', status: 'found', where: 'S12, A3' }],
+  keep: 'keep',
+  fix: 'fix',
+  insight: { calledOut: ['a'], missed: ['b'] },
+  summary: 'sum',
+  evidenceStats: { proposed: 6, verified: 6, dropped: 0 },
+  checksSummary: {
+    numbersCorrect: 1,
+    numbersWrong: 0,
+    numbersUnverifiable: 0,
+    brevity: { ...brevity0, ideal: 1 },
+    avgAnswerMs: 1200,
+    ledWithCall: true,
+    flagsFound: 1,
+    flagsHinted: 0,
+    flagsTotal: 1
   },
+  graderModel: 'fake',
+  promptVersion: 'v0',
+  scoredAt: 5
+}
+const reveal = {
+  scorecard: scorecardV2,
   checks: {
     brevity: [{ turnId: 't1', ms: 1200, band: 'ideal' }],
     ledWithCall: true,
     omitted: [],
-    numbers: [{ said: '48%', expected: '48%', ok: true }]
+    numbers: [{ claim: '48%', matched: '48%', expected: '48%', correct: true }]
   },
   idealAnswer: 'ideal',
   opening: 'opening',
-  keyNumbers: [{ label: 'ARR', text: '$184M' }]
+  keyNumbers: [{ label: 'ARR', text: '$184M' }],
+  intendedRead: 'read',
+  backSolve: ['Post-money: $34M'],
+  transcript: [{ id: 't1', speaker: 'candidate', text: 'x', offsetMs: 0, ms: 1200, section: null }]
 }
+
+describe('ScorecardSchema', () => {
+  it('given a full v2 scorecard when parsed then it passes', () => {
+    expect(ScorecardSchema.parse(scorecardV2)).toEqual(scorecardV2)
+  })
+  type Sc = typeof scorecardV2 & Record<string, unknown>
+  it.each<[string, (s: Sc) => void]>([
+    ['score 0', (s) => (s.rubric[0].score = 0)],
+    ['score 6', (s) => (s.rubric[0].score = 6)],
+    ['unknown dimension id', (s) => (s.rubric[0].id = 'charisma')],
+    ["band 'strong'", (s) => (s.band = 'strong')],
+    [
+      'four evidence quotes',
+      (s) => (s.rubric[0].evidence = Array(4).fill({ quote: 'q', turnId: 't1' }))
+    ],
+    ['missing scoredAt', (s) => delete (s as Record<string, unknown>).scoredAt],
+    ['extra key', (s) => (s.extra = 1)]
+  ])('given %s when parsed then it throws', (_n, mut) => {
+    const bad = structuredClone(scorecardV2) as Sc
+    mut(bad)
+    expect(() => ScorecardSchema.parse(bad)).toThrow()
+  })
+})
+
+describe('ChecksSchema', () => {
+  const base = { brevity: [], ledWithCall: false, omitted: [] }
+  it.each([true, false, 'unverifiable'])(
+    'given correct %j with nulls when parsed then it passes',
+    (correct) => {
+      const numbers = [{ claim: '12x', matched: null, expected: null, correct }]
+      expect(() => ChecksSchema.parse({ ...base, numbers })).not.toThrow()
+    }
+  )
+  it("given correct 'maybe' when parsed then it throws", () => {
+    const numbers = [{ claim: '12x', matched: null, expected: null, correct: 'maybe' }]
+    expect(() => ChecksSchema.parse({ ...base, numbers })).toThrow()
+  })
+})
+
+describe('RevealSchema', () => {
+  it.each(['intendedRead', 'backSolve', 'transcript'])(
+    'given a reveal missing %s when parsed then it throws',
+    (k) => {
+      const r: Record<string, unknown> = { ...reveal }
+      delete r[k]
+      expect(() => RevealSchema.parse(r)).toThrow()
+    }
+  )
+})
+
+describe('TrendsViewSchema', () => {
+  it('given insufficient with no summaries when parsed then it passes', () => {
+    expect(() =>
+      TrendsViewSchema.parse({ status: 'insufficient', summaries: [], insights: null })
+    ).not.toThrow()
+  })
+  const summary = {
+    sessionId: 's1',
+    caseId: '99',
+    at: 1,
+    total: 18,
+    band: 'another',
+    dims: Object.fromEntries(DIMS.map((d) => [d, 3])),
+    flagFoundRate: null,
+    avgAnswerMs: null,
+    numberAccuracy: null,
+    brevity: brevity0,
+    fix: 'fix'
+  }
+  const insights = {
+    recurringWeaknesses: ['x'],
+    progress: [{ id: 'retention', direction: 'up', note: 'n' }],
+    carriedForwardFix: { fix: 'f', improved: 'unclear', note: 'n' },
+    nextCase: { caseId: '03', why: 'w' },
+    readiness: 'r'
+  }
+  it('given ready with a summary and insights when parsed then it passes', () => {
+    expect(() =>
+      TrendsViewSchema.parse({ status: 'ready', summaries: [summary], insights })
+    ).not.toThrow()
+  })
+  it("given direction 'sideways' when parsed then it throws", () => {
+    const bad = { ...insights, progress: [{ id: 'retention', direction: 'sideways', note: 'n' }] }
+    expect(() =>
+      TrendsViewSchema.parse({ status: 'ready', summaries: [summary], insights: bad })
+    ).toThrow()
+  })
+})
 
 describe('ViewStateSchema', () => {
   it('given a pre-review view when parsed then it passes', () => {
@@ -169,6 +287,9 @@ describe('ViewStateSchema', () => {
       expect(() => ViewStateSchema.parse(v)).toThrow()
     }
   )
+  it('given scoringFailed true when parsed then it passes', () => {
+    expect(() => ViewStateSchema.parse({ ...baseView, scoringFailed: true })).not.toThrow()
+  })
   it('given deckPage 0 or 2.5 when parsed then it throws', () => {
     expect(() => ViewStateSchema.parse({ ...baseView, deckPage: 0 })).toThrow()
     expect(() => ViewStateSchema.parse({ ...baseView, deckPage: 2.5 })).toThrow()
@@ -183,6 +304,9 @@ describe('IntentSchema', () => {
   it('given a deckPage intent for page 3 when parsed then it passes', () => {
     expect(IntentSchema.parse({ type: 'deckPage', page: 3 })).toEqual({ type: 'deckPage', page: 3 })
   })
+  it('given retryScore when parsed then it passes', () => {
+    expect(IntentSchema.parse({ type: 'retryScore' })).toEqual({ type: 'retryScore' })
+  })
   it('given an answer with ms when parsed then it passes', () => {
     expect(() => IntentSchema.parse({ type: 'answer', ms: 1200 })).not.toThrow()
   })
@@ -195,7 +319,8 @@ describe('IntentSchema', () => {
     ['deckPage 0', { type: 'deckPage', page: 0 }],
     ['deckPage 501', { type: 'deckPage', page: 501 }],
     ['deckPage 2.5', { type: 'deckPage', page: 2.5 }],
-    ['deckPage extra key', { type: 'deckPage', page: 3, extra: 1 }]
+    ['deckPage extra key', { type: 'deckPage', page: 3, extra: 1 }],
+    ['retryScore extra key', { type: 'retryScore', x: 1 }]
   ])('given %s when parsed then it throws', (_n, bad) => {
     expect(() => IntentSchema.parse(bad)).toThrow()
   })

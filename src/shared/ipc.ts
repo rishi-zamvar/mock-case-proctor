@@ -16,7 +16,8 @@ export const CH = {
   e2eSay: 'e2e:say',
   sttChunk: 'stt:chunk',
   sttStatus: 'stt:status',
-  speakStarted: 'speak:started'
+  speakStarted: 'speak:started',
+  trendsGet: 'trends:get'
 } as const
 export type KeySource = 'stored' | 'env' | 'dotenv' | 'none'
 export type KeyStatus = { hasKey: boolean; source: KeySource }
@@ -46,6 +47,7 @@ export interface Api {
     ack(turnId: string, seq: number, spoken?: boolean): Promise<void>
     started?(turnId: string, seq: number): Promise<void>
   }
+  trends?: { get(): Promise<TrendsView> } // optional: old renderer test mocks omit it
   onView(cb: (v: ViewState) => void): () => void
   onSpeak(cb: (s: SpeakEvent) => void): () => void
   onSpeakCancel(cb: (c: SpeakCancel) => void): () => void
@@ -79,23 +81,82 @@ export type ViewPhase =
 export type Speaker = 'interviewer' | 'candidate'
 export type TranscriptLine = { id: string; speaker: Speaker; text: string }
 export type SectionView = { id: string; label: string; index: number; total: number }
-export type RubricRow = { dimension: string; score: number; evidence: string; answerKey: string }
-export type FlagStatus = 'found' | 'hinted' | 'missed'
-export type FlagRowView = { id: string; flag: string; status: FlagStatus }
+export const DIMENSION_IDS = [
+  'clear_call',
+  'lead_edge_8',
+  'retention',
+  'valuation',
+  'back_solve',
+  'quality_poise'
+] as const
+export type DimensionId = (typeof DIMENSION_IDS)[number]
+export const DIMENSION_LABELS: Record<DimensionId, string> = {
+  clear_call: 'Clear call',
+  lead_edge_8: 'Lead Edge 8',
+  retention: 'Retention insight',
+  valuation: 'Valuation and comps',
+  back_solve: 'Return back-solve',
+  quality_poise: 'Business quality and poise'
+}
+export type Band = 'ready' | 'close' | 'another' // 26-30 / 20-25 / <20
+export type EvidenceQuote = { quote: string; turnId: string }
+export type RubricRow = {
+  id: DimensionId
+  dimension: string
+  score: number // 1-5
+  evidence: EvidenceQuote[] // 0-3, verified only
+  answerKey: string
+  rationale: string
+  unverified: boolean
+}
+export type FlagStatus = 'found' | 'hinted' | 'missed' // 'hinted' = found after a hint
+export type FlagRowView = { id: string; flag: string; status: FlagStatus; where: string } // where: deck slide refs, e.g. "S12, A3"
+export type BrevityBand = 'short' | 'brief' | 'ideal' | 'long' | 'flagged'
+export type ChecksSummary = {
+  numbersCorrect: number
+  numbersWrong: number
+  numbersUnverifiable: number
+  brevity: Record<BrevityBand, number>
+  avgAnswerMs: number | null
+  ledWithCall: boolean
+  flagsFound: number
+  flagsHinted: number
+  flagsTotal: number
+}
 export type Scorecard = {
   rubric: RubricRow[]
   total: number
-  band: 'strong' | 'average' | 'weak'
+  band: Band
   flags: FlagRowView[]
+  keep: string
+  fix: string
+  insight: { calledOut: string[]; missed: string[] }
+  summary: string
+  evidenceStats: { proposed: number; verified: number; dropped: number }
+  checksSummary: ChecksSummary
   graderModel: string
   promptVersion: string
+  scoredAt: number
 }
-export type BrevityBand = 'short' | 'brief' | 'ideal' | 'long' | 'flagged'
+export type NumberCheck = {
+  claim: string
+  matched: string | null
+  expected: string | null
+  correct: boolean | 'unverifiable'
+}
 export type Checks = {
   brevity: { turnId: string; ms: number; band: BrevityBand }[]
   ledWithCall: boolean
   omitted: string[]
-  numbers: { said: string; expected: string; ok: boolean }[]
+  numbers: NumberCheck[]
+}
+export type RevealLine = {
+  id: string
+  speaker: Speaker
+  text: string
+  offsetMs: number
+  ms: number | null
+  section: string | null
 }
 export type Reveal = {
   scorecard: Scorecard
@@ -103,6 +164,34 @@ export type Reveal = {
   idealAnswer: string
   opening: string
   keyNumbers: { label: string; text: string }[]
+  intendedRead: string
+  backSolve: string[]
+  transcript: RevealLine[]
+}
+export type SessionSummary = {
+  sessionId: string
+  caseId: string
+  at: number // scoredAt
+  total: number
+  band: Band
+  dims: Record<DimensionId, number>
+  flagFoundRate: number | null
+  avgAnswerMs: number | null
+  numberAccuracy: number | null
+  brevity: Record<BrevityBand, number>
+  fix: string
+}
+export type TrendsInsights = {
+  recurringWeaknesses: string[]
+  progress: { id: DimensionId; direction: 'up' | 'flat' | 'down'; note: string }[]
+  carriedForwardFix: { fix: string; improved: 'yes' | 'no' | 'unclear'; note: string } | null
+  nextCase: { caseId: string; why: string } | null
+  readiness: string
+}
+export type TrendsView = {
+  status: 'insufficient' | 'ready' | 'failed'
+  summaries: SessionSummary[] // oldest first
+  insights: TrendsInsights | null
 }
 // Built ONLY from candidate-safe fields (BAR-01): before reviewMode nothing here can hold brief content.
 export type ViewState = {
@@ -121,6 +210,7 @@ export type ViewState = {
   deckPage: number // 1-based PDF page of the interviewee deck; 1 when unset
   reviewWarned: boolean
   transcribing?: boolean // optional for test literals; toViewState always sets it
+  scoringFailed?: boolean // optional in the type; toViewState always sets it
 }
 export type LibraryEntry = { card: CaseCard; completed: { at: number; score: number } | null }
 export type ResumableSession = {
@@ -142,6 +232,7 @@ export type Intent =
   | { type: 'skipWarmup' }
   | { type: 'end' }
   | { type: 'deckPage'; page: number }
+  | { type: 'retryScore' }
 export type StartOptions = { warmup: boolean }
 export type SpeakEvent = { turnId: string; seq: number; text: string }
 export type TtsMode = 'headtts' | 'fake'

@@ -51,6 +51,8 @@ export type ScoreInput = {
   controlLog: { at: number; turnId: string; control: InterviewControl }[]
   endedEarly: boolean
   omitted: SectionId[]
+  openingPlan?: OpeningPlan
+  at: number // app-clock ms; becomes scoredAt
 }
 export interface LlmPort {
   warmupTurn(req: { history: HistoryTurn[] }, signal: AbortSignal): AsyncIterable<LlmChunk>
