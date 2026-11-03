@@ -38,9 +38,12 @@ describe('parseNumbers', () => {
     expect(got.map((g) => ({ ...g, value: +g.value.toPrecision(12) }))).toEqual(expected)
   })
 
-  it.each(['', '$', 'x%', '...', '$,', 'FY', '1e999', '((()))', '\u0000'])('does not throw on %j', (s) => {
-    expect(() => parseNumbers(s)).not.toThrow()
-  })
+  it.each(['', '$', 'x%', '...', '$,', 'FY', '1e999', '((()))', '\u0000'])(
+    'does not throw on %j',
+    (s) => {
+      expect(() => parseNumbers(s)).not.toThrow()
+    }
+  )
 })
 
 describe('matches', () => {
