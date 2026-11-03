@@ -1,8 +1,8 @@
 # Phase 1: Scaffold, Harness & Key Onboarding - Research
 
 **Researched:** 2026-11-03
-**Domain:** An Electron 45 security baseline, electron-builder ad-hoc packaging, a Vitest/Playwright harness, Anthropic SDK test seams, and macOS safeStorage
-**Confidence:** HIGH. Most claims were verified by reading the installed or packed package source. The few MEDIUM or LOW items are flagged inline.
+**Domain:** Building a secure Electron 45 shell (electron-vite 6), packaging it as an ad-hoc-signed arm64 app with electron-builder 26, safeStorage key storage, the Anthropic SDK 1.4.0 probe, and a Vitest 5 + Playwright `_electron` harness
+**Confidence:** HIGH. Almost every claim below was run on this Mac today: a scaffold with the pinned stack, a packaged ad-hoc app, Playwright launching both the built and the packaged app, safeStorage, `app://` with CSP, and a live probe. Unverified items are flagged.
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -37,35 +37,35 @@
   - A Vitest test parses both plists and the builder config and asserts all of this.
 
 **API key onboarding**
-- **KeyStore service (main only).** Precedence:
+- KeyStore service (main only). Precedence:
   1. A key already stored in `safeStorage` (encrypted file in userData).
   2. Otherwise `process.env.ANTHROPIC_API_KEY`.
   3. Otherwise `.env` in the project root in dev. This is the keymgr symlink, read with a minimal parser: no dotenv dependency, just a few lines.
 
   If the key comes from the env or `.env`, it is probed, auto-saved and Settings is skipped. Register the project in keymgr: add `[projects.mock-case-proctor]` with `needs_shared = ["ANTHROPIC_API_KEY"]` to `~/.config/keys/projects.toml`, then `keymgr export mock-case-proctor`. That creates the `.env` symlink. Never print the key.
-- **Probe.** A minimal live call: `messages.create` with `max_tokens: 1`, on the cheapest current model (look up IDs via the claude-api skill). Statuses:
+- Probe. A minimal live call: `messages.create` with `max_tokens: 1`, on the cheapest current model (look up IDs via the claude-api skill). Statuses:
   - 401 → invalid;
   - network error → "couldn't verify". The user may save anyway.
   - In tests, the probe goes through the replay server.
-- **Renderer API.** The renderer sees only `{ hasKey: boolean, source: 'stored'|'env'|'dotenv'|'none', last4?: never }`. It never sees the key or any part of it. Settings shows a masked "Key saved ✓".
-- **Settings screen:**
+- Renderer API. The renderer sees only `{ hasKey: boolean, source: 'stored'|'env'|'dotenv'|'none', last4?: never }`. It never sees the key or any part of it. Settings shows a masked "Key saved ✓".
+- Settings screen:
   - a paste field (password type), plus Save & verify, Replace and Clear buttons;
   - status text and error states.
-- **Routing.** On first run with no key, the app routes to Settings. Otherwise it routes to a placeholder Home screen ("Case library coming in Phase 3").
-- **Logging.** One main-process logger with a redaction function that masks `sk-ant-[A-Za-z0-9_-]+`. It is unit-tested.
+- Routing. On first run with no key, the app routes to Settings. Otherwise it routes to a placeholder Home screen ("Case library coming in Phase 3").
+- Logging. One main-process logger with a redaction function that masks `sk-ant-[A-Za-z0-9_-]+`. It is unit-tested.
 
 **Test harness**
-- **Vitest:** `test.projects` with `main` (node; `src/main`, `src/shared`) and `renderer` (jsdom; `src/renderer`). Coverage via v8.
-- **Playwright:**
+- Vitest: `test.projects` with `main` (node; `src/main`, `src/shared`) and `renderer` (jsdom; `src/renderer`). Coverage via v8.
+- Playwright:
   - Launch `out/main/index.js` via `_electron.launch` with `env: { E2E: '1', ANTHROPIC_BASE_URL, USER_DATA_DIR: tmp }`.
   - When E2E=1, main sets a userData override (isolated profile per test) and these Chromium switches before ready: `use-fake-ui-for-media-stream`, `use-fake-device-for-media-stream`, `use-file-for-fake-audio-capture=<wav>`, and `disable-features=AudioServiceSandbox`.
   - `workers: 1`.
-- **Fake audio check.** The E2E harness test proves non-silent audio. It generates a WAV with `say` and `afconvert` in globalSetup. The renderer test page reads the peak via the AudioContext analyser through an E2E-only `window.__e2e` hook, and the test asserts peak > 0.1. The hook is exposed only when E2E=1.
-- **Replay server.** About 60 lines of `node:http` serving recorded SSE/JSON fixtures keyed by scenario plus request index. `RECORD=1` proxies to the real API and tees the traffic to fixtures. The API key is stripped from saved request JSON, and a test asserts it.
-- **Packaged smoke.** A Playwright test with `executablePath` pointing at `release/mac-arm64/*.app` launches and sees the first window. It is tagged `@packaged`; run it at the phase gate.
-- **Secret scan.** A Vitest test runs `git ls-files`, greps tracked contents for `sk-ant-`, and fails on any match.
+- Fake audio check. The E2E harness test proves non-silent audio. It generates a WAV with `say` and `afconvert` in globalSetup. The renderer test page reads the peak via the AudioContext analyser through an E2E-only `window.__e2e` hook, and the test asserts peak > 0.1. The hook is exposed only when E2E=1.
+- Replay server. About 60 lines of `node:http` serving recorded SSE/JSON fixtures keyed by scenario plus request index. `RECORD=1` proxies to the real API and tees the traffic to fixtures. The API key is stripped from saved request JSON, and a test asserts it.
+- Packaged smoke. A Playwright test with `executablePath` pointing at `release/mac-arm64/*.app` launches and sees the first window. It is tagged `@packaged`; run it at the phase gate.
+- Secret scan. A Vitest test runs `git ls-files`, greps tracked contents for `sk-ant-`, and fails on any match.
 
-**Visual direction (app-wide)**
+**Visual direction (app-wide, set here; later phases extend it)**
 - A calm, professional video-call aesthetic, dark by default. Think Zoom or Linear, not a game.
 - Tokens: background #0B0F14, surface #121821, elevated #1A2230, text #E6EDF3, muted #8B98A5. The accent is teal #19A7A0. Danger #E5484D, warning #F5A524.
 - Type: Inter (bundled locally, no Google Fonts fetch), 14 px base, tabular numbers for timers.
@@ -84,160 +84,433 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| FND-01 | Dev launch plus a packaged, ad-hoc-signed arm64 `.app` | §Scaffold procedure, §electron-builder config (verified that `identity: "-"` takes an ad-hoc branch in app-builder-lib 26.18.0, and that the output dir is `release/mac-arm64/`) |
-| FND-02 | Private repo, gitignore, secret-scan test | `.gitignore` already covers `.env`, models and sessions. `origin` remote already set. §Secret scan (regex caveat) |
-| FND-03 | Vitest projects, Playwright on the built app with fake media, replay server with RECORD | §Vitest 5 projects (verified in the d.ts), §Playwright launch (verified that `env` replaces `process.env`), §Replay server (verified SDK baseURL path concatenation) |
-| FND-04 | Entitlements in both plists, usage strings, test | §Entitlements, `plutil -convert json`-based test, post-package `codesign -d --entitlements` |
-| FND-05 | Sandbox, context isolation, CSP, no Node, no general file IPC, `app://` | §app:// protocol, §CSP, §Preload (sandbox forbids externalized deps, verified in electron-vite) |
-| KEY-01 | Settings paste, live probe, safeStorage encrypt | §KeyStore, §Probe (`claude-haiku-5-5`), §safeStorage (use the async API; sync is deprecated in 45 and removed in 46) |
-| KEY-02 | Auto-fill from env or `.env` (keymgr) | §keymgr registration (note: `export` does NOT create the symlink), §dotenv gating under E2E |
-| KEY-03 | Key never in renderer, logs, fixtures or git | §Key-leak canary E2E, §Logger, §Replay strips `authorization` (the SDK 1.4.0 sends `Authorization: Bearer`, not `x-api-key`) |
-| KEY-04 | Replace and Clear | §IPC surface (`key:save`, `key:clear`) |
-| QA-01 | TDD | §Validation Architecture: every pure module has a RED test first. Pure core plus a thin electron adapter, because `import 'electron'` under Vitest returns a path string |
+| FND-01 | One command for dev, one for a packaged ad-hoc arm64 `.app` | Scaffold flow (§Scaffold); `electron-builder.json` built and launched today (§Code Examples); `args:['.']` vs `out/main/index.js` finding (Pitfall 4) |
+| FND-02 | Private repo, gitignore, secret-scan test | Repo verified PRIVATE via `gh`; the bare `sk-ant-` scan already fails on 3 tracked planning docs, so use a key-shaped regex (Pitfall 6) |
+| FND-03 | Vitest main/renderer projects, Playwright with fake media, replay server with RECORD | Vitest 5 `test.projects` run today; the fake-media switches merge with Playwright's own `disable-features` (Pitfall 7); replay server design (§Pattern 4) |
+| FND-04 | Camera and mic entitlements in main and inherit plists, plus usage strings, tested | Built and inspected with `codesign -d --entitlements`; `disable-library-validation` is required for ad-hoc (Pitfall 2) |
+| FND-05 | Sandbox, context isolation, CSP, no Node, no general file IPC, `app://` | Prototype verified: no `require`/`process`/`electron` globals, CSP header and violations, `%2f` traversal returns 403; the toolkit preload breaks under sandbox (Pitfall 3) |
+| KEY-01 | Settings: paste, live probe, safeStorage | Live probe of `claude-haiku-5-5` with `max_tokens:1` measured; error classes verified; async safeStorage API (sync one deprecated) |
+| KEY-02 | Auto-fill from env or `.env` (keymgr) | keymgr source read: `export` does **not** create the symlink (Pitfall 9); E2E must not read the real `.env` (Pitfall 8) |
+| KEY-03 | Key never in renderer, logs, fixtures or git | Redaction regex; SDK log redaction verified; replay strips `authorization` (the SDK sends `Authorization: Bearer`, not `x-api-key`) |
+| KEY-04 | Replace and clear | KeyStore API; the replay server records the last bearer in memory so E2E can prove the new key is used |
+| QA-01 | TDD | Pure modules with injected deps; injected `fetch` seam verified for the probe; test-first task ordering |
 </phase_requirements>
 
 ## Project Constraints (from CLAUDE.md)
 
-- macOS Apple Silicon only, Node 22 dev, Electron latest stable (45.2.1).
-- The only paid dependency is the Claude API. The key comes from `~/.config/keys` keymgr. **The API key is never in the renderer or logs.**
-- TDD: every feature gets automated tests AND a live E2E run in the real app.
-- Use the STACK.md pins. No TS 7. No `three@latest` (later phases). No `pdfjs-dist` direct (later phases).
-- Dependencies are injected as plain function parameters (no DI framework).
-- GSD workflow: edits go through `/gsd:execute-phase`.
-- User memory rules that apply here:
-  - Never hardcode credentials. Use env first.
-  - API frugality: fixtures are the default, and live calls only at gates.
-  - Commits end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Platform: macOS Apple Silicon, Node 22 (22.20.0 installed), Electron latest stable (45.2.1).
+- The only paid dependency is the Claude API. The key comes from `~/.config/keys` keymgr. The key never goes in the renderer or logs.
+- TDD is mandatory. Every feature needs automated tests **and** a live E2E run in the real app.
+- Follow the STACK.md pins:
+  - TS `^5.9.3` (never 7), `three@0.186.1` later, and never install `pdfjs-dist` directly.
+  - JSON + zod for persistence, no native modules (N-API only).
+  - Don't flip the `EnableNodeCliInspectArguments` fuse (Playwright needs it).
+- E2E runs against the **built** output, never `electron-vite dev`. Run one packaged-`.app` smoke test per phase gate.
+- API frugality: fixtures are the default, and live calls happen only at phase gates (`@live`).
+- Work goes through GSD commands. Push to `origin` (`rishi-zamvar/mock-case-proctor`, private) after the phase.
+- From the user's global memory:
+  - Never hardcode credentials.
+  - Never force-delete user files; use trash.
+  - Tests come before logic.
 
 ## Summary
 
-This is a greenfield phase on a repo that holds only `.planning/`, `research/`, `CLAUDE.md` and `.gitignore`. The fastest correct path is to scaffold the `react-ts` template **into a scratch directory**, copy it in and modify about ten files. Running the scaffold in place with `--skip` calls `emptyDir(root)`, which deletes `.git` and `.planning`. That was verified in create-electron 1.0.31 `index.js`.
+The pinned stack scaffolds, builds, packages and E2E-launches cleanly on this machine. I reproduced the whole Phase 1 skeleton in the scratchpad:
+- `npm create @quick-start/electron@latest scaf -- --template react-ts --skip`, then electron 45.2.1, vitest 5.1.0 and @playwright/test 1.64.1.
+- A sandboxed window loading `app://bundle/index.html`, with a CSP response header.
+- A Vitest config with two projects, both passing.
+- An ad-hoc-signed arm64 `.app` with camera and mic entitlements in both plists.
+- Playwright launching both `.` and the packaged executable.
+- safeStorage round-tripping across a restart under a mock keychain.
+- A live `claude-haiku-5-5` probe: 578 ms, `stop_reason: max_tokens`, 10 input and 1 output tokens.
 
-The template is insecure by default (`sandbox: false`, generic `electronAPI` exposure, `loadFile`, no `mac.entitlements`, no identity). The security work is mostly deletion:
-- remove `@electron-toolkit/preload`;
-- flip `sandbox` to true;
-- replace `loadFile` with `app://bundle/index.html`;
-- add three entitlement keys and a second plist.
-
-Electron 45 changes two things that matter here:
-- The **sync safeStorage API is deprecated, and removed in 46**, so use `isAsyncEncryptionAvailable` / `encryptStringAsync` / `decryptStringAsync`.
-- `protocol.handle` requests carry `request.initiatorOrigin`.
-
-The Anthropic SDK 1.4.0 has three properties that shape the design:
-- It sends the key as `Authorization: Bearer <key>`, not `x-api-key`. The replay recorder must strip `authorization`.
-- It reads `ANTHROPIC_BASE_URL` by default and concatenates paths, so `http://127.0.0.1:PORT/s/<scenario>` works as a per-launch scenario selector.
-- If no `apiKey` is passed, it silently falls back to env and on-disk profiles. Always pass `apiKey` explicitly.
-
-The keychain risk under E2E is real. Electron's own test suite added `--use-mock-keychain` in September 2026, because unsigned apps launched by tests get keychain prompts that hang the tests. Ad-hoc-signed rebuilds change the code hash, so the keychain re-prompts after every rebuild. Plan for this:
-- `use-mock-keychain` when E2E=1;
-- a `cipher` parameter on KeyStore so unit tests never touch Electron.
+The phase is mostly assembly, and the risk sits in about ten non-obvious traps, each of which this research hit for real. In order of severity:
+1. Running the scaffolder with `--skip` into `.` **wipes the repo, including `.git` and `.planning/`**.
+2. The template preload `require`s `@electron-toolkit/preload`, which **fails under `sandbox: true`**. The template also exposes generic `window.electron.ipcRenderer`, which violates FND-05.
+3. An ad-hoc signature with hardened runtime needs `com.apple.security.cs.disable-library-validation`.
+4. The packaged app under Playwright **wrote a real keychain item** until main explicitly appended `use-mock-keychain` when E2E=1.
+5. A bare `sk-ant-` secret scan fails today, because the planning docs contain the regex text.
+6. `keymgr export` does not create the `.env` symlink.
+7. The real `.env` would leak into E2E unless dotenv loading is gated.
 
 **Primary recommendation:**
-- Build a pure, parameter-injected `KeyStore`, `probeKey`, `redact`, `resolveSafePath` and `parseDotenv`, each unit-tested first.
-- Write thin Electron adapters (`safeStorage` cipher, `protocol.handle`, IPC router) in one composition root.
-- Cover the adapters with one Playwright E2E suite launched on `out/` with a *minimal explicit env*, a replay server and a random canary key.
+1. Scaffold into a temp dir and copy the files in.
+2. Replace the template's main, preload, App and builder config with the hardened versions in §Code Examples.
+3. Build every main-process unit (KeyStore, probe, redaction, `app://` resolver, dotenv parser, replay server) as a pure module with injected dependencies, writing the test first.
+4. Make the E2E fixture strip `ANTHROPIC_*` from the inherited env and always set `E2E=1`, `USER_DATA_DIR`, and a per-test replay server URL.
 
 ## Standard Stack
 
-All versions verified with `npm view` on 2026-11-03.
+All versions were checked with `npm view` on 2026-11-03.
 
 ### Core
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| electron | 45.2.1 | Shell | Latest stable; spike-proven with Playwright. The template pins ^44.7.2, so bump it |
-| electron-vite | 6.0.0 | main/preload/renderer build | Template; `build.externalizeDeps` defaults to true |
-| vite | ^8.3.5 | Bundler | electron-vite 6 peer |
-| @vitejs/plugin-react | ^6.1.2 (template) | React | Injects an **inline** refresh preamble in dev (see the CSP pitfall) |
-| react / react-dom | ^19.3.0 | UI | Template |
-| typescript | ^5.9.3 | Types | Keep the template pin |
-| @anthropic-ai/sdk | 1.4.0 | Probe now, the interviewer later | **Goes in `dependencies`** (main externalizes deps, and electron-builder ships only `dependencies`) |
-| zod | 4.6.7 | IPC input validation in main | **`dependencies`** |
-| electron-builder | 26.18.0 | Package `.app` | Template |
+| electron | 45.2.1 | Shell (Node 24.22.1, Chromium 156) | Locked; the template pins ^44.7.2, so bump it |
+| electron-vite | 6.0.0 | main/preload/renderer build; dev spawns `electron .` | Locked; template default |
+| vite | 8.3.5 | Bundler | Peer of electron-vite 6 |
+| react / react-dom | ^19.3.0 (template) | Renderer | Locked |
+| typescript | ^5.9.3 (template; 5.9.3 is the latest 5.x) | Types | Locked; TS 7 breaks typescript-eslint |
+| @anthropic-ai/sdk | 1.4.0 (2026-11-02) | Probe now, interviewer later (main only) | Locked; `fetch`/`baseURL` seams verified |
+| zod | 4.6.7 | IPC input validation, persisted-file schemas | Locked |
+| electron-builder | 26.18.0 | `.app` packaging (template ^26.15.3, so bump it) | Locked; flat `mac.identity` etc. in 26.18 |
+| @electron-toolkit/utils | ^4.0.0 (template) | `is.dev`, `optimizer` | Keep. It is externalized in main, which is fine |
 
-### Test stack (devDependencies)
-| Library | Version | Purpose |
-|---------|---------|---------|
-| vitest | 5.1.0 | Unit and integration |
-| @vitest/coverage-v8 | 5.1.0 | Coverage |
-| jsdom | 30.1.3 | Renderer project environment |
-| @testing-library/react / @testing-library/dom / @testing-library/user-event | 16.3.3 / ^10 / ^14.6.8 | Settings component tests |
-| @playwright/test | 1.64.1 | `_electron` E2E (no `playwright install` needed) |
-| @fontsource-variable/inter | 5.3.0 | Inter woff2 bundled by Vite into `out/renderer/assets` (no network). A `devDependency` is enough because Vite inlines it at build |
+### Supporting (dev)
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| vitest | 5.1.0 | Unit and integration tests | `test.projects`, verified today |
+| @vitest/coverage-v8 | 5.1.0 | Coverage | Root `coverage` config |
+| jsdom | 30.1.3 | Renderer project environment | Verified today |
+| @testing-library/react | 16.3.3 | Component tests | Verified today |
+| @testing-library/dom | 10.4.2 | Required peer | Install explicitly |
+| @testing-library/user-event | 14.6.8 | Typing and clicking in the Settings tests | Settings component tests |
+| @playwright/test | 1.64.1 | `_electron` E2E | `import { _electron } from '@playwright/test'` works |
+| @fontsource-variable/inter | 5.3.0 | Local Inter woff2, bundled by Vite | Meets "Inter bundled locally"; `font-src 'self'` covers it |
 
-### Remove from the template
-- `@electron-toolkit/preload`. It exposes generic `ipcRenderer`, which breaks a locked decision. It is also an externalized dep, which **cannot be `require`d from a sandboxed preload**.
-- `@electron-toolkit/utils` is optional. `is.dev` is `!app.isPackaged`, which is **true under E2E of `out/`**, so never gate security on it. The lazy choice is to drop it and use `process.env.ELECTRON_RENDERER_URL` to detect dev.
+**Remove from the template:**
+- `@electron-toolkit/preload`: it breaks the sandboxed preload and exposes generic IPC.
+- `electron-builder.yml`: replace it with `electron-builder.json`, so the config test can `JSON.parse` it without adding a YAML dependency.
+- The `build:win` and `build:linux` scripts, the `publish` block, `Versions.tsx`, and the svgs.
 
-**Installation:**
+**No new dependencies for:**
+- plist parsing: use `plutil -convert json -o - <file>`, a macOS system tool.
+- dotenv: about 8 lines of code.
+- The replay server: `node:http`.
+- WAV generation: `say`.
+
+**Installation (after scaffold):**
 ```bash
-npm i -E electron@45.2.1 && npm i -D -E vitest@5.1.0 @vitest/coverage-v8@5.1.0 jsdom@30.1.3 @playwright/test@1.64.1 @testing-library/react@16.3.3 @testing-library/dom @testing-library/user-event @fontsource-variable/inter
-npm i -E @anthropic-ai/sdk@1.4.0 zod@4.6.7
-npm uninstall @electron-toolkit/preload @electron-toolkit/utils
+npm uninstall @electron-toolkit/preload
+npm i @anthropic-ai/sdk@1.4.0 zod@4.6.7            # runtime deps MUST be in "dependencies" (electron-vite externalizes them; builder packages them)
+npm i -D electron@45.2.1 electron-builder@26.18.0 vitest@5.1.0 @vitest/coverage-v8@5.1.0 jsdom@30.1.3 \
+  @testing-library/react@16.3.3 @testing-library/dom@10.4.2 @testing-library/user-event@14.6.8 \
+  @playwright/test@1.64.1 @fontsource-variable/inter@5.3.0
 ```
-Electron must stay in devDependencies; that is template-correct. Note that `npm i -E electron` may move it, so check `package.json` afterwards.
+No `npx playwright install` is needed, because the tests drive the electron binary. Keep the template's `postinstall: install-electron && electron-builder install-app-deps`. Electron 45 no longer downloads its binary on install, so `install-electron` (or the first `electron` run) fetches it.
 
-## Scaffold Procedure (exact)
+### Alternatives Considered
+| Instead of | Could Use | Tradeoff |
+|------------|-----------|----------|
+| `messages.create` probe (locked) | `models.list()` | It's free, but the probe is locked and costs about $0.0000015 per call |
+| Page-level `page.evaluate` peak check | `window.__e2e` hook (locked) | `page.evaluate` needs no app code. If you keep the hook, gate it via `additionalArguments` (§Pattern 5) |
 
-The template output (create-electron 1.0.31, `react-ts` plus `base`):
+## Architecture Patterns
+
+### Recommended Project Structure (template paths preserved)
 ```
-.editorconfig .prettierignore .prettierrc.yaml .vscode/ _gitignore(→.gitignore)
-build/entitlements.mac.plist build/icon.{icns,ico,png}  resources/icon.png
-electron-builder.yml electron.vite.config.ts eslint.config.mjs package.json
-tsconfig.json tsconfig.node.json tsconfig.web.json
-src/main/index.ts  src/preload/index.ts  src/preload/index.d.ts
-src/renderer/index.html  src/renderer/src/{main.tsx,App.tsx,env.d.ts}
-src/renderer/src/assets/{base.css,main.css,electron.svg,wavy-lines.svg}
-src/renderer/src/components/Versions.tsx
+electron-builder.json            # replaces electron-builder.yml
+electron.vite.config.ts          # template; add @shared alias
+vitest.config.mts                # .mts avoids Vite's "ESM in CJS" warning; do NOT add "type":"module"
+playwright.config.ts
+build/entitlements.mac.plist + entitlements.mac.inherit.plist
+src/
+├── shared/ipc.ts                # channel names + payload types + zod schemas (KeyStatus, SaveKeyResult)
+├── main/
+│   ├── index.ts                 # composition root: E2E switches, protocol, permissions, window, IPC wiring
+│   ├── window.ts                # WINDOW_PREFS constant (unit-asserted) + createWindow
+│   ├── app-protocol.ts          # resolveAppUrl(url, roots) pure + CSP constant  (+ .test.ts)
+│   ├── key-store.ts             # precedence, save/clear, injected crypto/fs  (+ .test.ts)
+│   ├── key-probe.ts             # probeKey(key, {fetch?}) → 'valid'|'invalid'|'unverified'  (+ .test.ts)
+│   ├── dotenv.ts                # parseDotenv(text) (+ .test.ts)
+│   ├── log.ts                   # redact() + logger writing userData/logs/main.log  (+ .test.ts)
+│   └── ipc.ts                   # handle(channel, schema, fn): validates input; records outbound in E2E
+├── preload/index.ts             # imports ONLY 'electron' + `import type` from shared
+└── renderer/
+    ├── index.html               # meta CSP (same string as main's header)
+    └── src/ main.tsx App.tsx screens/{Settings,Home}.tsx styles/tokens.css
+tests/
+├── unit/                        # secret-scan, gitignore, entitlements/builder config, csp-parity
+├── support/replay-server.ts     # used by Playwright fixture AND its own vitest test
+├── fixtures/claude/<scenario>/000.json
+└── e2e/ fixtures.ts smoke.spec.ts security.spec.ts key.spec.ts harness.spec.ts packaged.spec.ts
+```
+Note that the template's renderer lives at `src/renderer/src/`, with `index.html` at `src/renderer/`. CONTEXT asks for `src/renderer/styles/tokens.css`. Put it at `src/renderer/src/styles/tokens.css` so it stays inside `tsconfig.web.json`'s include and under the `@renderer` alias, or extend the include. Also add `src/shared/**/*` to the includes in **both** `tsconfig.node.json` and `tsconfig.web.json`.
+
+### Pattern 1: Composition root with the E2E block before ready
+**What:** Every Chromium switch and the userData override run at module top level, before `app.whenReady()`. `protocol.registerSchemesAsPrivileged` also runs at top level.
+**Verified:** `app.setPath('userData')` before ready works, and the merged `disable-features` contained both Playwright's list and `AudioServiceSandbox`.
+
+### Pattern 2: `app://` path-safe serving
+**What:** Map hosts to roots: `app://bundle/*` goes to `out/renderer`, and `app://assets/*` goes to `resources/`. Run `decodeURIComponent`, then `path.resolve`, then require the result to start with `root + sep`. Anything else gets a 403. A missing file makes `net.fetch` **reject**, so catch it and return 404, or the renderer sees an opaque "Failed to fetch". Add the CSP header to every response.
+**Verified:**
+- `app://bundle/..%2fmain.js` reaches the handler and is turned away with 403 only by the guard. The standard scheme normalizes a literal `../` but not `%2f`.
+- Module scripts with `crossorigin` load fine same-origin.
+- Packaged loading from inside `app.asar` works.
+
+### Pattern 3: KeyStore with injected dependencies (pure, Vitest-testable without Electron)
+- `init()`, called after ready and **before** `createWindow`:
+  1. Read the stored blob. If it decrypts, use it with source `stored`.
+  2. Otherwise read `env.ANTHROPIC_API_KEY` (source `env`), or the dotenv file if `dotenvPath` is set (source `dotenv`).
+  3. If a candidate exists, probe it. If the result is `valid`, encrypt and save it.
+  4. If decryption fails (ACL change, keychain deny, corrupt file), treat it as "no stored key" and fall through. Never crash, and never fall back to plaintext.
+- `status()` returns `{hasKey, source}` only.
+- `save(key, {force})`:
+  1. Trim and validate the input with zod (string, 20–300 chars).
+  2. Probe it.
+  3. On `valid`, or on `unverified` with `force`, encrypt and atomically write `userData/anthropic-key.bin` (tmp file + rename, mode 0600).
+  4. Return `{result}`.
+- **Replace** is just `save()`. The old key stays until the new one passes.
+- `clear()` deletes the file and sets status to `none`.
+- `getKey()` is **main-only** and has no IPC exposure.
+- **crypto:** `{ available: () => safeStorage.isAsyncEncryptionAvailable(), encrypt: s => safeStorage.encryptStringAsync(s), decrypt: async b => (await safeStorage.decryptStringAsync(b)).result }`. The sync `encryptString`/`decryptString`/`isEncryptionAvailable` are **deprecated in Electron 45** (verified in `electron.d.ts`). If `available()` is false, don't persist: hold the key in memory and show "Keychain unavailable".
+
+### Pattern 4: Replay server (`tests/support/replay-server.ts`)
+- `startReplay({ dir, scenario, record, upstream })` listens on `127.0.0.1:0` and returns `{ url, requests, lastAuth, close }`.
+- **Fixture format:**
+  - Responses go in `tests/fixtures/claude/<scenario>/<NNN>.json` as `{status, headers, body}`. `body` is the raw string, either JSON or SSE text.
+  - Requests go in `<NNN>.req.json` as `{method, url, headers (minus secrets), body}`.
+- **Replay:** serve fixture `i++` for each request. If it's missing, return **418** with `no fixture <scenario>/<NNN>`. A 4xx isn't retried by the SDK, so the test fails fast and loud.
+- **Record (`RECORD=1`):**
+  1. Forward to `upstream` (default `https://api.anthropic.com`) with the incoming headers, minus `host` and `content-length`.
+  2. Save the response **without** `content-encoding`, `content-length`, `transfer-encoding`, `connection` or `anthropic-organization-id`. Node `fetch` already decompressed the body, so replaying `content-encoding: gzip` would break the client.
+  3. Strip `authorization`, `x-api-key` and `proxy-authorization` from the saved request.
+  4. Before writing, **assert** that neither file matches the key regex.
+- The app needs **zero changes**: the SDK reads `ANTHROPIC_BASE_URL` when the client is constructed. So construct the client per probe call, not as a module singleton at import time.
+- Test RECORD mode deterministically by pointing `upstream` at a second tiny local `node:http` "fake Anthropic". The criterion "RECORD=1 captures a fixture" is then proved for free. An optional `@live` run records `probe-valid` against the real API.
+
+### Pattern 5: E2E launch fixture
+- Launch with `electron.launch({ args: ['.'], cwd: ROOT, env })`, not with `out/main/index.js`. The two resolve to the same built file through `package.json` `main`, but `args:['.']` gives `app.getAppPath()` = repo root and `app.getName()` = productName. A direct file path gives appPath `out/main` and name "Electron" (verified).
+- Build `env` from `process.env` **minus** `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, `ANTHROPIC_PROFILE` and `ANTHROPIC_LOG`. Then add `E2E=1`, `USER_DATA_DIR=<mkdtemp>`, `FAKE_WAV`, `ANTHROPIC_BASE_URL=<replay.url>`, plus per-test extras. Playwright's `env` *replaces* the environment ("Defaults to process.env"), so you must spread it yourself.
+- Use one replay server per test, created in the fixture. With `workers: 1` this is simplest and needs no global state.
+- globalSetup only generates the WAV: `say -o <tmp>/fixture.wav --data-format=LEI16@48000 "…"`. This was verified to produce a WAVE 48 kHz Int16 file; `afconvert` isn't needed.
+- To read app files, use Node `fs` in the **test** process against the known `USER_DATA_DIR`. `electronApp.evaluate()` has **no `require`** (verified: ReferenceError). It receives only the electron module.
+- If you keep the locked `window.__e2e` hook, pass `webPreferences.additionalArguments: ['--e2e']` only when E2E=1 and expose the hook in the preload only if `process.argv.includes('--e2e')`. The simpler, equally valid route is to run the analyser in `page.evaluate`, as the spike did, with no app code.
+
+### Pattern 6: IPC router as the single choke point
+`handle(channel, inputSchema, fn)` wraps `ipcMain.handle`. It zod-parses the renderer input (a trust boundary) and returns `fn`'s result. When E2E=1 it also pushes `{channel, result}` to `globalThis.__ipcOut`, which the tests read via `electronApp.evaluate(() => globalThis.__ipcOut)` and scan for the key. Phase 3's BAR-01 IPC-tap extends this same seam.
+
+Phase 1 channels are `key:status`, `key:save {key, force?}` and `key:clear`. The preload exposes exactly `window.api.key.{status, save, clear}`.
+
+### Anti-Patterns to Avoid
+- **`contextBridge.exposeInMainWorld('electron', electronAPI)`** (template): generic `ipcRenderer.send/invoke/on`. Delete it.
+- **Template `setWindowOpenHandler` → `shell.openExternal(any url)`**: deny everything (`{action:'deny'}`) and block `will-navigate` away from `app://bundle`.
+- **Importing a runtime value (zod, sdk, anything from node_modules) into the preload**: electron-vite externalizes it to `require('x')`, which throws in a sandboxed preload. Use `import type` only. Shared constants are fine, because relative imports get bundled.
+- **Asserting CSP with `page.evaluate(() => eval('1'))`**: CDP-evaluated code bypasses CSP, and the eval "ran" in the test. Instead, inject a `<script>` element or run eval inside `setTimeout`, and listen for `securitypolicyviolation` (verified: blocked, with violations reported).
+- **A module-level `new Anthropic()`**: it captures env at import time and hides the replay seam.
+
+## Don't Hand-Roll
+
+| Problem | Don't Build | Use Instead | Why |
+|---------|-------------|-------------|-----|
+| Encrypting the key at rest | Custom AES or a keychain wrapper (`keytar` is archived) | `safeStorage.encryptStringAsync` / `decryptStringAsync` | Uses the OS keychain key; locked |
+| Mapping HTTP status to error | Status-code parsing | SDK classes `AuthenticationError`, `PermissionDeniedError`, `APIConnectionError` (named exports) | Verified with an injected `fetch` |
+| Intercepting Claude HTTP in unit tests | MSW or nock | SDK `fetch` constructor option | Verified: 401→AuthenticationError, TypeError→APIConnectionError, 200→message |
+| Intercepting Claude in E2E | Monkey-patching main | `ANTHROPIC_BASE_URL` + replay server | The real code path runs |
+| Parsing plists | A plist npm package | `plutil -convert json -o - file` | System tool |
+| Ad-hoc signing | Manual `codesign` scripts | electron-builder `mac.identity: "-"` | Signs the app and helpers with entitlements |
+| Fake microphone | getUserMedia stubs | Chromium fake-media switches + WAV | Spike-proven |
+| Avoiding keychain prompts in tests | Stubbing safeStorage in E2E | `--use-mock-keychain` switch (Electron ≥45.0.0-alpha.6) | Verified: no keychain item, and decrypt works across restarts |
+
+## Common Pitfalls
+
+### Pitfall 1: The scaffolder empties the target directory
+**What goes wrong:** `npm create @quick-start/electron@latest . -- --template react-ts --skip` deletes `.git`, `.planning/`, `research/` and `CLAUDE.md`.
+**Why:** In create-electron 1.0.31 source, `shouldOverwrite = skip` leads to `emptyDir(root)`, and `emptyDir` walks recursively with no exclusions.
+**How to avoid:**
+1. Scaffold into a temp dir: `npm create @quick-start/electron@latest <scratch>/scaf -- --template react-ts --skip`. It's non-interactive; verified.
+2. Copy into the repo with `rsync -a --exclude .gitignore <scratch>/scaf/ ./`.
+3. Merge the template's `.gitignore` lines (`.eslintcache`, `*.log*`) into the existing one.
+4. Run `npm pkg set name=mock-case-proctor productName="Mock Case Proctor"`.
+**Warning sign:** `git status` shows deleted planning files.
+
+### Pitfall 2: An ad-hoc-signed app fails to launch (library validation)
+**What goes wrong:** With hardened runtime (on by default) and `identity: "-"`, Electron Framework's Team ID doesn't match, and the app crashes at launch.
+**How to avoid:**
+- Put `com.apple.security.cs.disable-library-validation` in **both** plists, alongside allow-jit, allow-unsigned-executable-memory, device.audio-input and device.camera.
+- electron-builder 26.18 prints the "ad-hoc signing with hardenedRuntime enabled requires …" warning **even when the key is present**. That's expected, so ignore it.
+- Verified: `codesign -dv` shows `flags=0x10002(adhoc,runtime)`, and both the app and `Helper (Renderer).app` carry all 5 entitlements.
+
+### Pitfall 3: The template preload breaks under `sandbox: true`
+**What goes wrong:**
+- The built `out/preload/index.js` contains `require("@electron-toolkit/preload")`. Sandboxed preloads can only require `electron` and a few built-ins, so the API never appears.
+- The template's `App.tsx` and `Versions.tsx` read `window.electron.*`, so the renderer crashes on mount. In the prototype this was a blank page and the selector timed out.
+
+**How to avoid:**
+- Rewrite the preload to `import { contextBridge, ipcRenderer } from 'electron'` only, and rewrite App.
+- Add a test asserting that the built preload's only `require(` is `"electron"`. Run it after the build, in the e2e or security spec.
+
+### Pitfall 4: Launching `out/main/index.js` directly changes the app name, userData and appPath
+**What goes wrong:** You get `app.getName()` = "Electron" and `getAppPath()` = `out/main`, so `.env` lookup and the default userData differ from dev and packaged runs.
+**How to avoid:** Launch with `args: ['.']` (dev also spawns `electron .`), and set `productName` in package.json. Verified: the name is "Mock Case Proctor" in dev-style launches and packaged runs alike.
+
+### Pitfall 5: Packaged E2E touches the real login keychain
+**What goes wrong:** The packaged app launched by Playwright with `executablePath` created a **real** `Mock Case Proctor Safe Storage` keychain item. Playwright's loader lists `--use-mock-keychain`, but that didn't take effect for the packaged launch.
+- Each ad-hoc rebuild changes the code signature, so the next access to that item can raise a keychain dialog. That would hang an unattended run.
+- I deleted the test-created item afterwards.
+
+**How to avoid:** When `E2E === '1'`, main **explicitly** calls `app.commandLine.appendSwitch('use-mock-keychain')`. Verified: no item was created, and an encrypted blob decrypted after a restart under the mock key.
+**Real-use consequence (not a test issue):**
+- Dev (`electron .`) and the packaged app share userData (`~/Library/Application Support/Mock Case Proctor`) but have different signatures. The packaged app reading a blob that dev saved, or the reverse after a rebuild, can therefore prompt "wants to use your confidential information". Rishi clicks Always Allow.
+- If he clicks Deny, the decrypt fails. KeyStore must then fall back to env or Settings and must not crash (Pattern 3).
+
+### Pitfall 6: The bare `sk-ant-` secret scan fails on day one
+**What goes wrong:** `git ls-files | xargs grep -l sk-ant-` already matches `.planning/REQUIREMENTS.md`, `ROADMAP.md` and `01-CONTEXT.md`, which contain the regex text. The test files would match themselves too.
+**How to avoid:**
+- Scan for **key-shaped** strings: `/sk-ant-[A-Za-z0-9_-]{20,}/`. That matched zero tracked files today.
+- Scan `git ls-files` plus `git ls-files --others --exclude-standard`, so it catches files before they're committed.
+- In tests, build fake keys at runtime: `'sk-ant-' + 'test-' + 'x'.repeat(24)`. A source literal would trip the scanner.
+- Planner note: this refines the locked "greps for `sk-ant-`" so it's implementable. The intent, failing on any tracked key, is preserved.
+
+### Pitfall 7: The `disable-features` switch overwrites Playwright's list
+**What goes wrong:** Playwright's loader appends `--disable-features=<18 features>` first. A plain `appendSwitch('disable-features','AudioServiceSandbox')` in main then replaces that value.
+**How to avoid:** Merge the values: `[app.commandLine.getSwitchValue('disable-features'), 'AudioServiceSandbox'].filter(Boolean).join(',')`. Verified that the merged value contains both.
+
+### Pitfall 8: E2E picks up the real key
+**What goes wrong:**
+- The repo-root `.env` is the keymgr symlink holding the **real** key. With `args:['.']`, appPath is the repo root, so a dev-mode dotenv lookup would load it in every E2E run and send it to the replay server, or upstream in RECORD mode.
+- An `ANTHROPIC_API_KEY` exported in the shell would leak into the app the same way.
+
+**How to avoid:**
+- `dotenvPath = process.env.MCP_DOTENV_PATH ?? (E2E || app.isPackaged ? null : join(app.getAppPath(), '.env'))`. The E2E dotenv test sets `MCP_DOTENV_PATH` to a temp file holding a fake key.
+- The E2E fixture strips `ANTHROPIC_*` from the inherited env. These are unset in Rishi's shell today, but strip them anyway.
+
+### Pitfall 9: `keymgr export` does not create the symlink
+**What goes wrong:** CONTEXT says export "creates the `.env` symlink". The keymgr source (`render_slice`) only writes `~/.config/keys/.envs/<project>.env` (mode 0600). `keymgr ls` shows ✗ until you link it yourself.
+**How to avoid (exact steps; never `cat` the files):**
+1. `cp ~/.config/keys/projects.toml ~/.config/keys/backup/projects.toml.$(date +%Y%m%d%H%M%S)`
+2. Append to `~/.config/keys/projects.toml`:
+   ```toml
+
+   [projects.mock-case-proctor]
+   path = "/Users/rishizamvar/Documents/Projects/mock-case-proctor/.env"
+   needs_shared = ["ANTHROPIC_API_KEY"]
+   secrets_enc = false
+   ```
+3. `~/.local/bin/keymgr export mock-case-proctor` prints only `rendered: <path>`.
+4. `ln -s ~/.config/keys/.envs/mock-case-proctor.env /Users/rishizamvar/Documents/Projects/mock-case-proctor/.env`
+5. Verify with `keymgr ls | grep mock-case-proctor` (it should show ✓) and `git check-ignore -q .env && echo ignored`. Don't run `keymgr probe`: it prints a body excerpt and is unnecessary.
+- The rendered slice has `#` comment lines and unquoted `KEY=value` lines. The parser must skip comments and blank lines and split on the first `=`.
+
+### Pitfall 10: GUI-launched apps have no shell env, and the packaged app can't see `.env`
+**What goes wrong:** KEY-02's env and `.env` paths work only for `npm run dev` or terminal launches. A Finder-launched `.app` gets no `ANTHROPIC_API_KEY`, and the `.env` lookup is disabled when packaged.
+**How to avoid:** Nothing more is needed. Dev auto-saves into safeStorage, and the packaged app shares userData (see the Pitfall 5 prompt caveat). Document this in the Settings help text.
+
+### Pitfall 11: The SDK credential chain and auth header
+- SDK 1.4.0 sends `apiKey` as **`Authorization: Bearer <key>`**, not `x-api-key`. Verified from source and from an injected fetch. The replay recorder and any log scrubbing must strip `authorization`.
+- With no `apiKey`, SDK 1.x resolves a credential chain: `ANTHROPIC_PROFILE`, workload identity, and on-disk profiles. Always pass `apiKey` explicitly, and never construct a client when there is no key.
+- `ANTHROPIC_LOG=debug` logging redacts `authorization` and `x-api-key` (`internal/utils/log.js`). Still, never log request options or raw errors. Pass them through `redact()`.
+
+### Pitfall 12: The adaptive-thinking model with `max_tokens: 1`
+- Haiku 5.5 has adaptive thinking on by default. The live probe with `max_tokens: 1` returned **200**, `stop_reason: "max_tokens"` and `content: []`. Don't assert on content.
+- Classify results this way:
+  - Resolved means `valid`.
+  - `AuthenticationError` or `PermissionDeniedError` means `invalid`.
+  - Anything else (connection, timeout, 429, 5xx, 400) means `unverified`, and Settings offers "Save anyway".
+- Use `maxRetries: 0` and `timeout: 10_000`.
+
+## Code Examples
+
+All of these were verified in the scratchpad prototype on 2026-11-03 unless noted.
+
+### main/index.ts security skeleton
+```ts
+import { app, BrowserWindow, net, protocol, session } from 'electron'
+import { join } from 'path'
+import { pathToFileURL } from 'url'
+import { CSP, resolveAppUrl } from './app-protocol'
+
+const E2E = process.env.E2E === '1'
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
+])
+if (E2E) {
+  if (process.env.USER_DATA_DIR) app.setPath('userData', process.env.USER_DATA_DIR)
+  app.commandLine.appendSwitch('use-mock-keychain')               // Pitfall 5
+  app.commandLine.appendSwitch('use-fake-ui-for-media-stream')
+  app.commandLine.appendSwitch('use-fake-device-for-media-stream')
+  if (process.env.FAKE_WAV) app.commandLine.appendSwitch('use-file-for-fake-audio-capture', process.env.FAKE_WAV)
+  const prev = app.commandLine.getSwitchValue('disable-features') // Pitfall 7
+  app.commandLine.appendSwitch('disable-features', [prev, 'AudioServiceSandbox'].filter(Boolean).join(','))
+}
+const ROOTS = { bundle: join(__dirname, '../renderer'), assets: join(__dirname, '../../resources') }
+
+app.whenReady().then(async () => {
+  protocol.handle('app', async (req) => {
+    const file = resolveAppUrl(req.url, ROOTS)          // pure; null = forbidden
+    if (!file) return new Response('forbidden', { status: 403 })
+    try {
+      const r = await net.fetch(pathToFileURL(file).toString())
+      const h = new Headers(r.headers); h.set('Content-Security-Policy', CSP)
+      return new Response(r.body, { status: r.status, headers: h })
+    } catch { return new Response('not found', { status: 404 }) }   // net.fetch rejects on ENOENT
+  })
+  session.defaultSession.setPermissionRequestHandler((wc, perm, cb) =>
+    cb(perm === 'media' && wc.getURL().startsWith('app://bundle/')))
+  // await keyStore.init()  ← before the window, so status is ready on first IPC
+  const win = new BrowserWindow({ show: false, webPreferences: {
+    preload: join(__dirname, '../preload/index.js'),
+    contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false } })
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('app://bundle/')) e.preventDefault() })
+  win.once('ready-to-show', () => win.show())
+  await win.loadURL('app://bundle/index.html')  // dev: is.dev && ELECTRON_RENDERER_URL → loadURL(that) instead
+})
 ```
 
-**Do this.** The scratch path is any temp dir. NEVER run with `--skip` inside the project root.
-```bash
-cd "$(mktemp -d)" && npm create @quick-start/electron@latest mcp -- --template react-ts --skip
-rsync -a --exclude .gitignore --exclude node_modules mcp/ /Users/rishizamvar/Documents/Projects/mock-case-proctor/
-# then: merge "*.log*" and ".eslintcache" into the existing .gitignore by hand
+### app-protocol.ts (pure)
+```ts
+import { resolve, sep } from 'path'
+export const CSP = [
+  "default-src 'self' app:", "script-src 'self' 'wasm-unsafe-eval'", "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: app:", "font-src 'self' app:", "media-src 'self' blob: app:", "worker-src 'self' blob:",
+  "connect-src 'self' app: https://huggingface.co https://*.huggingface.co https://*.hf.co",
+  "object-src 'none'", "base-uri 'none'"
+].join('; ')
+export function resolveAppUrl(url: string, roots: Record<string, string>): string | null {
+  const u = new URL(url)
+  const root = roots[u.host]
+  if (!root) return null
+  let p: string
+  try { p = resolve(root, '.' + decodeURIComponent(u.pathname)) } catch { return null } // malformed %-escape
+  return p.startsWith(root + sep) ? p : null
+}
 ```
-`--skip` also skips the updater prompt (no `electron-updater` is added) and the mirror prompt.
+- `'unsafe-inline'` applies to **style** only. React's `style={{}}` uses CSSOM and isn't affected, but Vite dev injects `<style>` tags.
+- Dev HMR works with the meta CSP because the react-refresh preamble is injected `head-prepend`, before the meta tag.
+- The HF hosts in `connect-src` are LOW confidence; Phase 5 must confirm them.
+- Unit-test that `src/renderer/index.html`'s meta `content` equals `CSP`. One constant, one parity test.
 
-**Files to modify:**
-| File | Change |
-|------|--------|
-| `package.json` | Set `name: "mock-case-proctor"` and add `"productName": "Mock Case Proctor"`. Without `productName`, dev and packaged builds get *different* userData dirs and keychain item names. Do NOT add `"type": "module"`, because electron-vite would emit an ESM preload and a sandboxed preload must be CJS. Update the pins and scripts (below). |
-| `electron-builder.yml` | Replace it with **`electron-builder.json`** (auto-detected), so the config test needs no YAML parser. Contents below. |
-| `build/entitlements.mac.plist` | Add device audio-input, camera and `cs.disable-library-validation` |
-| `build/entitlements.mac.inherit.plist` | **New**, with the same keys |
-| `src/main/index.ts` | Rewrite as the composition root (security, protocol, E2E switches, IPC) |
-| `src/preload/index.ts` and `index.d.ts` | Rewrite: `contextBridge.exposeInMainWorld('api', {...named methods})` |
-| `src/renderer/index.html` | Delete the template meta CSP. It is injected at build time from one constant (see the CSP section) |
-| `src/renderer/src/*` | Delete `Versions.tsx`, the template CSS and the SVGs. Add `App.tsx` (state switch), `screens/Settings.tsx`, `screens/Home.tsx`, `styles/tokens.css` |
-| `electron.vite.config.ts` | Add a `transformIndexHtml` CSP plugin to the renderer (`apply: 'build'`) |
-| new: `vitest.config.ts`, `playwright.config.ts`, `tests/e2e/*`, `tests/replay/server.ts`, `tests/config/*.test.ts` | Harness |
-
-CONTEXT says `src/renderer/` holds React. The template nests it at `src/renderer/src/`. Keeping the template nesting avoids changing tsconfig and alias paths, so keep it, and put tokens at `src/renderer/src/styles/tokens.css`.
-
-**Scripts:**
-```json
-"dev": "electron-vite dev",
-"build": "npm run typecheck && electron-vite build",
-"package": "electron-vite build && electron-builder --mac --arm64",
-"test": "vitest run",
-"test:e2e": "electron-vite build && playwright test --grep-invert \"@live|@packaged\"",
-"test:packaged": "npm run package && playwright test --grep @packaged",
-"test:live": "LIVE=1 vitest run && playwright test --grep @live"
+### key-probe.ts
+```ts
+import Anthropic, { AuthenticationError, PermissionDeniedError } from '@anthropic-ai/sdk'
+export const PROBE_MODEL = 'claude-haiku-5-5'   // cheapest current model ($0.10/$0.50 per MTok), released 2026-10-07
+export type ProbeResult = 'valid' | 'invalid' | 'unverified'
+export async function probeKey(apiKey: string, opts: { fetch?: typeof fetch } = {}): Promise<ProbeResult> {
+  const client = new Anthropic({ apiKey, maxRetries: 0, timeout: 10_000, ...opts }) // baseURL ← ANTHROPIC_BASE_URL
+  try {
+    await client.messages.create({ model: PROBE_MODEL, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] })
+    return 'valid'
+  } catch (e) {
+    return e instanceof AuthenticationError || e instanceof PermissionDeniedError ? 'invalid' : 'unverified'
+  }
+}
 ```
-Keep `postinstall: install-electron && electron-builder install-app-deps`. `install-electron` is Electron 45's own lazy-download bin (verified in electron/package.json `bin`).
+For unit tests, inject `fetch` returning `new Response(JSON.stringify({type:'error',error:{type:'authentication_error',message:'invalid x-api-key'}}),{status:401,headers:{'content-type':'application/json'}})`. A 200 needs a full message body: `{id,type:'message',role:'assistant',model,content:[],stop_reason:'max_tokens',stop_sequence:null,usage:{input_tokens:10,output_tokens:1}}`. For the network case, throw `new TypeError('fetch failed')`.
 
-## electron-builder Config (verified against app-builder-lib 26.18.0 source)
+### dotenv + redact
+```ts
+export function parseDotenv(text: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#')) continue
+    const i = line.indexOf('='); if (i < 1) continue
+    out[line.slice(0, i).trim()] = line.slice(i + 1).trim().replace(/^(['"])(.*)\1$/, '$2')
+  }
+  return out
+}
+export const redact = (s: string): string => s.replace(/sk-ant-[A-Za-z0-9_-]+/g, 'sk-ant-***')
+```
 
+### electron-builder.json (verified: builds in about 14 s; output `release/mac-arm64/Mock Case Proctor.app`)
 ```json
 {
   "appId": "com.rishizamvar.mockcaseproctor",
   "productName": "Mock Case Proctor",
   "directories": { "buildResources": "build", "output": "release" },
-  "files": ["!**/.vscode/*","!src/*","!tests/*","!electron.vite.config.{js,ts,mjs,cjs}",
-            "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,README.md}",
-            "!{.env,.env.*,.npmrc}","!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}",
-            "!{.planning,research,release,test-results,playwright-report,coverage}/**"],
-  "asarUnpack": ["resources/**", "**/*.node"],
+  "files": ["out/**", "package.json"],
+  "asarUnpack": ["**/*.node", "resources/**"],
   "npmRebuild": false,
   "mac": {
     "target": [{ "target": "dir", "arch": ["arm64"] }],
@@ -246,541 +519,231 @@ Keep `postinstall: install-electron && electron-builder install-app-deps`. `inst
     "entitlements": "build/entitlements.mac.plist",
     "entitlementsInherit": "build/entitlements.mac.inherit.plist",
     "extendInfo": {
-      "NSMicrophoneUsageDescription": "Mock Case Proctor listens to your answers during a mock interview.",
-      "NSCameraUsageDescription": "Mock Case Proctor shows your webcam as a self-view tile. It is never recorded.",
-      "NSDocumentsFolderUsageDescription": "Mock Case Proctor reads your mock case library in Documents."
+      "NSMicrophoneUsageDescription": "Mock Case Proctor listens to your answers during the mock interview.",
+      "NSCameraUsageDescription": "Mock Case Proctor shows your webcam as a self-view tile. Video is never recorded."
     },
     "notarize": false
   }
 }
 ```
+- The `files` whitelist kept `.planning/`, `tests/`, `.env` and `CLAUDE.md` out of the asar. Production `node_modules` were still added automatically (verified with `@electron/asar list`).
+- If you keep the template's `resources/icon.png?asset` import, it needs `resources/**` in `files` too.
+- The default `output` is `dist`, so set `release` explicitly.
+- Electron-builder 26.18 uses **flat** keys (`mac.identity`, `mac.entitlements`…). The docs site shows `mac.sign.identity`, which is a newer schema that 26.18's `macOptions.d.ts` doesn't have.
 
-Facts checked in the source:
-- **`identity: "-"`**: `MacTargetHelper.findSigningIdentity` has `if (qualifier === "-")`, which builds `new Identity("-")`. With `hardenedRuntime` on (the default for non-MAS builds), it **warns that ad-hoc signing plus hardened runtime requires `com.apple.security.cs.disable-library-validation` to prevent launch failures.** So add that key. [V]
-- **Output dir:** `macPackager.js` uses `${target.name}${getArchSuffix(arch, defaultArch)}`, which gives `release/mac-arm64/Mock Case Proctor.app` for arm64. [V]
-- **Entitlements defaults:** the defaults are `build/entitlements.mac.plist` and `build/entitlements.mac.inherit.plist` when they exist. Set them explicitly anyway, so the config test can assert them. [V]
-- `NSDocumentsFolderUsageDescription` is kept because Phase 3 reads `~/Documents/Projects/lead_edge_mock_cases`. A packaged app hits TCC Documents protection there.
-- Use the `dir` target only. It is fastest, and `release/mac-arm64/*.app` is all the smoke test needs. Add a dmg later if ever wanted.
-- **Do not set `electronFuses.enableNodeCliInspectArguments: false`**, because Playwright `_electron` launch then fails.
-
-**Entitlements (both plists, identical):**
+### Entitlements plist (both files identical)
 ```xml
-<key>com.apple.security.cs.allow-jit</key><true/>
-<key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
-<key>com.apple.security.cs.disable-library-validation</key><true/>
-<key>com.apple.security.device.audio-input</key><true/>
-<key>com.apple.security.device.camera</key><true/>
-```
-The template also has `allow-dyld-environment-variables`. Drop it, since nothing needs it.
-
-**Post-package verification (phase gate):**
-```bash
-APP="release/mac-arm64/Mock Case Proctor.app"
-codesign -dv "$APP" 2>&1 | grep -q "Signature=adhoc"
-codesign -d --entitlements - --xml "$APP" | plutil -convert json -o - - | grep -q audio-input
-codesign -d --entitlements - --xml "$APP/Contents/Frameworks/Mock Case Proctor Helper (Renderer).app" | plutil -convert json -o - - | grep -q camera
-plutil -extract NSMicrophoneUsageDescription raw "$APP/Contents/Info.plist"
-```
-These are MEDIUM. The `--xml` flag exists on recent macOS codesign. If it is rejected, fall back to `--entitlements :-`.
-
-## Architecture Patterns
-
-### Recommended structure (minimal; the planner may rename)
-```
-src/main/
-  index.ts           # composition root: switches, protocol, window, IPC wiring (only file that imports electron broadly)
-  e2e.ts             # applyE2ESwitches(app, env): userData override + Chromium switches (pure-ish, takes app)
-  protocol.ts        # resolveSafePath(root, pathname) (pure) + registerAppProtocol() (adapter)
-  csp.ts → src/shared/csp.ts  # one CSP string used by vite plugin + response header
-  log.ts             # redact() + log.{info,warn,error}
-  keys/keyStore.ts   # createKeyStore({cipher, readFile, writeFile, rm, env, dotenvPath, probe}) — pure
-  keys/probe.ts      # probeKey(key, {baseURL?, fetch?}) → 'valid'|'invalid'|'unverified'
-  keys/dotenv.ts     # parseDotenv(text) → Record<string,string>
-  keys/cipher.ts     # safeStorage adapter (async API)
-  ipc.ts             # registerIpc(ipcMain, keyStore) — zod-validated handlers
-src/preload/index.ts # contextBridge 'api' (+ '__e2e' when --e2e arg)
-src/shared/ipc.ts    # channel names + KeyStatus/SaveResult types + zod schemas
-src/renderer/src/    # App.tsx (state switch), screens/Settings.tsx, screens/Home.tsx, styles/tokens.css
-tests/config/        # entitlements.test.ts, builder.test.ts, secret-scan.test.ts (main project)
-tests/replay/server.ts
-tests/e2e/           # global-setup.ts, launch.ts, shell.spec.ts, key.spec.ts, packaged.spec.ts
-tests/fixtures/claude/<scenario>/<n>.res.json ; tests/fixtures/audio/ (generated, gitignored)
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.cs.allow-jit</key><true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+  <key>com.apple.security.cs.disable-library-validation</key><true/>
+  <key>com.apple.security.device.audio-input</key><true/>
+  <key>com.apple.security.device.camera</key><true/>
+</dict></plist>
 ```
 
-### Pattern 1: Pure core, thin Electron adapter
-Under Vitest (Node), `import { safeStorage } from 'electron'` resolves to the npm `electron` package, which exports **the binary path string**. Any module that imports Electron APIs at top level is therefore untestable in Vitest. Only `index.ts`, `cipher.ts`, `protocol.ts`'s adapter function and `ipc.ts` import `electron`. Everything else takes parameters.
-
-### Pattern 2: E2E switches before ready
+### Entitlements config test (tests/unit/entitlements.test.ts)
 ```ts
-// src/main/e2e.ts — call at top of index.ts, before app.whenReady()
-export function applyE2ESwitches(app: Electron.App, env = process.env): boolean {
-  if (env.E2E !== '1') return false
-  if (env.USER_DATA_DIR) app.setPath('userData', env.USER_DATA_DIR)
-  app.commandLine.appendSwitch('use-mock-keychain')            // no keychain prompts (see safeStorage)
-  app.commandLine.appendSwitch('use-fake-ui-for-media-stream')
-  app.commandLine.appendSwitch('use-fake-device-for-media-stream')
-  if (env.FAKE_AUDIO_WAV) {
-    app.commandLine.appendSwitch('use-file-for-fake-audio-capture', env.FAKE_AUDIO_WAV)
-    app.commandLine.appendSwitch('disable-features', 'AudioServiceSandbox') // REQUIRED or samples are all zero [spike-verified]
-  }
-  return true
-}
-```
-The spike `main.js` used exactly these switch names; they are verified working on Electron 45.2.1. Only one `disable-features` switch is honoured. If later phases need more features disabled, comma-join them in one call.
-
-### Pattern 3: app:// protocol, path-safe
-```ts
-// before ready (module top level):
-protocol.registerSchemesAsPrivileged([{ scheme: 'app',
-  privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }])
-
-// pure, unit-tested:
-export function resolveSafePath(root: string, urlPathname: string): string | null {
-  let p: string
-  try { p = decodeURIComponent(urlPathname) } catch { return null }
-  if (p.includes('\0')) return null
-  const abs = path.resolve(root, '.' + p)
-  const rel = path.relative(root, abs)
-  return rel && !rel.startsWith('..') && !path.isAbsolute(rel) ? abs : null
-}
-
-// after ready:
-const ROOTS: Record<string, string> = {
-  bundle: join(__dirname, '../renderer'),
-  assets: join(app.getAppPath(), 'resources', 'assets'),   // later phases extend
-}
-protocol.handle('app', async (req) => {
-  const { host, pathname } = new URL(req.url)
-  const root = ROOTS[host]
-  const file = root && resolveSafePath(root, pathname === '/' ? '/index.html' : pathname)
-  if (!file) return new Response('Not found', { status: 404 })
-  const res = await net.fetch(pathToFileURL(file).toString())
-  const headers = new Headers(res.headers); headers.set('Content-Security-Policy', CSP)
-  return new Response(res.body, { status: res.status, headers })
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { test, expect } from 'vitest'
+const plist = (f: string) => JSON.parse(execFileSync('plutil', ['-convert', 'json', '-o', '-', f], { encoding: 'utf8' }))
+const REQUIRED = ['com.apple.security.device.audio-input', 'com.apple.security.device.camera',
+  'com.apple.security.cs.allow-jit', 'com.apple.security.cs.allow-unsigned-executable-memory',
+  'com.apple.security.cs.disable-library-validation']
+test.each(['build/entitlements.mac.plist', 'build/entitlements.mac.inherit.plist'])('%s has all keys', (f) => {
+  const p = plist(f); for (const k of REQUIRED) expect(p[k], k).toBe(true)
 })
-// production load:
-win.loadURL(process.env.ELECTRON_RENDERER_URL ?? 'app://bundle/index.html')
+test('builder config wires both plists, ad-hoc identity and usage strings', () => {
+  const mac = JSON.parse(readFileSync('electron-builder.json', 'utf8')).mac
+  expect(mac).toMatchObject({ identity: '-', entitlements: 'build/entitlements.mac.plist',
+    entitlementsInherit: 'build/entitlements.mac.inherit.plist' })
+  expect(mac.extendInfo.NSMicrophoneUsageDescription).toBeTruthy()
+  expect(mac.extendInfo.NSCameraUsageDescription).toBeTruthy()
+})
 ```
-The `resolve`/`relative`/`isAbsolute` safety check mirrors the official Electron `protocol.handle` docs example. `request.initiatorOrigin` is available in 45 [V, d.ts] if Phase 3 wants origin checks.
-- `resources/assets/` must exist. Commit a `.gitkeep`. `asarUnpack: resources/**` keeps it a real directory in the packaged app, so `net.fetch(file://)` works.
-- If ES module loads from `app://` ever fail with CORS errors (workers and WASM in Phase 5), add `corsEnabled: true`. That fix is LOW confidence and only needed if the error appears.
+For the packaged gate, the matching artifact check is `codesign -d --entitlements - --xml "<app>"` and `"<app>/Contents/Frameworks/Mock Case Proctor Helper (Renderer).app"`, piped to `plutil -convert json -o - -`, plus `plutil -extract NSMicrophoneUsageDescription raw <app>/Contents/Info.plist`.
 
-### Pattern 4: Window and session lockdown
+### vitest.config.mts (verified: both projects pass; `--project renderer` works)
 ```ts
-new BrowserWindow({ show: false, width: 1280, height: 800, backgroundColor: '#0B0F14',
-  webPreferences: { preload: join(__dirname, '../preload/index.js'), contextIsolation: true,
-    sandbox: true, nodeIntegration: false, webSecurity: true, backgroundThrottling: false,
-    additionalArguments: e2e ? ['--e2e'] : [] } })
-win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('app://bundle/') && !isDevUrl(url)) e.preventDefault() })
-session.defaultSession.setPermissionRequestHandler((_wc, perm, cb, d) =>
-  cb(perm === 'media' && isAppOrigin(d.requestingUrl)))
-session.defaultSession.setPermissionCheckHandler((_wc, perm, origin) => perm === 'media' && isAppOrigin(origin))
-```
-Here `isAppOrigin` accepts `app://bundle` plus the dev `ELECTRON_RENDERER_URL` origin. Without a media allow, the fake-audio E2E fails.
-
-### Pattern 5: Preload (sandboxed, CJS, only `electron` import)
-```ts
-import { contextBridge, ipcRenderer } from 'electron'
-import { CH, type KeyStatus, type SaveResult } from '../shared/ipc'   // relative → bundled, OK
-const api = {
-  key: {
-    status: (): Promise<KeyStatus> => ipcRenderer.invoke(CH.keyStatus),
-    save: (key: string, opts?: { force?: boolean }): Promise<SaveResult> => ipcRenderer.invoke(CH.keySave, key, opts),
-    clear: (): Promise<KeyStatus> => ipcRenderer.invoke(CH.keyClear),
-  },
-}
-contextBridge.exposeInMainWorld('api', api)
-if (process.argv.includes('--e2e')) contextBridge.exposeInMainWorld('__e2e', { micPeak: (ms: number) => /* getUserMedia + AnalyserNode loop as in spike index.html */ })
-```
-- `additionalArguments` ends up in `process.argv` in the renderer and preload. This is documented Electron behaviour, and `process.argv` is in the sandboxed preload's `process` subset. MEDIUM; the E2E test proves it.
-- A simpler equivalent of the `__e2e` hook: the test can run the spike's probe via `page.evaluate(...)`, because CDP evaluation bypasses page CSP. Either satisfies the requirement. The hook is what CONTEXT asked for, and it costs about 10 lines.
-
-### Pattern 6: KeyStore (pure)
-```ts
-type Source = 'stored' | 'env' | 'dotenv' | 'none'
-export type KeyStatus = { hasKey: boolean; source: Source }   // nothing else, ever
-createKeyStore({ cipher, file, fs, env, dotenvPath /* null when packaged or E2E */, probe, log })
-  .init(): Promise<KeyStatus>       // stored → env → dotenv; env/dotenv: probe; valid|unverified → save as 'stored'; invalid → none + lastError
-  .status(): KeyStatus
-  .save(key, {force}): Promise<{ status: KeyStatus; result: 'valid'|'invalid'|'unverified'|'unavailable' }>
-  .clear(): Promise<KeyStatus>      // rm file, drop in-memory key
-  .getKey(): string | null          // MAIN ONLY — never wired to IPC
-```
-- Trim the pasted key and reject empty input. Write the file atomically (write to tmp, then `rename`) with mode `0o600`.
-- A decrypt failure (keychain denied, file corrupt, key rotated) means "no stored key", so fall through to env. Never crash.
-- If `cipher.available()` is false, return `'unavailable'` and do NOT write plaintext.
-- `dotenvPath = !app.isPackaged && process.env.E2E !== '1' ? join(app.getAppPath(), '.env') : (process.env.E2E_DOTENV_PATH ?? null)`.
-- Allow a fixture `.env` in E2E via `E2E_DOTENV_PATH`, so KEY-02's dotenv path is E2E-tested without touching the real symlink.
-
-### Anti-Patterns to Avoid
-- **Spreading `process.env` into `_electron.launch({env})`.** Playwright *replaces* the environment with the `env` option (verified in coreBundle: `options.env ? envArrayToObject(options.env) : process.env`). Spreading `process.env` would hand the real `ANTHROPIC_API_KEY` from the developer shell to the app under test. Pass a minimal explicit env: `PATH`, `HOME`, `E2E`, `USER_DATA_DIR`, `ANTHROPIC_BASE_URL`, `FAKE_AUDIO_WAV`, plus per-test additions.
-- **Gating anything on `is.dev` / `!app.isPackaged`.** Both are true in E2E of `out/`.
-- **`new Anthropic()` without `apiKey`.** SDK 1.4.0 then reads `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_PROFILE` and the on-disk active profile [V client.d.ts]. Always pass `apiKey: keyStore.getKey()`.
-- **Exposing `ipcRenderer` or `invoke(channel)`** from the preload, as the template's `electronAPI` does.
-
-## Don't Hand-Roll
-
-| Problem | Don't Build | Use Instead | Why |
-|---------|-------------|-------------|-----|
-| Plist parsing in tests | XML regex | `execFileSync('plutil', ['-convert','json','-o','-', file])` | macOS native, exact |
-| YAML builder config parsing | add `yaml` dep | `electron-builder.json` | Zero dependencies |
-| Claude HTTP mocking in unit tests | MSW / nock | `new Anthropic({ apiKey:'t', fetch: async () => new Response(...) })` | The SDK seam; the real error classes get thrown |
-| Claude in E2E | patching the SDK via `electronApp.evaluate` | `ANTHROPIC_BASE_URL` to the replay server | The production code path runs unchanged |
-| Keychain encryption | custom AES / keytar | `safeStorage.encryptStringAsync` | keytar is archived; this is the platform API |
-| dotenv | `dotenv` dep | an 8-line `parseDotenv` | Locked decision |
-| Audio fixtures | recording | `say -o x.aiff "…" && afconvert -f WAVE -d LEI16@48000 x.aiff x.wav` | Verified on this Mac (1 ch, 48 kHz, Int16). `say -o x.wav --data-format=LEI16@48000` also produces WAVE [V] |
-| Error classification | status-code sniffing | `instanceof Anthropic.AuthenticationError` etc. | The SDK's typed errors |
-
-## Probe (KEY-01)
-
-The cheapest current model is **`claude-haiku-5-5`** at $0.10/$0.50 per MTok, from the claude-api skill `shared/models.md`, cached 2026-10-06. The skill says never to downgrade *the interviewer* for cost. A probe is not the interviewer, and CONTEXT explicitly asks for the cheapest model, so this does not conflict. The interviewer stays `claude-opus-5-5` (INT-01, Phase 6).
-
-```ts
-// src/main/keys/probe.ts
-import Anthropic from '@anthropic-ai/sdk'
-export const PROBE_MODEL = 'claude-haiku-5-5'
-export async function probeKey(apiKey: string, opts: { baseURL?: string; fetch?: typeof fetch } = {}) {
-  const client = new Anthropic({ apiKey, maxRetries: 0, timeout: 10_000, ...opts })
-  try {
-    await client.messages.create({ model: PROBE_MODEL, max_tokens: 1,
-      thinking: { type: 'disabled' },   // Haiku 5.5 thinks by default; max_tokens caps thinking+text
-      messages: [{ role: 'user', content: 'ping' }] })
-    return 'valid' as const
-  } catch (e) {
-    if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return 'invalid' as const
-    if (e instanceof Anthropic.RateLimitError) return 'valid' as const   // 429 ⇒ auth passed
-    return 'unverified' as const   // APIConnectionError/Timeout, 5xx/529, unexpected 400
-  }
-}
-```
-- `baseURL` defaults to `process.env.ANTHROPIC_BASE_URL` [V], so E2E needs no code change.
-- `maxRetries: 0` prevents the default 2 retries, which would add seconds to an offline probe.
-- The error class names AuthenticationError, PermissionDeniedError, RateLimitError, APIConnectionError, APIConnectionTimeoutError and InternalServerError were verified in `core/error.js`. Check `APIConnectionError` before `APIError`, since it is a subclass.
-- `thinking: {type:'disabled'}` is accepted on Haiku 5.5 at effort high or below; the default effort is medium (skill docs). MEDIUM confidence. If the SDK types reject it, remove it. Recording the `probe-ok` fixture with RECORD=1 confirms the 200 either way.
-- Cost per probe is about 10 tokens, effectively $0. The `@live` test calls it once.
-
-## safeStorage under E2E (keychain prompts)
-
-**Behaviour:**
-- On macOS the encryption key lives in a Keychain item named for the app (`<app name> Safe Storage`).
-- The creating binary gets silent access. A binary with a *different code signature* triggers the "wants to use your confidential information stored in … Safe Storage" dialog.
-- Ad-hoc signatures carry no team identity, so **every rebuild of the packaged app re-prompts**. So does switching between the dev build (Electron.app's signature) and the packaged app.
-- The Electron docs say: "the app should be code signed … without a consistent signature Keychain may re-prompt on each update". The sync API "can block the current thread to collect user input".
-- A hidden modal prompt hangs an E2E run.
-
-**Override (recommended, two layers):**
-1. **Unit:** `KeyStore` takes `cipher: { available(): Promise<boolean>; encrypt(s): Promise<Buffer>; decrypt(b): Promise<string> }`. Vitest passes a fake cipher (for example base64 with a `fake:` prefix). The tests never touch Electron.
-2. **E2E:** when `E2E=1`, `app.commandLine.appendSwitch('use-mock-keychain')` before ready.
-   - This is the switch Electron's own test suite adopted, in electron/electron PR #53790, backported into 45.0.0-alpha.6, to stop keychain prompts timing out tests.
-   - GitGrove and OpenWork use it the same way for ad-hoc builds.
-   - The mock keychain is plaintext-backed, so it is E2E-only.
-   - The real `safeStorage` adapter still runs end to end.
-   - **MEDIUM.** The PR describes the network-service cookie key, not safeStorage explicitly, though both go through Chromium OSCrypt's keychain. Wave 0 must include one E2E assertion that save → relaunch with the same `USER_DATA_DIR` → `status().source === 'stored'` passes with no dialog within 10 s. If that fails, fall back to an `E2E_FAKE_CIPHER=1` branch in `cipher.ts` and document that the real safeStorage is verified only in the `@packaged` gate.
-- Electron 45 adapter: use `safeStorage.isAsyncEncryptionAvailable()`, `encryptStringAsync()` and `decryptStringAsync()`, which returns `{ result, shouldReEncrypt }`; re-encrypt when it is true. The sync `encryptString`, `decryptString` and `isEncryptionAvailable` are `@deprecated` in the 45.2.1 d.ts and "will be removed in Electron 46" (docs) [V].
-- Real-world expectation for Rishi: the first packaged launch after a rebuild may show one Keychain prompt. "Always Allow" is fine for a personal tool. Note it in the phase SUMMARY.
-
-## CSP
-
-One constant, `src/shared/csp.ts`:
-```
-default-src 'self' app:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self';
-img-src 'self' app: data: blob:; font-src 'self' app:; media-src 'self' app: blob: mediastream:;
-worker-src 'self' app: blob:; connect-src 'self' app: https://huggingface.co https://*.huggingface.co https://*.hf.co;
-object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
-```
-- **Pitfall:** `@vitejs/plugin-react` 6 injects an **inline `<script>` refresh preamble in dev** (verified: `transformIndexHtml` with `children: getPreambleCode(...)`). The template's static meta CSP (`script-src 'self'`) would therefore block HMR in dev.
-- Fix: inject the meta only in build, with a renderer plugin `{ name:'csp', apply:'build', transformIndexHtml: h => h.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="${CSP}">`) }`. Production also gets the response header from `protocol.handle`. Dev runs without CSP, but on loopback only.
-- `style-src 'self'` works in production because Vite extracts the CSS. React `style={{}}` uses CSSOM and is not blocked.
-- Add `mediastream:` because the Phase 4 webcam `<video srcObject>` doesn't need it, but some code paths set blob/mediastream URLs. It is harmless.
-- E2E check: read the `content` attribute of `<meta http-equiv=Content-Security-Policy>`. Also check the header: `page.evaluate(() => fetch(location.href).then(r=>r.headers.get('content-security-policy')))`, which works because `supportFetchAPI` is set.
-
-## Replay Server (FND-03)
-
-Design (about 60 lines, `tests/replay/server.ts`, started in Playwright `globalSetup` and also importable from Vitest):
-- **URL scheme:** `ANTHROPIC_BASE_URL=http://127.0.0.1:<port>/s/<scenario>`. The SDK builds `baseURL + path` (verified in `buildURL`: `new URL(baseURL + path)`), so requests arrive at `/s/<scenario>/v1/messages`. The scenario is fixed per app launch. This is stateless and needs no control endpoint.
-- **Counter:** an in-memory `Map<scenario, n>`; the response is `tests/fixtures/claude/<scenario>/<n>.res.json` = `{ "status": 200, "headers": {"content-type": "..."}, "body": "<raw text: JSON or SSE bytes>" }`.
-  - SSE fixtures are served by writing `body` as-is with `content-type: text/event-stream`. Chunked writing is unnecessary for Phase 1.
-  - A missing fixture gets a 599 with a JSON error, so the test fails loudly.
-- **Request log:** each request writes `<n>.req.json` = `{ method, path, body: JSON.parse(reqBody) }`. **No headers are saved at all.** Saving none is simpler and safer than stripping them, and SDK 1.4.0 puts the key in `Authorization: Bearer …` [V], so an `x-api-key`-only strip would leak it.
-  - In replay mode, write logs to `test-results/replay/` (gitignored). In RECORD mode, write them next to the fixtures.
-  - A `GET /__log/<scenario>` endpoint returns the requests the server saw. The E2E test uses it to assert the probe hit `/v1/messages` with `model: claude-haiku-5-5` and `max_tokens: 1`. It also lets the canary test assert the server received `authorization: Bearer <canary>`. Return a boolean `sawCanary`, never the header value.
-- **RECORD=1:** forward to `https://api.anthropic.com` + path (after stripping `/s/<scenario>`) using global `fetch`. Copy only `anthropic-version`, `anthropic-beta`, `content-type` and `authorization` upstream. Read the full text, save `<n>.res.json`, and return it.
-- **Phase 1 scenarios:**
-  - `probe-ok`: record once with the real key (`RECORD=1`).
-  - `probe-401`: record once with a bogus key that does not start with `sk-ant-`, for example `invalid-key-e2e`.
-  - Network error: point `ANTHROPIC_BASE_URL` at `http://127.0.0.1:9` (a closed port). No fixture needed.
-- **Fixture hygiene test (Vitest, main project):** read every file under `tests/fixtures/claude/**`. Assert no `/sk-ant-[A-Za-z0-9_-]{20,}/`, no `"authorization"` key, and no `x-api-key`.
-
-### Key-leak canary E2E (KEY-03)
-Launch with `ANTHROPIC_API_KEY=canary-<randomUUID>` and the `probe-ok` scenario. Then assert:
-1. The app routes to Home with `source:'stored'` (auto-saved from env).
-2. The replay server saw the canary (`sawCanary: true`).
-3. The canary appears nowhere it shouldn't:
-   - in `page.content()`;
-   - in `JSON.stringify(await page.evaluate(() => window.api.key.status()))`;
-   - in `localStorage` / `sessionStorage` dumps;
-   - in collected `page.on('console')` text;
-   - in `electronApp.process().stdout` / `stderr`;
-   - in any file under `USER_DATA_DIR` (read them as binary and search for the canary bytes). The key file is ciphertext, so the plaintext canary must not appear.
-4. `Object.keys(window.api)` deep-equals `['key']` and `Object.keys(window.api.key)` equals `['status','save','clear']`.
-5. The renderer has no Node: `typeof require === 'undefined' && typeof process === 'undefined' && typeof module === 'undefined'`.
-
-## Vitest 5 projects (verified in vitest 5.1.0 d.ts)
-
-```ts
-// vitest.config.ts
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 export default defineConfig({
   test: {
     coverage: { provider: 'v8', include: ['src/main/**', 'src/shared/**'] },
-    projects: [
-      { extends: true, test: { name: 'main', environment: 'node',
-          include: ['src/main/**/*.test.ts', 'src/shared/**/*.test.ts', 'tests/config/**/*.test.ts', 'tests/replay/**/*.test.ts'] } },
-      { extends: true, plugins: [react()], test: { name: 'renderer', environment: 'jsdom',
-          include: ['src/renderer/**/*.test.{ts,tsx}'] } },
-    ],
-  },
+    projects: [   // Vitest 5: inline projects inherit root config by default (extends: true)
+      { test: { name: 'main', environment: 'node',
+          include: ['src/main/**/*.test.ts', 'src/shared/**/*.test.ts', 'tests/unit/**/*.test.ts', 'tests/support/**/*.test.ts'] } },
+      { plugins: [react()], test: { name: 'renderer', environment: 'jsdom', include: ['src/renderer/**/*.test.{ts,tsx}'] } }
+    ]
+  }
 })
 ```
-- `test.projects?: TestProjectConfiguration[]` [V]. Inline entries are `UserWorkspaceConfig & { extends?: string | boolean }`, and `extends` **defaults to true** [V], so `extends: true` is explicit but redundant. Inline projects cannot declare nested `projects`.
-- Run one project with `npx vitest run --project main`.
-- `@vitest/coverage-v8` must match exactly (5.1.0).
-- `tests/e2e/**` must stay out of the Vitest includes, because Playwright specs would crash Vitest.
 
-## Playwright
-
+### playwright.config.ts + fixture
 ```ts
 // playwright.config.ts
 import { defineConfig } from '@playwright/test'
 export default defineConfig({ testDir: 'tests/e2e', workers: 1, fullyParallel: false, timeout: 60_000,
   globalSetup: './tests/e2e/global-setup.ts', reporter: [['list']], use: { trace: 'retain-on-failure' } })
 
-// tests/e2e/launch.ts
-import { _electron as electron } from '@playwright/test'
-export async function launch(o: { scenario?: string; env?: Record<string,string>; executablePath?: string } = {}) {
-  const userData = o.env?.USER_DATA_DIR ?? await mkdtemp(join(tmpdir(), 'mcp-e2e-'))
-  const app = await electron.launch({
-    ...(o.executablePath ? { executablePath: o.executablePath, args: [] } : { args: ['.'], cwd: ROOT }),
-    env: { PATH: process.env.PATH!, HOME: process.env.HOME!, E2E: '1', USER_DATA_DIR: userData,
-           FAKE_AUDIO_WAV: join(ROOT, 'tests/fixtures/audio/tone.wav'),
-           ANTHROPIC_BASE_URL: `${process.env.REPLAY_URL}/s/${o.scenario ?? 'none'}`, ...o.env } })
-  return { app, page: await app.firstWindow(), userData }
+// tests/e2e/fixtures.ts (sketch)
+const STRIP = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_PROFILE', 'ANTHROPIC_LOG']
+export async function launchApp(o: { userDataDir: string; replayUrl: string; env?: Record<string, string>; executablePath?: string }) {
+  const base = Object.fromEntries(Object.entries(process.env).filter(([k, v]) => v != null && !STRIP.includes(k))) as Record<string, string>
+  const env = { ...base, E2E: '1', USER_DATA_DIR: o.userDataDir, ANTHROPIC_BASE_URL: o.replayUrl,
+    FAKE_WAV: process.env.MCP_FAKE_WAV!, ...o.env }
+  const app = o.executablePath
+    ? await _electron.launch({ executablePath: o.executablePath, env })
+    : await _electron.launch({ args: ['.'], cwd: ROOT, env })
+  return { app, page: await app.firstWindow() }
 }
 ```
-- `args: ['.']` runs `package.json#main` = `out/main/index.js`, which satisfies "launch out/main/index.js". It also keeps `productName` as the app name. Passing the script path directly can make Electron fall back to the default name "Electron".
-- `globalSetup`:
-  1. generate the WAV with `say` plus `afconvert` into `tests/fixtures/audio/` (gitignored);
-  2. start the replay server on port 0;
-  3. set `process.env.REPLAY_URL` (Playwright propagates env set in globalSetup to workers);
-  4. return a teardown that closes the server.
-- Tags: `test('launches packaged', { tag: '@packaged' }, …)`. `--grep @packaged` matches tags.
-- Packaged smoke: `executablePath: join(ROOT, 'release/mac-arm64/Mock Case Proctor.app/Contents/MacOS/Mock Case Proctor')`.
-- Hidden windows work (spike). Wait with `await page.waitForSelector('[data-screen=home]')`. Never use `waitForTimeout`.
-- Close in `finally`: `await app.close()`.
+Run the packaged smoke with `executablePath: 'release/mac-arm64/Mock Case Proctor.app/Contents/MacOS/Mock Case Proctor'` (verified: `isPackaged: true`, it loads `app://bundle/index.html`).
 
-## keymgr Registration (KEY-02), verified against `~/.local/bin/keymgr`
-
-```toml
-# append to ~/.config/keys/projects.toml
-[projects.mock-case-proctor]
-path = "/Users/rishizamvar/Documents/Projects/mock-case-proctor/.env"
-needs_shared = ["ANTHROPIC_API_KEY"]
-secrets_enc = false
-
-[projects.mock-case-proctor.project_config]
-```
-```bash
-keymgr export mock-case-proctor        # renders ~/.config/keys/.envs/mock-case-proctor.env (mode 600) — prints only the path
-ln -s ~/.config/keys/.envs/mock-case-proctor.env /Users/rishizamvar/Documents/Projects/mock-case-proctor/.env
-keymgr ls | grep mock-case-proctor     # ✓ column confirms symlink
-test -L .env && git check-ignore -q .env
-```
-- **`keymgr export` does NOT create the symlink.** `cmd_export` only calls `render_slice`, and the README's "Adding a new project" step does `ln -s` by hand. CONTEXT's "that creates the .env symlink" is inaccurate, so the plan needs the explicit `ln -s` step.
-- The master `.env` has `ANTHROPIC_API_KEY` (presence checked by line count; the value was not read). `ANTHROPIC_API_KEY` is **not** set in this shell's env, so dev auto-fill will come from `.env`.
-- Never `cat` the slice or `.env`. Verify presence with `grep -c '^ANTHROPIC_API_KEY=' .env`.
-
-## Logger
-
+### Fake-audio peak (page.evaluate; spike-proven, peak 0.72)
 ```ts
-const KEY_RE = /sk-ant-[A-Za-z0-9_-]+/g
-export const redact = (s: string) => s.replace(KEY_RE, 'sk-ant-***')
-export const log = { info: (...a: unknown[]) => console.log(fmt(a)), warn: …, error: … }  // fmt = redact(a.map(x => x instanceof Error ? x.stack : typeof x === 'string' ? x : JSON.stringify(x)).join(' '))
+const peak = await page.evaluate(async () => {
+  const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
+  const ctx = new AudioContext(); const an = ctx.createAnalyser(); an.fftSize = 2048; ctx.createMediaStreamSource(s).connect(an)
+  const buf = new Float32Array(2048); let p = 0; const t0 = performance.now()
+  while (performance.now() - t0 < 2500) { an.getFloatTimeDomainData(buf); for (const v of buf) p = Math.max(p, Math.abs(v)); await new Promise(r => setTimeout(r, 50)) }
+  return p
+})
+expect(peak).toBeGreaterThan(0.1)
 ```
-- Also redact errors from `process.on('uncaughtException')`.
-- The canary key does not match `sk-ant-`. That is the point: the E2E canary proves the key never reaches logs by **design**, and `redact` is only the safety net. Unit-test both.
 
-## Secret Scan (FND-02)
-
-Matching the literal `sk-ant-` "anywhere" would self-trigger. The logger regex, this RESEARCH.md, CONTEXT.md and the scan test itself all contain `sk-ant-`. Use `/sk-ant-[A-Za-z0-9_-]{20,}/` over `git ls-files -z`. Real keys run to about 100 characters; regex sources (`sk-ant-[A`) and prose don't match. Skip binary files: if a file has a NUL in its first 8 KB, skip it.
-- Also run the scan in a Vitest self-check: write a temp string containing a fake 30-character key into the test's memory and assert the matcher finds it, so the regex can't silently rot.
-- Test fake keys anywhere in the repo must not take the form `sk-ant-` plus 20 or more characters.
-
-## Common Pitfalls
-
-### Pitfall 1: Scaffolding in place wipes the repo
-**What goes wrong:** `npm create … -- --skip` in a non-empty dir runs `emptyDir(root)`, which deletes `.git`, `.planning` and `research/`. [V index.js]
-**How to avoid:** Scaffold in a temp dir and rsync it over, excluding `.gitignore`.
-
-### Pitfall 2: Silent mic/camera denial in the packaged app
-**How to avoid:** Put device entitlements in **both** plists, add usage strings, add a config test, and check `codesign -d --entitlements` on the Helper (Renderer).
-
-### Pitfall 3: Ad-hoc signing plus hardened runtime fails to launch
-**What goes wrong:** Library validation rejects frameworks.
-**How to avoid:** Add `cs.disable-library-validation`. electron-builder itself warns about this [V].
-**Warning sign:** The packaged smoke test times out on `firstWindow`.
-
-### Pitfall 4: Sandboxed preload `require` failure
-**What goes wrong:** electron-vite externalizes deps by default [V], so `import '@electron-toolkit/preload'` becomes a runtime `require`, which the sandbox refuses ("module not found").
-**How to avoid:** The preload imports only `electron` plus relative `src/shared`. Keep CJS output by not setting `"type": "module"`.
-
-### Pitfall 5: The real key leaks into E2E
-**What goes wrong:** The test spreads `process.env`, or the app reads the real `.env` symlink because the E2E cwd is the project root.
-**How to avoid:** Use an explicit minimal env, and a `dotenvPath` that is null when `E2E=1` unless `E2E_DOTENV_PATH` is set.
-
-### Pitfall 6: Keychain prompt hangs E2E, and the packaged app re-prompts after each rebuild
-**How to avoid:** Use `use-mock-keychain` under E2E, a cipher parameter in unit tests, and accept "Always Allow" on the packaged app. A decrypt failure falls through to env without crashing.
-
-### Pitfall 7: Main-process deps missing in the packaged app
-**What goes wrong:** `@anthropic-ai/sdk` or `zod` ends up in devDependencies. Externalized `require` fails only in the packaged `.app`.
-**How to avoid:** Keep them in `dependencies`. The packaged smoke test triggers a probe (scenario `probe-ok`) so the SDK actually loads.
-
-### Pitfall 8: Strict CSP breaks dev HMR
-**What goes wrong:** The inline plugin-react preamble is blocked.
-**How to avoid:** Inject the meta CSP only in build. Production carries the header as well.
-
-### Pitfall 9: `fake-audio` gives silence
-**How to avoid:** `disable-features=AudioServiceSandbox` is required [spike]. Only one `disable-features` switch counts. Assert peak > 0.1, not just that the track is `live`.
-
-### Pitfall 10: Vitest imports `electron`
-**What goes wrong:** You get a path string instead of the APIs, causing confusing `undefined is not a function` errors.
-**How to avoid:** Use the pure-core/adapter split (Pattern 1).
+### package.json scripts
+```json
+"dev": "electron-vite dev",
+"build": "npm run typecheck && electron-vite build",
+"package": "npm run build && electron-builder --mac --arm64",
+"test": "vitest run",
+"test:e2e": "electron-vite build && playwright test --grep-invert \"@packaged|@live\"",
+"test:packaged": "npm run package && playwright test --grep @packaged",
+"test:live": "electron-vite build && playwright test --grep @live && LIVE=1 vitest run"
+```
 
 ## State of the Art
 
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
-| `safeStorage.encryptString` (sync) | `encryptStringAsync` / `decryptStringAsync` / `isAsyncEncryptionAvailable` | The sync API is deprecated in 45 and removed in 46 | Use the async API now |
-| `protocol.registerFileProtocol` / `loadFile` | `protocol.handle` + `net.fetch` | Electron 25+ | `request.initiatorOrigin` is available in 45 |
-| `x-api-key` header | `Authorization: Bearer <key>` in SDK 1.4.0 | SDK 1.x | Replay key stripping must handle `authorization` |
-| vitest `workspace` file | `test.projects` inline | Vitest 3.2+, and the only option in 5 | Use one config file |
-| `externalizeDepsPlugin()` | `build.externalizeDeps` (default true) | electron-vite 5/6 | The plugin is deprecated; don't add it |
+| `safeStorage.encryptString` / `decryptString` / `isEncryptionAvailable` (sync) | `encryptStringAsync`, `decryptStringAsync` (returns `{result, shouldReEncrypt}`), `isAsyncEncryptionAvailable` | Deprecated in the Electron 45 typings | Use async; re-encrypt when `shouldReEncrypt` |
+| Electron downloads its binary on postinstall | `install-electron` bin (template postinstall) or lazy download on first run | Electron 44/45 era | Keep the template postinstall |
+| SDK `x-api-key` header | SDK 1.4.0 sends `Authorization: Bearer <apiKey>` | SDK 1.x | Scrub `authorization` in fixtures |
+| Vitest `workspace` / `extends: true` required | `test.projects`, inheriting the root by default | Vitest 5 docs | Simpler config |
+| `protocol.registerFileProtocol` | `protocol.handle` + `net.fetch` | Electron 25+ | Used here |
 
 ## Open Questions
 
-1. **Does `use-mock-keychain` cover `safeStorage` (async OSCrypt) in Electron 45?**
-   - What we know: Electron's own tests adopted it for keychain prompts, and others use it for "Safe Storage" dialogs.
-   - Unclear: the async path is not stated explicitly anywhere.
-   - Recommendation: make the save-relaunch-stored E2E test the first harness test. Fall back to `E2E_FAKE_CIPHER` if it hangs.
-2. **Does `thinking: {type:'disabled'}` type-check in SDK 1.4.0 for Haiku 5.5?**
-   - Recommendation: try it. If `tsc` rejects it, drop the field. The probe's 200 vs 401 behaviour doesn't depend on it.
-3. **`app://` module scripts and `crossorigin`.** Vite emits `<script type="module" crossorigin>`. This is a same-origin load from `app://bundle`, so it is expected to work with `standard`+`secure`. Add `corsEnabled: true` if the built app shows a blank window with CORS console errors (LOW).
-4. **Packaged app and `.env`.** The packaged app has no `.env`, and a Finder launch has no shell env. The first packaged launch uses the stored key (after one Keychain prompt) or Settings. This is by design.
+1. **Does Clear remove the key permanently if `.env` exists?**
+   - What we know: precedence re-sources from env or `.env` at the next launch.
+   - Recommendation: Clear deletes the stored blob only, and the Settings copy says "will be re-imported from .env on next launch" when `source` was `dotenv`. Don't build an opt-out flag (YAGNI).
+2. **Which exact HF hub hosts does HeadTTS fetch from?** (LOW confidence) Phase 5 should confirm them, and the CSP `connect-src` should be tightened then.
+3. **The keychain prompt when moving between dev and packaged builds** (real use, not tests). Expect one "Always Allow" per new ad-hoc build. It isn't avoidable without a stable signing identity, and that's acceptable.
 
 ## Environment Availability
 
 | Dependency | Required By | Available | Version | Fallback |
 |------------|------------|-----------|---------|----------|
-| Node | everything | ✓ | 22.20.0 (needs ^22.12 for vitest 5 and electron install) | — |
-| npm | scaffold/install | ✓ | 10.9.3 | — |
-| keymgr | KEY-02 | ✓ | `~/.local/bin/keymgr` (Python) | Settings paste |
-| master `ANTHROPIC_API_KEY` | KEY-02, RECORD, @live | ✓ (present in `~/.config/keys/.env`) | — | — |
-| `ANTHROPIC_API_KEY` in shell env | — | ✗ (unset) | — | `.env` symlink (intended path) |
-| say / afconvert | WAV fixtures | ✓ | system | — |
-| codesign / plutil | ad-hoc sign, plist test | ✓ | system | — |
-| gh + `origin` remote | FND-02 push | ✓ | `rishi-zamvar/mock-case-proctor` | — |
-| Electron 45.2.1 binary | E2E | downloads on `npm i` (already cached by the spike) | — | — |
-| Network to api.anthropic.com | RECORD and @live only | assumed | — | Replay fixtures; mark live tests skipped |
+| Node | everything | ✓ | 22.20.0 (Vitest needs ^22.12) | — |
+| npm | package manager | ✓ | 10.9.3 | — |
+| Electron binary | dev, E2E | ✓ (downloaded to the cache today) | 45.2.1 | — |
+| git + gh (authed) | FND-02, push | ✓ | gh confirms the repo is PRIVATE | — |
+| `say` | WAV fixtures | ✓ | macOS 26.6.2 | — |
+| `plutil`, `codesign` | entitlement tests | ✓ | system | — |
+| keymgr + master `ANTHROPIC_API_KEY` | KEY-02 | ✓ (key present, shape valid) | — | Paste in Settings |
+| Network to api.anthropic.com | `@live` probe only | ✓ (live probe 200 in 578 ms) | — | Replay fixtures |
+| Apple Silicon | arm64 target | ✓ | arm64 | — |
 
-**Missing dependencies with no fallback:** none.
+No missing dependencies.
 
 ## Validation Architecture
 
 ### Test Framework
 | Property | Value |
 |----------|-------|
-| Framework | Vitest 5.1.0 (projects `main` and `renderer`) + Playwright 1.64.1 `_electron` |
-| Config files | `vitest.config.ts`, `playwright.config.ts` (both Wave 0) |
-| Quick run command | `npx vitest run --project main` (< 5 s) |
-| Full suite command | `npm test && npm run test:e2e` |
-| Phase gate | `npm run test:packaged && npm run test:live`, then the codesign checks |
+| Framework | Vitest 5.1.0 (projects `main`, `renderer`) + @playwright/test 1.64.1 `_electron` |
+| Config file | `vitest.config.mts`, `playwright.config.ts` (both created in Wave 0) |
+| Quick run command | `npx vitest run` (about 1 s today) |
+| Full suite command | `npx vitest run && npm run test:e2e` |
+| Phase gate | add `npm run test:packaged` (and optionally `npm run test:live`) |
 
 ### Phase Requirements → Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| FND-01 | The built app launches and the first window shows Settings or Home | e2e | `npm run test:e2e -- tests/e2e/shell.spec.ts -g "launches"` | ❌ Wave 0 |
-| FND-01 | The packaged ad-hoc arm64 `.app` launches | e2e @packaged + shell | `npm run test:packaged` then `codesign -dv "release/mac-arm64/Mock Case Proctor.app" 2>&1 \| grep Signature=adhoc` | ❌ |
-| FND-02 | No `sk-ant-` plus 20+ characters in tracked files; `.env` ignored | unit | `npx vitest run tests/config/secret-scan.test.ts` (also asserts `git check-ignore .env models/x sessions/x`) | ❌ |
-| FND-03 | The Vitest projects both run | meta | `npx vitest run --project renderer` (one trivial App test) | ❌ |
-| FND-03 | The fake mic delivers non-silent audio | e2e | `npm run test:e2e -- -g "fake audio"` (asserts `__e2e.micPeak(2500) > 0.1`) | ❌ |
-| FND-03 | Replay serves by scenario and index; RECORD strips headers; fixtures are clean | unit + integration | `npx vitest run tests/replay/` (starts the server on port 0, hits it with the real SDK `baseURL`, checks the `.req.json` has no headers, and the fixture-hygiene scan) | ❌ |
-| FND-04 | Both plists have audio-input, camera, jit, unsigned-mem and disable-library-validation; the builder JSON has identity `-`, entitlements, entitlementsInherit, both usage strings and target arm64 | unit | `npx vitest run tests/config/entitlements.test.ts` (`plutil -convert json`) | ❌ |
-| FND-05 | `resolveSafePath` rejects `..`, `%2e%2e`, encoded `/`, NUL, absolute paths and bad percent-encoding | unit | `npx vitest run src/main/protocol.test.ts` | ❌ |
-| FND-05 | No Node globals; `window.api` keys are exactly the allowlist; CSP meta and header present and equal to the constant; `app://bundle/../` gets a 404; `window.open` denied | e2e | `npm run test:e2e -- tests/e2e/shell.spec.ts` | ❌ |
-| FND-05 | BrowserWindow webPreferences | e2e | `electronApp.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences())` asserts sandbox, contextIsolation, `!nodeIntegration` and webSecurity | ❌ |
-| KEY-01 | KeyStore precedence, save, encrypt, atomic write, decrypt-failure fallthrough, `unavailable` | unit | `npx vitest run src/main/keys/keyStore.test.ts` | ❌ |
-| KEY-01 | Probe maps 200 to valid, 401/403 to invalid, 429 to valid, network/5xx to unverified, and sends `max_tokens:1` with `claude-haiku-5-5` | unit (SDK `fetch` seam) | `npx vitest run src/main/keys/probe.test.ts` | ❌ |
-| KEY-01 | Settings: a paste field of type password, Save & verify, error states, force-save on unverified | component | `npx vitest run --project renderer` | ❌ |
-| KEY-01 | First run with no key goes to Settings; paste, then `probe-ok`, then Home; relaunch with the same userData gives `source:'stored'` and no prompt | e2e | `npm run test:e2e -- tests/e2e/key.spec.ts -g "paste"` | ❌ |
-| KEY-01 | `probe-401` shows "invalid" and stays on Settings; closed port shows "couldn't verify" and Save-anyway works | e2e | `npm run test:e2e -- tests/e2e/key.spec.ts -g "invalid\|offline"` | ❌ |
-| KEY-02 | Env key auto-saved and Settings skipped; dotenv via `E2E_DOTENV_PATH` likewise | unit + e2e | `npx vitest run src/main/keys/` ; `npm run test:e2e -- -g "auto-fill"` | ❌ |
-| KEY-02 | keymgr symlink present and ignored | shell (gate) | `test -L .env && keymgr ls \| grep -q 'mock-case-proctor' && git check-ignore -q .env` | n/a |
-| KEY-03 | Redaction | unit | `npx vitest run src/main/log.test.ts` | ❌ |
-| KEY-03 | Canary key absent from DOM, IPC returns, storage, console, main stdio and userData plaintext; present at the replay server | e2e | `npm run test:e2e -- -g "canary"` | ❌ |
-| KEY-03 | `KeyStatus` has exactly `{hasKey, source}` (zod `.strict()`) | unit | `npx vitest run src/shared/` | ❌ |
-| KEY-04 | Clear removes the file and goes back to Settings; Replace overwrites; a relaunch reflects it | unit + e2e | `npx vitest run src/main/keys/keyStore.test.ts` ; `npm run test:e2e -- -g "replace\|clear"` | ❌ |
-| KEY-01 (live) | A real key probes as `valid` against the real API | live | `npm run test:live` (reads `.env` via `parseDotenv` in the test; skipped if absent) | ❌ |
-| QA-01 | TDD order | process | Each plan task commits the RED test before the implementation. The verifier checks `git log` order per module | n/a |
+| FND-01 | The built app launches and the first window shows Settings or Home | e2e | `npx playwright test tests/e2e/smoke.spec.ts` | ❌ Wave 0 |
+| FND-01 | The packaged ad-hoc `.app` launches (`isPackaged` true, `app://` loaded) | e2e @packaged | `npm run test:packaged` | ❌ Wave 0 |
+| FND-01 | `npm run dev` opens a window | manual one-off (dev server is not an E2E target, per CLAUDE.md) | `npm run dev` | — |
+| FND-02 | No key-shaped string in tracked or untracked-unignored files | unit | `npx vitest run tests/unit/secret-scan.test.ts` | ❌ Wave 0 |
+| FND-02 | `.env`, `models/`, `sessions/`, `cases/` ignored | unit (`git check-ignore -q`) | `npx vitest run tests/unit/gitignore.test.ts` | ❌ Wave 0 |
+| FND-02 | Repo private | one-off verify | `gh repo view rishi-zamvar/mock-case-proctor --json visibility` | — |
+| FND-03 | Both Vitest projects run at least one test | unit | `npx vitest run --project main && npx vitest run --project renderer` | ❌ Wave 0 |
+| FND-03 | Fake WAV reaches the page with peak > 0.1 | e2e | `npx playwright test tests/e2e/harness.spec.ts` | ❌ Wave 0 |
+| FND-03 | Replay serves fixtures by scenario and index; 418 on missing; RECORD tees to a fake upstream, strips auth and drops content-encoding | integration | `npx vitest run tests/support/replay-server.test.ts` | ❌ Wave 0 |
+| FND-04 | Both plists carry the 5 keys; builder JSON wires them, plus usage strings | unit | `npx vitest run tests/unit/entitlements.test.ts` | ❌ Wave 0 |
+| FND-04 | Packaged app and Helper (Renderer) are signed with the entitlements; Info.plist has usage strings | e2e @packaged (codesign/plutil via execFileSync) | `npm run test:packaged` | ❌ Wave 0 |
+| FND-05 | `resolveAppUrl` rejects `..`, `%2f`, unknown hosts and malformed escapes | unit | `npx vitest run src/main/app-protocol.test.ts` | ❌ Wave 0 |
+| FND-05 | The meta CSP equals the `CSP` constant | unit | `npx vitest run tests/unit/csp-parity.test.ts` | ❌ Wave 0 |
+| FND-05 | No `require`/`process`/`electron` globals; `Object.keys(window.api)` equals the allowlist; CSP header on `app://`; an injected inline script fires `securitypolicyviolation`; `app://bundle/..%2f…` returns 403; `app://assets/icon.png` returns 200; the built preload requires only `electron` | e2e | `npx playwright test tests/e2e/security.spec.ts` | ❌ Wave 0 |
+| FND-05 | `WINDOW_PREFS` constant has the locked flags | unit | `npx vitest run src/main/window.test.ts` | ❌ Wave 0 |
+| KEY-01 | Probe classification (200, 401, 403, TypeError, 429) | unit (injected fetch) | `npx vitest run src/main/key-probe.test.ts` | ❌ Wave 0 |
+| KEY-01 | KeyStore save, encrypt, atomic write; decrypt-failure fallback; unavailable keychain means no persist | unit (fake crypto, tmp dir) | `npx vitest run src/main/key-store.test.ts` | ❌ Wave 0 |
+| KEY-01 | Settings states (verifying, invalid, unverified with Save anyway, saved) | component (jsdom, mocked `window.api`) | `npx vitest run --project renderer` | ❌ Wave 0 |
+| KEY-01 | Clean profile shows Settings; paste a fake key, replay 200, "Key saved", restart, Home | e2e | `npx playwright test tests/e2e/key.spec.ts -g onboarding` | ❌ Wave 0 |
+| KEY-02 | Precedence: stored over env over dotenv; env and dotenv probe then auto-save | unit | `npx vitest run src/main/key-store.test.ts` | ❌ Wave 0 |
+| KEY-02 | Env-launch skips Settings; `MCP_DOTENV_PATH` launch skips Settings | e2e | `npx playwright test tests/e2e/key.spec.ts -g auto` | ❌ Wave 0 |
+| KEY-03 | `redact()` masks keys in strings and error messages | unit | `npx vitest run src/main/log.test.ts` | ❌ Wave 0 |
+| KEY-03 | After all flows, the fake key is absent from `__ipcOut`, `page.content()`, `userData/logs/*` and the stored blob bytes (encrypted) | e2e | `npx playwright test tests/e2e/key.spec.ts -g leak` | ❌ Wave 0 |
+| KEY-03 | No key in `tests/fixtures/**` | unit (covered by the secret scan) | `npx vitest run tests/unit/secret-scan.test.ts` | ❌ Wave 0 |
+| KEY-04 | Replace: the new key is verified and saved, and the replay `lastAuth` equals `Bearer <new>` on the next probe; Clear: the file is gone and Settings is shown | e2e | `npx playwright test tests/e2e/key.spec.ts -g "replace|clear"` | ❌ Wave 0 |
+| QA-01 | Tests precede logic | process (verifier: `git log --reverse` shows a failing-test commit before each implementation commit for each pure module) | `git log --oneline -- src/main` | — |
 
 ### Sampling Rate
-- **Per task commit:** `npx vitest run --project main` (plus `--project renderer` when the UI changed).
-- **Per wave merge:** `npm test && npm run test:e2e`.
-- **Phase gate:**
-  - the full suite;
-  - `npm run test:packaged`;
-  - the codesign/plutil checks;
-  - `npm run test:live` (one probe);
-  - three consecutive green `test:e2e` runs (flake check);
-  - then push to `origin`.
+- **Per task commit:** `npx vitest run` (under 5 s)
+- **Per wave merge:** `npx vitest run && npm run test:e2e`
+- **Phase gate:** the full suite, plus `npm run test:packaged`, plus one `@live` probe (about $0.0000015), all green before `/gsd:verify-work`
 
 ### Wave 0 Gaps
-- [ ] Scaffold, pins, `productName`, remove `@electron-toolkit/*`
-- [ ] `vitest.config.ts` (projects) + one trivial test per project
-- [ ] `playwright.config.ts`, `tests/e2e/global-setup.ts` (WAV + replay server), `tests/e2e/launch.ts`
-- [ ] `tests/replay/server.ts` + record `probe-ok` / `probe-401` fixtures (`RECORD=1`, one-time real call)
-- [ ] `.gitignore` additions: `tests/fixtures/audio/*.wav`, `*.log*`, `.eslintcache`
-- [ ] The mock-keychain save → relaunch test runs first (Open Question 1)
+- [ ] Scaffold via a temp dir (Pitfall 1); pin the deps; remove the toolkit preload, the yml and the template UI
+- [ ] `vitest.config.mts`, `playwright.config.ts`, `tests/e2e/global-setup.ts` (the `say` WAV into `os.tmpdir()`, exported via `process.env.MCP_FAKE_WAV`)
+- [ ] `tests/support/replay-server.ts` + `tests/fixtures/claude/{probe-valid,probe-invalid}/000.json` (hand-written, tiny)
+- [ ] `tests/e2e/fixtures.ts` (env stripping, mkdtemp userData, per-test replay)
+- [ ] `.gitignore` additions: `cases/`, `.eslintcache`, `*.log*`, `release/` (already present), `test-results/` (present)
+- [ ] keymgr registration + manual `ln -s` (Pitfall 9)
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- create-electron 1.0.31 tarball (`index.js`, `template/base`, `template/react-ts`): the file list, `--skip` → `emptyDir`, the template configs.
-- app-builder-lib 26.18.0 tarball: `mac/MacTargetHelper.js` (the `"-"` ad-hoc branch, the disable-library-validation warning, the entitlements defaults) and `macPackager.js` (the arch-suffixed output dir).
-- electron 45.2.1 `electron.d.ts` (spike node_modules): the SafeStorage async API and sync deprecation, the `CustomScheme` privileges, `protocol.handle`, `initiatorOrigin`.
-- @anthropic-ai/sdk 1.4.0 tarball: `client.js` (the Bearer auth header, the `ANTHROPIC_BASE_URL` default, `buildURL` concatenation, the env/profile fallback) and `core/error.js` (the error classes).
-- vitest 5.1.0 tarball d.ts: `projects`, `TestProjectInlineConfiguration.extends` (default true).
-- electron-vite 6.0.0 d.ts: `externalizeDeps` defaults to true, plus the sandbox note. @vitejs/plugin-react 6: the inline dev preamble.
-- playwright-core (spike): the `env` option replaces `process.env`.
-- `~/.local/bin/keymgr` source and `~/.config/keys/README.md`: export renders only; the symlink is manual.
-- claude-api skill `shared/models.md` / `SKILL.md`: `claude-haiku-5-5` pricing and thinking defaults, `claude-opus-5-5`.
-- Local runs: `say`/`afconvert` WAV output; spike `main.js`/`run2.mjs` fake-media switches.
-- https://www.electronjs.org/docs/latest/api/safe-storage: async API, re-prompt on inconsistent signature, sync removal in 46.
+- Local prototype runs (2026-11-03, this Mac):
+  - create-electron 1.0.31 source and template files.
+  - electron-vite 6.0.0 dist (dev spawns `electron .`, externalized preload deps).
+  - app-builder-lib 26.18.0 source (`MacTargetHelper.js` ad-hoc and entitlement defaults, `macOptions.d.ts`).
+  - Electron 45.2.1 `electron.d.ts` (safeStorage async APIs, protocol, permissions).
+  - Playwright 1.64.1 `loader.js` (Chromium switches) and its `types.d.ts` (`env` semantics).
+  - `@anthropic-ai/sdk` 1.4.0 source (`client.d.ts` credential chain, `Authorization: Bearer`, log redaction, error exports).
+  - keymgr source.
+  - A live probe against `claude-haiku-5-5`.
+- https://platform.claude.com/docs/en/about-claude/models/overview and https://platform.claude.com/docs/en/models/haiku-5-5/overview: model IDs and pricing. Haiku 5.5 is the cheapest, with adaptive thinking on by default.
+- https://vitest.dev/guide/projects: v5.1.0 `test.projects` syntax.
+- https://www.electron.build/docs/features/code-signing/code-signing-mac/: ad-hoc signing needs disable-library-validation.
+- https://releases.electronjs.org/pr/53790: `--use-mock-keychain` landed in 45.0.0-alpha.6.
 
 ### Secondary (MEDIUM confidence)
-- https://releases.electronjs.org/pr/53790: `--use-mock-keychain` for test keychain prompts, backported to 45.0.0-alpha.6.
-- https://github.com/danipen/gitgrove/pull/17 and https://instagit.com/different-ai/openwork/openwork-electron-desktop-app-architecture/: mock keychain against Safe Storage dialogs on ad-hoc builds.
+- [gitgrove PR #17](https://github.com/danipen/gitgrove/pull/17) and [zero-agent PR #46](https://github.com/0-AI-UG/zero-agent/pull/46): community use of `use-mock-keychain` to suppress the Safe Storage dialog. Corroborated by the local test.
+- `.planning/research/STACK.md`, `PITFALLS.md` and `ARCHITECTURE.md` (prior project research).
 
 ### Tertiary (LOW confidence)
-- Whether `corsEnabled` is needed for `app://` module scripts; untested.
+- The HF hub hostnames for CSP `connect-src`, pending Phase 5.
 
 ## Metadata
 
 **Confidence breakdown:**
-- Standard stack: HIGH. Every version was checked with `npm view` today, and the template was inspected.
-- Architecture and security patterns: HIGH. They come from d.ts and source reads plus the official doc pattern.
-- safeStorage under E2E: MEDIUM. The mock-keychain coverage of async safeStorage is inferred, and a Wave 0 test resolves it.
-- Pitfalls: HIGH. Most were verified in source; the rest are spike-proven.
+- Standard stack: HIGH. Every version came from `npm view`, and the stack was installed and built today.
+- Architecture: HIGH. A sandboxed `app://` build plus the packaged app were run under Playwright.
+- Pitfalls: HIGH. Each was reproduced or read from the installed source. The exact mechanism behind Pitfall 5 (why Playwright's mock-keychain switch didn't apply to the packaged launch) is unknown, but the fix is verified.
 
 **Research date:** 2026-11-03
-**Valid until:** 2026-12-03 (Electron and the SDK move monthly; re-check if bumping majors)
+**Valid until:** 2026-12-03 (Electron, SDK and Playwright move fast; re-check `npm view` if planning slips past that)
