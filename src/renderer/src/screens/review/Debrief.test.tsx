@@ -38,12 +38,23 @@ describe('Debrief', () => {
 
   it('cards follow the debrief order', () => {
     setup()
-    const order = ['insight-called-out', 'flag-row', 'intended-read', 'rubric-row', 'summary', 'checks']
+    const order = [
+      'insight-called-out',
+      'flag-row',
+      'intended-read',
+      'rubric-row',
+      'summary',
+      'checks'
+    ]
     const els = order.map((t) => all(t)[0])
     for (let i = 1; i < els.length; i++) {
-      expect(els[i - 1].compareDocumentPosition(els[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(
+        els[i - 1].compareDocumentPosition(els[i]) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
     }
-    expect(id('review-header').compareDocumentPosition(els[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(
+      id('review-header').compareDocumentPosition(els[0]) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 
   it('insight lists called out and None for an empty missed list', () => {
@@ -105,7 +116,11 @@ describe('Debrief', () => {
   it('checks: numbers table with marks and expected only when wrong', () => {
     setup()
     const rows = all('numbers-row')
-    expect(rows.map((r) => r.getAttribute('data-correct'))).toEqual(['true', 'false', 'unverifiable'])
+    expect(rows.map((r) => r.getAttribute('data-correct'))).toEqual([
+      'true',
+      'false',
+      'unverifiable'
+    ])
     expect(within(rows[0]).getByLabelText('Correct').textContent).toBe('✓')
     expect(within(rows[1]).getByLabelText('Wrong').textContent).toBe('✗')
     expect(within(rows[2]).getByLabelText('Unverifiable').textContent).toBe('?')

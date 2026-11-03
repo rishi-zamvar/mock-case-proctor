@@ -1,4 +1,9 @@
-import { DIMENSION_IDS, DIMENSION_LABELS, type Reveal, type ViewState } from '../../../../shared/ipc'
+import {
+  DIMENSION_IDS,
+  DIMENSION_LABELS,
+  type Reveal,
+  type ViewState
+} from '../../../../shared/ipc'
 
 export const AT = Date.UTC(2026, 10, 3, 15)
 
