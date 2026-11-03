@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { mkdtemp, readFile, writeFile, readdir, stat, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -17,8 +17,9 @@ let file: string
 let avail: boolean
 let reenc: boolean
 let probeResult: ProbeResult
-let log: { info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> }
-let probe: ReturnType<typeof vi.fn>
+type LogFn = (...a: unknown[]) => void
+let log: { info: Mock<LogFn>; warn: Mock<LogFn> }
+let probe: Mock<(k: string) => Promise<ProbeResult>>
 let cipher: Cipher
 
 beforeEach(async () => {
@@ -27,8 +28,8 @@ beforeEach(async () => {
   avail = true
   reenc = false
   probeResult = 'valid'
-  log = { info: vi.fn(), warn: vi.fn() }
-  probe = vi.fn(async () => probeResult)
+  log = { info: vi.fn<LogFn>(), warn: vi.fn<LogFn>() }
+  probe = vi.fn(async (_k: string) => probeResult)
   cipher = {
     available: async () => avail,
     encrypt: async (s) => enc(s),
