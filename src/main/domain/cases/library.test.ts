@@ -1,9 +1,9 @@
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { CaseCard } from '../../../shared/ipc'
-import { listCases, loadCase } from './library'
+import { casePdfResolver, findCase, listCases, loadCase } from './library'
 import { LEFTOVER_RE, resolveDeep } from './resolve'
 
 const FIXTURE_ROOT = join(__dirname, '../../../../tests/fixtures/cases')
@@ -115,5 +115,33 @@ describe('loadCase errors', () => {
     data.interviewer.prep_brief.ideal_answer += ' {no_such_token}'
     writeFileSync(p, JSON.stringify(data))
     expect(() => loadCase(root, '99', deck)).toThrow(/unresolved token/)
+  })
+})
+
+describe('findCase', () => {
+  it('given the fixture id, when found, then returns id, slug and dir', () => {
+    const c = findCase(FIXTURE_ROOT, '99')
+    expect(c).toMatchObject({ id: '99', slug: 'fixture' })
+    expect(c?.dir).toMatch(/case_99_fixture$/)
+  })
+  it.each(['98', '../99', '9', ''])('given id %j, when found, then null', (id) => {
+    expect(findCase(FIXTURE_ROOT, id)).toBeNull()
+  })
+})
+
+describe('casePdfResolver', () => {
+  const resolve = casePdfResolver(FIXTURE_ROOT)
+  it('given the fixture id, when resolved, then returns the existing interviewee pdf', () => {
+    const p = resolve('99')
+    expect(p).toMatch(/case_99_fixture_interviewee_package\.pdf$/)
+    expect(existsSync(p!)).toBe(true)
+  })
+  it.each(['98', '9'])('given id %s, when resolved, then null', (id) => {
+    expect(resolve(id)).toBeNull()
+  })
+  it('given a case dir with no interviewee pdf, when resolved, then null', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cases-'))
+    mkdirSync(join(root, 'case_42_nopdf'))
+    expect(casePdfResolver(root)('42')).toBeNull()
   })
 })
