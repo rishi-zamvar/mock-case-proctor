@@ -192,7 +192,11 @@ export function compose(
     agent: () => {
       const key = reviewerKey()
       return key
-        ? createTrendsAgent({ client: reviewerClient(key), model: config.reviewerModel, log: o.log })
+        ? createTrendsAgent({
+            client: reviewerClient(key),
+            model: config.reviewerModel,
+            log: o.log
+          })
         : createFakeTrendsAgent()
     },
     file: join(config.sessionsDir, 'trends.json'),
@@ -212,8 +216,7 @@ export function compose(
     newId: (p) =>
       `${p === 'session' ? 's' : 't'}_${Date.now().toString(36)}_${randomUUID().slice(0, 8)}`,
     awake: o.awake,
-    onScored: () =>
-      void trends.refresh().catch(() => o.log.warn('trends refresh failed')),
+    onScored: () => void trends.refresh().catch(() => o.log.warn('trends refresh failed')),
     log: o.log
   })
   const library = (): LibraryView => {

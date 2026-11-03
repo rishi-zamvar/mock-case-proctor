@@ -11,6 +11,7 @@ import { PROMPT_VERSION } from './review/grader'
 import { FIXTURE_ROOT, manualClock } from './session/runner.harness'
 
 const tmp = (): string => mkdtempSync(join(tmpdir(), 'compose-rev-'))
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred mock shape
 const mkLog = () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 const KEY = 'sk-ant-test-canary-0002'
 
@@ -36,7 +37,10 @@ async function scoreOnce(
   await vi.waitFor(() => expect(core.runner.current()?.phase).toBe('reviewMode'), {
     timeout: 5000
   })
-  const card = core.runner.current()?.reveal?.scorecard as { graderModel: string; promptVersion: string }
+  const card = core.runner.current()?.reveal?.scorecard as {
+    graderModel: string
+    promptVersion: string
+  }
   core.runner.discard(sessionId)
   return card
 }
@@ -101,10 +105,13 @@ describe('compose reviewer + trends', () => {
     const srv = await startReplayServer({ fixturesDir: fixtures, logDir: tmp() })
     try {
       const l = mkLog()
-      const core = compose(
-        env({ REVIEWER: 'claude', ANTHROPIC_BASE_URL: `${srv.url}/s/rev` }),
-        { userData: tmp(), log: l, send: vi.fn(), getKey: () => KEY, clock: manualClock() }
-      )
+      const core = compose(env({ REVIEWER: 'claude', ANTHROPIC_BASE_URL: `${srv.url}/s/rev` }), {
+        userData: tmp(),
+        log: l,
+        send: vi.fn(),
+        getKey: () => KEY,
+        clock: manualClock()
+      })
       const card = await scoreOnce(core)
       expect(card.graderModel).toBe('claude-opus-5-5')
       expect(card.promptVersion).toBe(PROMPT_VERSION)
