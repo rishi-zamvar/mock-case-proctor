@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-11-03T09:07:38.839Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-11-03T09:08:29.536Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 41
-  completed_plans: 36
+  completed_plans: 37
   percent: 0
 ---
 
@@ -88,6 +88,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05 P04 | 6min | 2 tasks | 4 files |
 | Phase 05 P03 | 6min | 1 tasks | 2 files |
 | Phase 05 P02 | 4min | 3 tasks | 19 files |
+| Phase 05 P01 | 25min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,7 @@ Recent decisions affecting current work:
 - [Phase 05]: HeadTTS device by endpoint order (null adapter -> wasm, webgpu fail -> wasm, both fail -> none); synth timeout reconnects current endpoint
 - [Phase 05]: Voice assets live under gitignored resources/assets/models/ and are served at /res/models/... (voices at /res/models/voices/<v>.bin); models are local-only (allowRemoteModels=false)
 - [Phase 05]: Voice packages (talkinghead, three, headtts, transformers) are exact-pinned devDependencies; copyVoiceVendor copies the runtime into src/renderer/public/vendor at build
+- [Phase 05]: TTS mode defaults headtts, fake under E2E=1; T-10 line is spoken (no ack, no transcript) only in headtts
 
 ### Pending Todos
 
@@ -159,6 +161,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T09:07:38.836Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-11-03T09:08:29.532Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
