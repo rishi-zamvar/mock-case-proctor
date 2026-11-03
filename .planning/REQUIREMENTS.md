@@ -19,7 +19,7 @@
 ### API Key (KEY)
 
 - [x] **KEY-01**: On first run, if no key is stored, a Settings screen asks for an Anthropic API key, checks it with a live call, and saves it encrypted via Electron `safeStorage`.
-- [ ] **KEY-02**: If `ANTHROPIC_API_KEY` is set in the environment or in the gitignored `.env` (symlinked by keymgr), the key is filled in and saved automatically, so Rishi never has to paste it.
+- [x] **KEY-02**: If `ANTHROPIC_API_KEY` is set in the environment or in the gitignored `.env` (symlinked by keymgr), the key is filled in and saved automatically, so Rishi never has to paste it.
 - [x] **KEY-03**: The key never reaches the renderer, logs, fixtures or git. Tests assert this.
 - [x] **KEY-04**: Rishi can replace or clear the key from Settings.
 
@@ -143,7 +143,7 @@
 | FND-04 | Phase 1 | Complete |
 | FND-05 | Phase 1 | Complete |
 | KEY-01 | Phase 1 | Complete |
-| KEY-02 | Phase 1 | Pending |
+| KEY-02 | Phase 1 | Complete |
 | KEY-03 | Phase 1 | Complete |
 | KEY-04 | Phase 1 | Complete |
 | LIB-01 | Phase 3 | Pending |
