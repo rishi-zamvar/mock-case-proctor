@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Scaffold, Harness & Key Onboarding** - Sandboxed Electron app, private repo, three-tier test harness, encrypted API key (completed 2026-11-03)
 - [x] **Phase 2: Core Domain Logic** - Pure, test-first state machine, case loader, leak guard and speech normaliser (completed 2026-11-03)
 - [x] **Phase 3: Walking Skeleton on Fakes** - Every screen and the full session flow clickable on fakes, with the barrier and persistence enforced (completed 2026-11-03)
-- [ ] **Phase 4: Proctored Review Block** - In-window deck, a drift-free 45-minute countdown, webcam tile and mic check
+- [x] **Phase 4: Proctored Review Block** - In-window deck, a drift-free 45-minute countdown, webcam tile and mic check (completed 2026-11-03)
 - [ ] **Phase 5: Voice Out & Avatar** - Local Kokoro voice on WebGPU and a lip-synced TalkingHead partner
 - [ ] **Phase 6: Interviewer Agent** - A Claude partner grounded in the case's answer key that follows Rishi's structure and grills him
 - [ ] **Phase 7: Voice In & Barge-In** - Push-to-talk local speech-to-text, sentence streaming within 3 s, interruptible avatar
@@ -111,7 +111,7 @@ Plans:
 - [x] 04-04-PLAN.md — createAwake display-sleep blocker + ensureMediaAccess (macOS TCC) (wave 1)
 - [x] 04-05-PLAN.md — Runner warning timer (resume-safe), deck page persistence, awake hold/release; index/compose wiring, no View menu (wave 2)
 - [x] 04-06-PLAN.md — Session deck stage + Deck toggle, monotonic countdown, T-10 toast, webcam tile + toggles; start-sheet setup check (wave 2)
-- [ ] 04-07-PLAN.md — E2E review/media specs, flow + packaged updates, Phase 4 gate (wave 3)
+- [x] 04-07-PLAN.md — E2E review/media specs, flow + packaged updates, Phase 4 gate (wave 3)
 **UI hint**: yes
 
 ### Phase 5: Voice Out & Avatar
@@ -194,7 +194,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Scaffold, Harness & Key Onboarding | 5/9 | Complete    | 2026-11-03 |
 | 2. Core Domain Logic | 4/5 | Complete    | 2026-11-03 |
 | 3. Walking Skeleton on Fakes | 12/12 | Complete    | 2026-11-03 |
-| 4. Proctored Review Block | 2/7 | In Progress|  |
+| 4. Proctored Review Block | 7/7 | Complete   | 2026-11-03 |
 | 5. Voice Out & Avatar | 0/TBD | Not started | - |
 | 6. Interviewer Agent | 0/TBD | Not started | - |
 | 7. Voice In & Barge-In | 0/TBD | Not started | - |
