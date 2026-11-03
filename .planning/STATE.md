@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-07-PLAN.md
-last_updated: "2026-11-03T09:03:31.388Z"
-last_activity: 2026-11-03 -- Phase 5 execution started
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-11-03T09:06:21.356Z"
+last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 41
-  completed_plans: 33
+  completed_plans: 35
   percent: 0
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 
 ## Current Position
 
-Phase: 5 (Voice Out & Avatar) — EXECUTING
-Plan: 1 of 8
+Phase: 05
+Plan: Not started
 Status: Executing Phase 5
-Last activity: 2026-11-03 -- Phase 5 execution started
+Last activity: 2026-11-03
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -85,6 +85,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04 P05 | 2min | 2 tasks | 7 files |
 | Phase 04 P06 | 2min | 2 tasks | 6 files |
 | Phase 04 P07 | 35min | 3 tasks | 11 files |
+| Phase 05 P04 | 6min | 2 tasks | 4 files |
+| Phase 05 P03 | 6min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -138,6 +140,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Session countdown is deadline-derived state, min-clamped per deadline (nextRemaining)
 - [Phase 04]: WebcamTile unmounts <video> when off ([hidden] lost to display:block)
 - [Phase 04]: Display-sleep E2E matches NoDisplaySleepAssertion|PreventUserIdleDisplaySleep on the app pid
+- [Phase 05]: speechQueue: failed-synth acks go through speakMarker to keep seq order; handOff races synth vs drop so a stuck cancelled synth cannot block later turns
+- [Phase 05]: HeadTTS device by endpoint order (null adapter -> wasm, webgpu fail -> wasm, both fail -> none); synth timeout reconnects current endpoint
 
 ### Pending Todos
 
@@ -152,6 +156,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T09:02:58.459Z
-Stopped at: Completed 04-07-PLAN.md
+Last session: 2026-11-03T09:06:21.279Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
