@@ -5,11 +5,16 @@ import { ScorecardSchema } from '../../shared/schemas'
 import { loadCase } from '../domain/cases/library'
 import { SECTION_IDS } from '../domain/machine/sections'
 import { checkUtterance } from '../domain/text/leakGuard'
-import type { LlmChunk, TurnRequest } from '../ports'
+import type { InterviewControl } from '../domain/machine/interviewMachine'
+import type { LlmChunk, ScoreInput, TurnRequest } from '../ports'
 import { createFakeLlm } from './fakeLlm'
 
 const ROOT = join(__dirname, '../../../tests/fixtures/cases')
-const brief = loadCase(ROOT, '99', readFileSync(join(ROOT, 'case_99_fixture/deck.txt'), 'utf8')).brief
+const brief = loadCase(
+  ROOT,
+  '99',
+  readFileSync(join(ROOT, 'case_99_fixture/deck.txt'), 'utf8')
+).brief
 const live = (): AbortSignal => new AbortController().signal
 
 async function collect(it: AsyncIterable<LlmChunk>): Promise<LlmChunk[]> {
@@ -18,7 +23,10 @@ async function collect(it: AsyncIterable<LlmChunk>): Promise<LlmChunk[]> {
   return out
 }
 const text = (cs: LlmChunk[]): string =>
-  cs.map((c) => (c.type === 'text' ? c.delta : '')).join('').trim()
+  cs
+    .map((c) => (c.type === 'text' ? c.delta : ''))
+    .join('')
+    .trim()
 const grill = (section: TurnRequest['section'], turnInSection: number): TurnRequest => ({
   kind: 'grill',
   section,
@@ -34,18 +42,28 @@ describe('createFakeLlm streamTurn', () => {
     expect(kinds.slice(-2)).toEqual(['control', 'done'])
     expect(kinds.filter((k) => k === 'control')).toHaveLength(1)
     expect(text(cs)).toContain('Retention')
-    expect(cs.at(-2)).toEqual({ type: 'control', payload: { section: 'retention', section_status: 'continue' } })
+    expect(cs.at(-2)).toEqual({
+      type: 'control',
+      payload: { section: 'retention', section_status: 'continue' }
+    })
   })
 
   it('given turn 1 with default sufficientAfter, when streamed, then sufficient and no next_section', async () => {
     const cs = await collect(createFakeLlm()(brief).streamTurn(grill('retention', 1), live()))
     const ctl = cs.find((c) => c.type === 'control')
-    expect(ctl).toEqual({ type: 'control', payload: { section: 'retention', section_status: 'sufficient' } })
+    expect(ctl).toEqual({
+      type: 'control',
+      payload: { section: 'retention', section_status: 'sufficient' }
+    })
   })
 
   it('given sufficientAfter 3, when turn 1 streamed, then still continue', async () => {
-    const cs = await collect(createFakeLlm({ sufficientAfter: 3 })(brief).streamTurn(grill('business', 1), live()))
-    expect(cs.find((c) => c.type === 'control')).toMatchObject({ payload: { section_status: 'continue' } })
+    const cs = await collect(
+      createFakeLlm({ sufficientAfter: 3 })(brief).streamTurn(grill('business', 1), live())
+    )
+    expect(cs.find((c) => c.type === 'control')).toMatchObject({
+      payload: { section_status: 'continue' }
+    })
   })
 
   it('given the same request twice, when streamed, then identical text', async () => {
@@ -60,7 +78,8 @@ describe('createFakeLlm streamTurn', () => {
     for (const s of SECTION_IDS)
       for (const t of [0, 1]) {
         const line = text(await collect(llm.streamTurn(grill(s, t), live())))
-        for (const sentence of line.split(/(?<=[.?!])\s+/)) expect(checkUtterance(sentence, brief).ok).toBe(true)
+        for (const sentence of line.split(/(?<=[.?!])\s+/))
+          expect(checkUtterance(sentence, brief).ok).toBe(true)
         expect(line.toLowerCase()).not.toMatch(/rubric|answer key/)
       }
   })
@@ -77,13 +96,18 @@ describe('createFakeLlm streamTurn', () => {
   it('given an aborted signal, when iterated, then nothing is yielded', async () => {
     const ac = new AbortController()
     ac.abort()
-    expect(await collect(createFakeLlm()(brief).streamTurn(grill('retention', 0), ac.signal))).toEqual([])
+    expect(
+      await collect(createFakeLlm()(brief).streamTurn(grill('retention', 0), ac.signal))
+    ).toEqual([])
   })
 
   it('given an abort mid-stream, when iterated, then it stops early without done', async () => {
     const ac = new AbortController()
     const out: LlmChunk[] = []
-    for await (const c of createFakeLlm({ chunkDelayMs: 5 })(brief).streamTurn(grill('retention', 0), ac.signal)) {
+    for await (const c of createFakeLlm({ chunkDelayMs: 5 })(brief).streamTurn(
+      grill('retention', 0),
+      ac.signal
+    )) {
       out.push(c)
       if (out.length === 2) ac.abort()
     }
@@ -103,7 +127,9 @@ describe('createFakeLlm warmupTurn', () => {
   })
 
   it('given two candidate turns, when warmup streamed, then closing line and warmupComplete', async () => {
-    const cs = await collect(createFakeLlm()(brief).warmupTurn({ history: [intv, cand, intv, cand] }, live()))
+    const cs = await collect(
+      createFakeLlm()(brief).warmupTurn({ history: [intv, cand, intv, cand] }, live())
+    )
     expect(text(cs)).toBe("Great, let's get into the case.")
     expect(cs.at(-1)).toEqual({ type: 'done', warmupComplete: true })
   })
@@ -111,7 +137,9 @@ describe('createFakeLlm warmupTurn', () => {
 
 describe('createFakeLlm extractPlan', () => {
   it('given default options, when extracting, then the full section order', async () => {
-    expect(await createFakeLlm()(brief).extractPlan('anything', live())).toEqual({ order: [...SECTION_IDS] })
+    expect(await createFakeLlm()(brief).extractPlan('anything', live())).toEqual({
+      order: [...SECTION_IDS]
+    })
   })
   it('given a plan option, when extracting, then that order', async () => {
     const llm = createFakeLlm({ plan: ['retention', 'business'] })(brief)
@@ -123,11 +151,11 @@ describe('createFakeLlm scoreSession', () => {
   const turn = {
     id: 't1',
     speaker: 'candidate' as const,
-    phase: 'interview' as const,
+    phase: 'grilling' as const,
     text: 'My call is to pass at this price',
     at: 0
   }
-  const ctl = (extra: object) => ({
+  const ctl = (extra: Partial<InterviewControl>): ScoreInput['controlLog'][number] => ({
     at: 0,
     turnId: 't1',
     control: { section: 'retention' as const, section_status: 'continue' as const, ...extra }
@@ -135,7 +163,12 @@ describe('createFakeLlm scoreSession', () => {
 
   it('given one turn and f1 surfaced, when scored, then a valid average card with f1 found', async () => {
     const card = await createFakeLlm()(brief).scoreSession(
-      { transcript: [turn], controlLog: [ctl({ flags_surfaced: ['f1'] })], endedEarly: false, omitted: [] },
+      {
+        transcript: [turn],
+        controlLog: [ctl({ flags_surfaced: ['f1'] })],
+        endedEarly: false,
+        omitted: []
+      },
       live()
     )
     expect(ScorecardSchema.parse(card)).toEqual(card)
@@ -170,10 +203,21 @@ describe('createFakeLlm scoreSession', () => {
 
   it('given a long answer or none, when scored, then evidence is 12 words or (no answer)', async () => {
     const llm = createFakeLlm()(brief)
-    const long = { ...turn, text: 'one two three four five six seven eight nine ten eleven twelve thirteen' }
-    const a = await llm.scoreSession({ transcript: [long], controlLog: [], endedEarly: false, omitted: [] }, live())
-    expect(a.rubric[0].evidence).toBe('one two three four five six seven eight nine ten eleven twelve')
-    const b = await llm.scoreSession({ transcript: [], controlLog: [], endedEarly: false, omitted: [] }, live())
+    const long = {
+      ...turn,
+      text: 'one two three four five six seven eight nine ten eleven twelve thirteen'
+    }
+    const a = await llm.scoreSession(
+      { transcript: [long], controlLog: [], endedEarly: false, omitted: [] },
+      live()
+    )
+    expect(a.rubric[0].evidence).toBe(
+      'one two three four five six seven eight nine ten eleven twelve'
+    )
+    const b = await llm.scoreSession(
+      { transcript: [], controlLog: [], endedEarly: false, omitted: [] },
+      live()
+    )
     expect(b.rubric[0].evidence).toBe('(no answer)')
   })
 })
