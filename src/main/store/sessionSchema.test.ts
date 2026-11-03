@@ -123,4 +123,83 @@ describe('SessionFileSchema', () => {
     for (const deckPage of [0, 501, 2.5])
       expect(() => SessionFileSchema.parse({ ...minimal(), deckPage })).toThrow()
   })
+  it('given a pre-Phase-6 machineState without pushbackDone/grillStartedAt/warmupDeadline when parsed then they default', () => {
+    const f = minimal()
+    const ms = { ...(f.machineState as Record<string, unknown>) }
+    delete ms.pushbackDone
+    delete ms.grillStartedAt
+    delete ms.warmupDeadline
+    const timings = [{ turnId: 't1', kind: 'grill', startedAt: 1, doneAt: 2 }]
+    const parsed = SessionFileSchema.parse({ ...f, machineState: ms, timings })
+    expect(parsed.machineState.pushbackDone).toBe(false)
+    expect(parsed.machineState.grillStartedAt).toBeNull()
+    expect(parsed.machineState.warmupDeadline).toBeNull()
+    expect(parsed.openingPlan).toBeUndefined()
+  })
+
+  it('given a control with flags_hinted, evidence, numbers_checked and pushback_done when round-tripped then it is unchanged', () => {
+    const file = {
+      ...minimal(),
+      controlLog: [
+        {
+          at: 6,
+          turnId: 't2',
+          control: {
+            section: 'valuation',
+            section_status: 'continue',
+            flags_surfaced: ['f1', 'f2'],
+            flags_hinted: ['f2'],
+            evidence: 'we pay twelve times revenue',
+            numbers_checked: [{ claim: '12x ARR', correct: false }],
+            pushback_done: true
+          }
+        }
+      ]
+    }
+    const parsed = SessionFileSchema.parse(JSON.parse(JSON.stringify(file)))
+    expect(parsed).toEqual(SessionFileSchema.parse(file))
+    expect(parsed.controlLog[0].control).toEqual(file.controlLog[0].control)
+  })
+
+  const openingPlan = {
+    recap: 'Invest at a lower price',
+    recommendation: 'invest_at_price',
+    price: '$400M',
+    considerations: [{ label: 'Churn is rising', section_id: 'retention', stance: 'against' }],
+    order: ['retention']
+  }
+
+  it('given an openingPlan and a timing with firstSentenceAt + usage when round-tripped then it is unchanged', () => {
+    const file = {
+      ...minimal(),
+      openingPlan,
+      timings: [
+        {
+          turnId: 't2',
+          kind: 'grill',
+          startedAt: 5,
+          firstTextAt: 5.5,
+          firstSentenceAt: 5.8,
+          doneAt: 6,
+          usage: { inputTokens: 10, outputTokens: 5, cacheRead: 3, cacheWrite: 0, stopReason: null }
+        }
+      ]
+    }
+    const parsed = SessionFileSchema.parse(JSON.parse(JSON.stringify(file)))
+    expect(parsed.openingPlan).toEqual(openingPlan)
+    expect(parsed.timings).toEqual(file.timings)
+  })
+
+  it.each([
+    [
+      'section_id nonsense',
+      {
+        ...openingPlan,
+        considerations: [{ ...openingPlan.considerations[0], section_id: 'nonsense' }]
+      }
+    ],
+    ['an extra key', { ...openingPlan, extra: 1 }]
+  ])('given an openingPlan with %s when parsed then it throws', (_n, plan) => {
+    expect(() => SessionFileSchema.parse({ ...minimal(), openingPlan: plan })).toThrow()
+  })
 })
