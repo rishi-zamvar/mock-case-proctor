@@ -33,8 +33,10 @@ test('renderer has no Node and a minimal api', async () => {
       'onView',
       'session',
       'speak',
-      'stt'
+      'stt',
+      'trends'
     ])
+    expect(await page.evaluate(() => Object.keys(window.api.trends!).sort())).toEqual(['get'])
     expect(await page.evaluate(() => window.api.config)).toEqual({ tts: 'fake', stt: 'fake' })
     expect(await page.evaluate(() => Object.keys(window.api.stt!).sort())).toEqual([
       'chunk',
