@@ -2,7 +2,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { CH, type Api, type E2EHooks } from '../shared/ipc'
 
-const api: Api = {
+// ponytail: Pick until 03-10 wires the session API; then back to full Api.
+const api: Pick<Api, 'key'> = {
   key: {
     status: () => ipcRenderer.invoke(CH.keyStatus),
     save: (key, opts) => ipcRenderer.invoke(CH.keySave, key, opts ?? {}),
@@ -13,7 +14,7 @@ const api: Api = {
 contextBridge.exposeInMainWorld('api', api)
 
 if (process.argv.includes('--e2e')) {
-  const hooks: E2EHooks = {
+  const hooks: Pick<E2EHooks, 'micPeak'> = {
     micPeak: async (ms) => {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
