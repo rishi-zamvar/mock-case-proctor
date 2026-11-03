@@ -1,0 +1,14 @@
+	pytorch2.6.0:οσ›
+I
+	input_ids/encoder/bert/Shape_1_output_0/encoder/bert/Shape_1"Shape
+®
+.encoder.bert.embeddings.word_embeddings.weight
+	input_ids8/encoder/bert/embeddings/word_embeddings/Gather_output_0//encoder/bert/embeddings/word_embeddings/Gather"Gather
+“
+%encoder.text_encoder.embedding.weight
+	input_ids//encoder/text_encoder/embedding/Gather_output_0&/encoder/text_encoder/embedding/Gather"Gather
+―
+style
+/encoder/Constant_3_output_0
+/encoder/Constant_4_output_0
+/encoder/Const

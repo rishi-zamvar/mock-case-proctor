@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { describe, expect, test } from 'vitest'
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
@@ -36,4 +37,20 @@ describe('voice dependencies', () => {
       expect(pkg.dependencies[name]).toBeUndefined()
     }
   )
+})
+
+describe('signing dependencies', () => {
+  // isbinaryfile 4.x loops past EOF on a garbage protobuf varint ("Invalid array length") and
+  // @electron/osx-sign runs it on every bundled file, so the shipped model.onnx crashed packaging.
+  const signer = createRequire(require.resolve('@electron/osx-sign/package.json'))
+
+  test('given osx-sign, when it resolves isbinaryfile, then it gets the fixed 5.x line', () => {
+    expect(signer('isbinaryfile/package.json').version).toMatch(/^5\./)
+  })
+
+  test('given the first 512 bytes of the Kokoro model.onnx, when osx-sign tastes it, then it does not throw', () => {
+    const { isBinaryFileSync } = signer('isbinaryfile')
+    const buf = readFileSync('tests/fixtures/signing/onnx-header.bin')
+    expect(isBinaryFileSync(buf, buf.length)).toBe(true)
+  })
 })
