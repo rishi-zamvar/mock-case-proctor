@@ -1,7 +1,8 @@
 // The real LlmPort over @anthropic-ai/sdk (INT-01, INT-06..08, FLOW-02, FLOW-05). Main only.
 // One closure per brief: frozen system prefix + private histories, nothing at module scope.
 // Logs carry codes and counts only, never candidate, proctor or reply text.
-import Anthropic, { APIUserAbortError } from '@anthropic-ai/sdk'
+import Anthropic, { APIError, APIUserAbortError } from '@anthropic-ai/sdk'
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import type {
   MessageCreateParamsStreaming,
   MessageParam
@@ -11,8 +12,10 @@ import type { Logger } from '../log'
 import type { HistoryTurn, LlmChunk, LlmUsage, MakeLlm } from '../ports'
 import { INTERVIEW_CONTROL_TOOL, parseControl } from './control'
 import { assistantTurn, seedFromHistory, textOnlyAssistant, userTurn } from './messages'
-import { buildSystem, proctorNote } from './prompt'
-import { FALLBACK_LINE } from './turnText'
+import { buildSystem, buildWarmupSystem, proctorNote, warmupNote } from './prompt'
+import { EXTRACT_SYSTEM, OpeningPlanSchema, toExtractResult } from './extraction'
+import { FALLBACK_LINE, wrapCandidate } from './turnText'
+import { createFakeLlm } from '../adapters/fakeLlm'
 
 export const DEFAULT_INTERVIEWER_MODEL = 'claude-opus-5-5'
 /** Research Correction 1: 300 truncates the interview_control call. */
@@ -67,10 +70,17 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
     stopReason: msg.stop_reason
   })
 
+  /** Only after a completed turn: append the user turn and the raw assistant content. */
+  const remember = (msgs: MessageParam[], user: MessageParam, msg: Anthropic.Message): void => {
+    const asst = assistantTurn(msg.content)
+    msgs.push(user, asst.content.length ? asst : textOnlyAssistant(FALLBACK_LINE))
+  }
+
   return (brief: InterviewerBrief) => {
     const system = buildSystem(brief)
     const flagIds = brief.flags.map.map((f) => f.id)
     const grillMsgs: MessageParam[] = []
+    const warmMsgs: MessageParam[] = []
     let pendingToolUseId: string | null = null
 
     return {
@@ -103,8 +113,7 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
         const msg = yield* run(params, signal, 'grill')
         // ponytail: an aborted turn's candidate text is not replayed to Claude; Phase 7 barge-in owns partial history.
         if (!msg) return
-        const asst = assistantTurn(msg.content)
-        grillMsgs.push(user, asst.content.length ? asst : textOnlyAssistant(FALLBACK_LINE))
+        remember(grillMsgs, user, msg)
         const tu = msg.content.find(
           (b): b is Anthropic.ToolUseBlock =>
             b.type === 'tool_use' && b.name === INTERVIEW_CONTROL_TOOL.name
@@ -117,16 +126,53 @@ export function createClaudeLlm(cfg: ClaudeLlmConfig): MakeLlm {
         yield { type: 'done', usage: usageOf(msg) }
       },
 
-      warmupTurn() {
-        throw new Error('not implemented')
+      async *warmupTurn({ history }, signal) {
+        const candidate = lastCandidate(history)
+        const n = history.filter((t) => t.speaker === 'candidate').length
+        const user = userTurn({ proctor: warmupNote(n), candidate })
+        const msg = yield* run(
+          {
+            model,
+            max_tokens: INTERVIEWER_MAX_TOKENS,
+            output_config: { effort: 'low' },
+            system: buildWarmupSystem(),
+            messages: [...warmMsgs, user],
+            stream: true
+          },
+          signal,
+          'warmup'
+        )
+        if (!msg) return
+        remember(warmMsgs, user, msg)
+        // Warm-up end is code-owned (skip button / 10-min timer): never warmupComplete here.
+        yield { type: 'done', usage: usageOf(msg) }
       },
 
-      async extractPlan() {
-        throw new Error('not implemented')
+      async extractPlan(opening, signal) {
+        try {
+          const r = await client.messages.parse(
+            {
+              model,
+              max_tokens: 2048,
+              output_config: { effort: 'low', format: zodOutputFormat(OpeningPlanSchema) },
+              system: EXTRACT_SYSTEM,
+              messages: [{ role: 'user', content: wrapCandidate(opening) }]
+            },
+            { signal }
+          )
+          if (!r.parsed_output) log.warn('extraction unparsable: no parsed output')
+          return toExtractResult(r.parsed_output)
+        } catch (e) {
+          if (isAbort(e, signal)) return { order: [] }
+          if (e instanceof APIError) throw e
+          log.warn('extraction unparsable')
+          return { order: [] }
+        }
       },
 
-      async scoreSession() {
-        throw new Error('not implemented')
+      scoreSession(input, signal) {
+        // ponytail: Phase 8 grader replaces this.
+        return createFakeLlm()(brief).scoreSession(input, signal)
       }
     }
   }
