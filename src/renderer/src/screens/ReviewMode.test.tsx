@@ -135,7 +135,7 @@ describe('ReviewMode', () => {
     expect(sc.getAttribute('aria-selected')).toBe('true')
     fireEvent.click(tr)
     expect(tr.getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByText('Trends arrive in Phase 8')).not.toBeNull()
+    expect(id('trends')).not.toBeNull()
     expect(q('rubric-row')).toBeNull()
     fireEvent.keyDown(tr, { key: 'ArrowLeft' })
     expect(sc.getAttribute('aria-selected')).toBe('true')
