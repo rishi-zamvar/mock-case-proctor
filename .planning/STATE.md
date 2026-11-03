@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-09-PLAN.md
-last_updated: "2026-11-03T10:03:13.840Z"
+stopped_at: Completed 06-08-PLAN.md
+last_updated: "2026-11-03T10:04:01.189Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 5
   total_plans: 51
-  completed_plans: 49
+  completed_plans: 50
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 6 (Interviewer Agent) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -101,6 +101,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06 P07 | 15min | 2 tasks | 3 files |
 | Phase 06 P06 | 15min | 2 tasks | 3 files |
 | Phase 06 P09 | 6min | 1 tasks | 13 files |
+| Phase 06 P08 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -177,6 +178,7 @@ Recent decisions affecting current work:
 - [Phase 06]: Interject is a real interviewer turn (kind 'interject') via speakTurn; one silent retry with SORRY_LINE; extraction double-failure falls back to default section order
 - [Phase 06]: claudeLlm appends history only after a completed turn; aborted turns forgotten; extractPlan rethrows APIError, unparsable -> { order: [] }
 - [Phase 06]: Replay fixtures recorded on case_99 only; scripted lines use Fixturely deck figures
+- [Phase 06]: LLM defaults auto outside E2E, fake under E2E; no key falls back to fake with a per-session warn
 
 ### Pending Todos
 
@@ -191,6 +193,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T10:03:13.837Z
-Stopped at: Completed 06-09-PLAN.md
+Last session: 2026-11-03T10:04:01.186Z
+Stopped at: Completed 06-08-PLAN.md
 Resume file: None
