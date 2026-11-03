@@ -339,6 +339,21 @@ describe('App voice wiring', () => {
     expect(resumedFirst).toBe(true)
   })
 
+  it('given headtts and a resumable session, when Resume is clicked, then resumes audio', async () => {
+    const { api } = mockApi(
+      { hasKey: true, source: 'stored' },
+      async () =>
+        libraryView({
+          resumable: { sessionId: 's9', caseId: '01', company: 'Acme', phase: 'grilling' }
+        }),
+      'headtts'
+    )
+    render(<App />)
+    await userEvent.click(await screen.findByTestId('resume-btn'))
+    expect(fakeVoice.resume).toHaveBeenCalled()
+    expect(api.session.resume).toHaveBeenCalledWith('s9')
+  })
+
   it('given headtts, when the session shows, then the avatar stage hosts the voice', async () => {
     const { cb } = mockApi({ hasKey: true, source: 'stored' }, undefined, 'headtts')
     render(<App />)
