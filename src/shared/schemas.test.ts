@@ -62,7 +62,10 @@ describe('CaseCardSchema', () => {
     ['bad slug', { ...card, slug: 'Bad-Slug' }],
     [
       'interviewer pdf',
-      { ...card, intervieweePdfPath: '/x/case_01_claimpath/case_01_claimpath_interviewer_package.pdf' }
+      {
+        ...card,
+        intervieweePdfPath: '/x/case_01_claimpath/case_01_claimpath_interviewer_package.pdf'
+      }
     ]
   ])('rejects %s', (_n, bad) => {
     expect(() => CaseCardSchema.parse(bad)).toThrow()

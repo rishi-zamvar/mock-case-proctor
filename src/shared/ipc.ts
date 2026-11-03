@@ -17,3 +17,13 @@ export interface Api {
 export interface E2EHooks {
   micPeak(ms: number): Promise<number>
 }
+// Candidate-safe case summary: the ONLY case shape that may cross IPC. Never add interviewer fields.
+export type CaseCard = {
+  id: string
+  number: number
+  slug: string
+  company: string
+  vertical: string
+  level: number
+  intervieweePdfPath: string
+}
