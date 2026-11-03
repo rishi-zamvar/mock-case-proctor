@@ -138,7 +138,7 @@ describe('compose', () => {
 
   const warnSpeaks = async (tts: string): Promise<unknown[]> => {
     const send = vi.fn()
-    const core = compose(env({ TTS: tts, E2E_TIME_SCALE: '100000' }), {
+    const core = compose(env({ TTS: tts, E2E_TIME_SCALE: '10000' }), {
       userData: tmp(),
       log,
       send
