@@ -27,7 +27,7 @@
 
 - [ ] **LIB-01**: The library screen lists all 12 cases from `~/Documents/Projects/lead_edge_mock_cases` (the path is configurable). Each entry shows only candidate-safe fields: number, company name, vertical and level.
 - [ ] **LIB-02**: Completed cases are greyed out, with the date and score. An explicit "Retake" starts a fresh session.
-- [ ] **LIB-03**: The case loader builds two things for each case:
+- [x] **LIB-03**: The case loader builds two things for each case:
   - A main-process-only interviewer brief from `_work/data/case_NN.json`, with every `{token}` resolved. Zero unresolved tokens across all 12 cases, tested.
   - A candidate-safe card, plus the text of the interviewee deck.
 
@@ -148,7 +148,7 @@
 | KEY-04 | Phase 1 | Complete |
 | LIB-01 | Phase 3 | Pending |
 | LIB-02 | Phase 3 | Pending |
-| LIB-03 | Phase 2 | Pending |
+| LIB-03 | Phase 2 | Complete |
 | BAR-01 | Phase 3 | Pending |
 | BAR-02 | Phase 3 | Pending |
 | BAR-03 | Phase 2 | Pending |

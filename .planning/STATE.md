@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-09-PLAN.md
-last_updated: "2026-11-03T07:23:47.441Z"
-last_activity: 2026-11-03 -- Phase 2 execution started
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-11-03T07:26:14.563Z"
+last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 14
-  completed_plans: 9
+  completed_plans: 10
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 2 (Core Domain Logic) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 2
-Last activity: 2026-11-03 -- Phase 2 execution started
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-11-03
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P07 | 10min | 2 tasks | 11 files |
 | Phase 01 P08 | 4min | 2 tasks | 2 files |
 | Phase 01 P09 | 9min | 3 tasks | 6 files |
+| Phase 02 P01 | 6min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,8 @@ Recent decisions affecting current work:
 - [Phase 01]: Real safeStorage + use-mock-keychain persists across relaunch; E2E_FAKE_CIPHER fallback not needed
 - [Phase 01]: resources/assets keeps non-dot placeholder ASSETS.txt (electron-builder drops dotfiles)
 - [Phase 01]: test:live rebuilds out/ before @live run
+- [Phase 02]: Leftover checks walk string leaves, not JSON.stringify (compact JSON objects match LEFTOVER_RE)
+- [Phase 02]: src/main/domain/cases/ un-ignored (cases/ rule swallowed it)
 
 ### Pending Todos
 
@@ -98,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T07:09:01.710Z
-Stopped at: Completed 01-09-PLAN.md
+Last session: 2026-11-03T07:26:14.560Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

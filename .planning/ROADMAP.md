@@ -60,7 +60,7 @@ Plans:
 **Plans**: 5 plans in 2 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — TDD token/{fn:} resolver + deck page splitter, case_99_fixture, .gitignore negation (wave 1)
+- [x] 02-01-PLAN.md — TDD token/{fn:} resolver + deck page splitter, case_99_fixture, .gitignore negation (wave 1)
 - [ ] 02-03-PLAN.md — TDD section catalog, plan merge, turn caps, pure interview reducer (wave 1)
 - [ ] 02-04-PLAN.md — TDD speakable() normaliser + lexicon (real census) and streaming sentence splitter (wave 1)
 - [ ] 02-05-PLAN.md — TDD leak guard, canonical number parser, brevity bands (wave 1)
