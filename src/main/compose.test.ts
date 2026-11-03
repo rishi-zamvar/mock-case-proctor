@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,6 +8,8 @@ import { compose, readConfig, REVIEW_WARNING_LINE } from './compose'
 import { DEFAULT_LIBRARY_ROOT } from './domain/cases/library'
 import { WARMUP_CLOSING_LINE } from './agent/turnText'
 import { startReplayServer } from '../../tests/replay/server'
+import type { FromWorker, ToWorker } from './stt/protocol'
+import type { ChildLike } from './stt/whisperStt'
 
 const FIXTURE_ROOT = join(__dirname, '../../tests/fixtures/cases')
 const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
@@ -23,7 +25,9 @@ describe('readConfig', () => {
       e2e: false,
       tts: 'headtts',
       llm: 'auto',
-      interviewerModel: 'claude-opus-5-5'
+      interviewerModel: 'claude-opus-5-5',
+      stt: 'whisper',
+      sttModel: 'turbo'
     })
   })
 
@@ -52,7 +56,8 @@ describe('readConfig', () => {
   it.each([
     [{ ADAPTERS: 'real' }, 'ADAPTERS=real'],
     [{ LLM: 'gpt' }, 'LLM=gpt'],
-    [{ STT: 'whisper' }, 'STT=whisper'],
+    [{ STT: 'bogus' }, 'STT=bogus'],
+    [{ STT_MODEL: 'large' }, 'STT_MODEL=large'],
     [{ TTS: 'kokoro' }, 'TTS=kokoro']
   ])('given unavailable adapter env %j, when read, then it throws', (env, name) => {
     expect(() => readConfig(env, '/ud')).toThrow(`adapter not available in this build: ${name}`)
@@ -82,6 +87,15 @@ describe('readConfig', () => {
     [{ INTERVIEWER_MODEL: '  ' }, 'claude-opus-5-5']
   ])('given env %j, when read, then interviewerModel is %s', (env, m) => {
     expect(readConfig(env, '/ud').interviewerModel).toBe(m)
+  })
+
+  it.each([
+    [{}, 'whisper', 'turbo'],
+    [{ E2E: '1' }, 'fake', 'turbo'],
+    [{ E2E: '1', STT: 'whisper', STT_MODEL: 'base' }, 'whisper', 'base'],
+    [{ STT: 'fake' }, 'fake', 'turbo']
+  ])('given env %j, when read, then stt is %s / %s', (env, stt, sttModel) => {
+    expect(readConfig(env, '/ud')).toMatchObject({ stt, sttModel })
   })
 
   it('given LLM fake, when read, then it is accepted', () => {
@@ -307,5 +321,75 @@ describe('compose', () => {
         expect(spoken(send).includes(WARMUP_CLOSING_LINE)).toBe(said)
       }
     )
+  })
+
+  describe('stt selection', () => {
+    const METAL = [{ name: 'MTL0', description: 'Apple M', type: 'gpu' }]
+    const mkLog = (): typeof log => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() })
+    const fakeChild = (sent: ToWorker[]): ChildLike => {
+      const subs: ((m: FromWorker) => void)[] = []
+      const emit = (m: FromWorker): void => void setImmediate(() => subs.forEach((cb) => cb(m)))
+      return {
+        postMessage: (m) => {
+          sent.push(m)
+          if (m.type === 'init') emit({ type: 'ready', gpus: METAL })
+          else emit({ type: 'text', id: m.id, text: 'hello' })
+        },
+        on: ((ev: string, cb: (m: FromWorker) => void) => {
+          if (ev === 'message') subs.push(cb)
+        }) as ChildLike['on'],
+        kill: () => true
+      }
+    }
+    const whisperEnv = (): Record<string, string> => env({ STT: 'whisper', STT_MODEL: 'base' })
+
+    it('given STT=whisper, a model file and a fork, when composed, then it pre-warms with the model path and reports metal', async () => {
+      const dir = tmp()
+      writeFileSync(join(dir, 'ggml-base.en.bin'), '')
+      const sent: ToWorker[] = []
+      const forkStt = vi.fn(() => fakeChild(sent))
+      const l = mkLog()
+      const core = compose(whisperEnv(), {
+        userData: tmp(),
+        log: l,
+        send: vi.fn(),
+        forkStt,
+        sttModelsDir: dir
+      })
+      expect(sent[0]).toEqual({ type: 'init', model: join(dir, 'ggml-base.en.bin') })
+      await expect(core.sttStatus()).resolves.toBe('metal')
+      expect(core.e2eSay).toBeUndefined()
+      expect(l.info).toHaveBeenCalledWith('stt', 'whisper', 'base')
+      core.disposeStt?.()
+    })
+
+    it('given STT=whisper and a missing model, when composed, then status is failed, the log is pathless and fork is never called', async () => {
+      const dir = tmp()
+      const forkStt = vi.fn()
+      const l = mkLog()
+      const core = compose(whisperEnv(), {
+        userData: tmp(),
+        log: l,
+        send: vi.fn(),
+        forkStt,
+        sttModelsDir: dir
+      })
+      await expect(core.sttStatus()).resolves.toBe('failed')
+      expect(l.error).toHaveBeenCalledWith('whisper model missing; run npm run fetch:voice')
+      expect(JSON.stringify(l.error.mock.calls)).not.toContain(dir)
+      expect(forkStt).not.toHaveBeenCalled()
+    })
+
+    it('given STT=whisper and no forkStt, when composed, then status is failed without throwing', async () => {
+      const core = compose(whisperEnv(), { userData: tmp(), log: mkLog(), send: vi.fn() })
+      await expect(core.sttStatus()).resolves.toBe('failed')
+    })
+
+    it('given E2E default, when composed, then stt is off and e2eSay is defined', async () => {
+      const core = compose(env(), { userData: tmp(), log: mkLog(), send: vi.fn() })
+      expect(core.config.stt).toBe('fake')
+      await expect(core.sttStatus()).resolves.toBe('off')
+      expect(core.e2eSay).toBeTypeOf('function')
+    })
   })
 })

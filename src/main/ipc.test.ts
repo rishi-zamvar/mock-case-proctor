@@ -88,7 +88,7 @@ describe('registerIpc', () => {
 const LIB = { cases: [], resumable: null, quarantined: 0, error: null }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred harness shape
-function full(o: { e2eSay?: boolean; library?: unknown } = {}) {
+function full(o: { e2eSay?: boolean; library?: unknown; sttStatus?: () => Promise<unknown> } = {}) {
   const handlers = new Map<string, Handler>()
   const ipc: IpcLike = { handle: (ch, fn) => void handlers.set(ch, fn) }
   const keyStore = { status: vi.fn(), save: vi.fn(), clear: vi.fn() }
@@ -97,7 +97,9 @@ function full(o: { e2eSay?: boolean; library?: unknown } = {}) {
     resume: vi.fn(async () => ({ sessionId: 's_1' })),
     discard: vi.fn(),
     intent: vi.fn(async () => undefined),
-    ack: vi.fn()
+    ack: vi.fn(),
+    sttChunk: vi.fn(),
+    started: vi.fn()
   }
   const library = vi.fn(() => o.library ?? LIB)
   const e2eSay = vi.fn()
@@ -105,7 +107,8 @@ function full(o: { e2eSay?: boolean; library?: unknown } = {}) {
     keyStore: keyStore as unknown as IpcDeps['keyStore'],
     runner,
     library: library as unknown as () => LibraryView,
-    ...(o.e2eSay === false ? {} : { e2eSay })
+    ...(o.e2eSay === false ? {} : { e2eSay }),
+    ...(o.sttStatus ? { sttStatus: o.sttStatus as IpcDeps['sttStatus'] } : {})
   }
   registerIpc(ipc, deps)
   const call = async (ch: string, ...args: unknown[]): Promise<unknown> =>
@@ -126,6 +129,9 @@ describe('registerIpc session channels', () => {
         'session:resume',
         'session:start',
         'speak:ack',
+        'speak:started',
+        'stt:chunk',
+        'stt:status',
         'e2e:say'
       ].sort()
     )
@@ -225,6 +231,9 @@ describe('registerIpc session channels', () => {
     'session:resume',
     'session:discard',
     'speak:ack',
+    'speak:started',
+    'stt:chunk',
+    'stt:status',
     'e2e:say'
   ])('given a foreign or missing sender, when %s, then rejects forbidden sender', async (ch) => {
     const { handlers, runner, library, e2eSay } = full()
@@ -241,9 +250,42 @@ describe('registerIpc session channels', () => {
       runner.resume,
       runner.discard,
       runner.ack,
+      runner.sttChunk,
+      runner.started,
       library,
       e2eSay
     ])
       expect(f).not.toHaveBeenCalled()
+  })
+
+  it('given a Float32Array chunk, when stt:chunk, then the runner gets the same array; number[] rejects', async () => {
+    const { call, runner } = full()
+    const pcm = new Float32Array(160)
+    await expect(call('stt:chunk', 'a1', 0, pcm)).resolves.toBeUndefined()
+    expect(runner.sttChunk).toHaveBeenCalledWith('a1', 0, pcm)
+    expect(runner.sttChunk.mock.calls[0][2]).toBe(pcm)
+    await expect(call('stt:chunk', 'a1', 1, [0, 0.1])).rejects.toThrow('invalid arguments')
+    expect(runner.sttChunk).toHaveBeenCalledTimes(1)
+  })
+
+  it('given turn and seq, when speak:started, then forwards to runner.started', async () => {
+    const { call, runner } = full()
+    await expect(call('speak:started', 't1', 2)).resolves.toBeUndefined()
+    expect(runner.started).toHaveBeenCalledWith('t1', 2)
+  })
+
+  it('given an sttStatus dep, when stt:status, then returns the parsed status; a bad value rejects', async () => {
+    await expect(full({ sttStatus: async () => 'metal' }).call('stt:status')).resolves.toBe('metal')
+    await expect(full({ sttStatus: async () => 'gpu' }).call('stt:status')).rejects.toThrow()
+  })
+
+  it('given no sttStatus dep, when stt:status, then resolves off', async () => {
+    await expect(full().call('stt:status')).resolves.toBe('off')
+  })
+
+  it('given a bargeIn intent, when session:intent, then forwards to the runner', async () => {
+    const { call, runner } = full()
+    await call('session:intent', { type: 'bargeIn' })
+    expect(runner.intent).toHaveBeenCalledWith({ type: 'bargeIn' })
   })
 })
