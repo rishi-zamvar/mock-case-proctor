@@ -1,7 +1,15 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, type Mock } from 'vitest'
 import { ensureMediaAccess, type MediaKind, type MediaPrefs } from './media'
 
-function fake(status: Record<MediaKind, string>, ask: (k: MediaKind) => Promise<boolean>) {
+type Fake = {
+  prefs: {
+    getMediaAccessStatus: Mock<MediaPrefs['getMediaAccessStatus']>
+    askForMediaAccess: Mock<MediaPrefs['askForMediaAccess']>
+  }
+  log: { info: Mock; warn: Mock; error: Mock }
+}
+
+function fake(status: Record<MediaKind, string>, ask: (k: MediaKind) => Promise<boolean>): Fake {
   const prefs = {
     getMediaAccessStatus: vi.fn((k: MediaKind) => status[k]),
     askForMediaAccess: vi.fn(ask)

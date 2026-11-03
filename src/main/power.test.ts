@@ -1,11 +1,22 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, type Mock } from 'vitest'
 import { createAwake, type Blocker } from './power'
 
-function fake() {
+type FakeLog = { info: Mock; warn: Mock; error: Mock }
+type Fake = {
+  b: {
+    start: Mock<Blocker['start']>
+    stop: Mock<Blocker['stop']>
+    isStarted: Mock<Blocker['isStarted']>
+  }
+  log: FakeLog
+  started: Set<number>
+}
+
+function fake(): Fake {
   const started = new Set<number>()
   let next = 1
   const b = {
-    start: vi.fn((_t: 'prevent-display-sleep') => {
+    start: vi.fn<Blocker['start']>(() => {
       const id = next++
       started.add(id)
       return id
