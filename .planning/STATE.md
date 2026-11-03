@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-10-PLAN.md
-last_updated: "2026-11-03T08:08:01.884Z"
+stopped_at: Completed 03-11-PLAN.md
+last_updated: "2026-11-03T08:13:29.606Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 26
-  completed_plans: 24
+  completed_plans: 25
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 3 (Walking Skeleton on Fakes) — EXECUTING
-Plan: 11 of 12
+Plan: 12 of 12
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -76,6 +76,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P09 | 8min | 2 tasks | 5 files |
 | Phase 03 P08 | 9min | 2 tasks | 4 files |
 | Phase 03 P10 | 6min | 2 tasks | 7 files |
+| Phase 03 P11 | 15min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,7 @@ Recent decisions affecting current work:
 - [Phase 03]: Runner applies LLM turn results inside one queued job; end ignored once scoring started; ack timeout is wall time
 - [Phase 03]: compose.ts is the sole adapter/config-env reader; non-fake LLM/STT/TTS/ADAPTERS throws until Phases 5-7
 - [Phase 03]: E2E_TIME_SCALE honoured only under E2E=1
+- [Phase 03]: T1 flow suite relaunches on a finished profile rather than sharing one app across tests
 
 ### Pending Todos
 
@@ -132,6 +134,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T08:08:01.880Z
-Stopped at: Completed 03-10-PLAN.md
+Last session: 2026-11-03T08:13:29.602Z
+Stopped at: Completed 03-11-PLAN.md
 Resume file: None
