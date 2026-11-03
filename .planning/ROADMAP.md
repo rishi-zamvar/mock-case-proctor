@@ -130,7 +130,7 @@ Plans:
 - [x] 05-02-PLAN.md — app:// Content-Length/MIME + same-origin /res route, CSP connect-src blob:, pinned devDeps + vendor copy plugin + tf-shim, idempotent model/voice/GLB fetch script (wave 1)
 - [x] 05-03-PLAN.md — TDD speech queue: seq order, pre-synthesis, marker acks, cancel by turn with spoken:false (wave 1)
 - [x] 05-04-PLAN.md — TDD HeadTTS adapter (WebGPU detection, wasm fallback, timeouts, PCM audition) + avatar behaviour map/AvatarBinding (wave 1)
-- [ ] 05-05-PLAN.md — TalkingHead engine singleton (30 fps, run gating, states, readback) + voice runtime (warm-up, window.__voice probe) (wave 2)
+- [x] 05-05-PLAN.md — TalkingHead engine singleton (30 fps, run gating, states, readback) + voice runtime (warm-up, window.__voice probe) (wave 2)
 - [x] 05-06-PLAN.md — AvatarStage component + single Session mount point (wave 2)
 - [ ] 05-07-PLAN.md — App wiring: fake vs real queue, warm at startup, cancel routing, fallback banner, Start resumes audio (wave 3)
 - [ ] 05-08-PLAN.md — T2 E2E (@t2), audition WAVs, full regression + packaged gate, validation (wave 4)

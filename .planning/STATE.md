@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-06-PLAN.md
-last_updated: "2026-11-03T09:10:55.963Z"
+stopped_at: Completed 05-05-PLAN.md
+last_updated: "2026-11-03T09:12:58.130Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 41
-  completed_plans: 38
+  completed_plans: 39
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 05
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -90,6 +90,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05 P02 | 4min | 3 tasks | 19 files |
 | Phase 05 P01 | 25min | 3 tasks | 13 files |
 | Phase 05 P06 | 4min | 2 tasks | 5 files |
+| Phase 05 P05 | 4min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -149,6 +150,8 @@ Recent decisions affecting current work:
 - [Phase 05]: Voice packages (talkinghead, three, headtts, transformers) are exact-pinned devDependencies; copyVoiceVendor copies the runtime into src/renderer/public/vendor at build
 - [Phase 05]: TTS mode defaults headtts, fake under E2E=1; T-10 line is spoken (no ack, no transcript) only in headtts
 - [Phase 05]: AvatarStage: fake mode keeps exact T1 placeholder; avatar mode = dark tile + bottom-left name tag with speaking dot
+- [Phase 05]: Avatar logic in pure avatarCore.ts (tested); avatarEngine.ts is thin TalkingHead glue
+- [Phase 05]: voice.ts queue ready rejects on device none so seqs ack false immediately
 
 ### Pending Todos
 
@@ -163,6 +166,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T09:10:55.960Z
-Stopped at: Completed 05-06-PLAN.md
+Last session: 2026-11-03T09:12:58.127Z
+Stopped at: Completed 05-05-PLAN.md
 Resume file: None
