@@ -62,7 +62,7 @@
 
 ### Interviewer Agent (INT)
 
-- [ ] **INT-01**: The interviewer is Claude (one config value, default `claude-opus-5-5`), with the case's interviewer brief cached as the system prefix.
+- [x] **INT-01**: The interviewer is Claude (one config value, default `claude-opus-5-5`), with the case's interviewer brief cached as the system prefix.
 - [x] **INT-02**: Persona: a chill but sharp Lead Edge partner.
   - Speaks in short turns (1–3 sentences, one question).
   - Interrupts during the grilling when an answer runs past about 90 s.
@@ -70,7 +70,7 @@
   - Calls out obvious BS and wrong numbers, checked against the case data.
   - Is not an idealized scrutinizer.
 - [x] **INT-03**: For each section the interviewer opens with a high-level framing question ("let's dive into why you want to invest first"). It stays until the section's probe checklist has been sufficiently tested or the cap is hit, then moves on in Rishi's order.
-- [ ] **INT-04**: Sections cover:
+- [x] **INT-04**: Sections cover:
   - the Lead Edge 8 (gross retention first);
   - a qualitative and quantitative view of the industry, including public comps as the anchor;
   - whether the business is interesting (tailwind, system of record, switching cost);
@@ -165,10 +165,10 @@
 | VIN-03 | Phase 7 | Pending |
 | VIN-04 | Phase 7 | Pending |
 | VIN-05 | Phase 4 | Complete |
-| INT-01 | Phase 6 | Pending |
+| INT-01 | Phase 6 | Complete |
 | INT-02 | Phase 6 | Complete |
 | INT-03 | Phase 6 | Complete |
-| INT-04 | Phase 6 | Pending |
+| INT-04 | Phase 6 | Complete |
 | INT-05 | Phase 6 | Complete |
 | INT-06 | Phase 6 | Complete |
 | INT-07 | Phase 6 | Complete |
