@@ -33,6 +33,10 @@ export type RunnerDeps = {
   ackTimeoutMs?: number
   /** Keeps the display awake for the life of a session. */
   awake?: AwakePort
+  /** Tells the renderer to drop audio for a turn main aborted mid-speech. */
+  emitCancel?(turnId: string): void
+  /** Spoken at T-10 in review (headtts only); not part of the transcript. */
+  reviewWarningLine?: string
   log: Logger
 }
 
@@ -41,7 +45,7 @@ export interface SessionRunner {
   resume(id: string): Promise<{ sessionId: string }>
   discard(id: string): void
   intent(i: Intent): Promise<void>
-  ack(turnId: string, seq: number): void
+  ack(turnId: string, seq: number, spoken?: boolean): void
   current(): ViewState | null
 }
 
@@ -58,6 +62,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   let llm: LlmPort
   let inflight: AbortController | null = null
   let speaking = false
+  let speakingTurn: string | null = null
   const timers = new Map<'review' | 'warning', () => void>()
   let lastView: ViewState | null = null
   const acks = new Map<string, () => void>()
@@ -108,6 +113,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   }
 
   function abortInflight(): void {
+    if (speakingTurn) d.emitCancel?.(speakingTurn)
+    speakingTurn = null
     inflight?.abort()
     inflight = null
     flushAcks()
@@ -134,8 +141,10 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
           armTimer(e.id, e.deadline)
           break
         case 'REVIEW_WARNING':
-          // Phase 5 speaks "Ten minutes left." here
           d.log.info('review warning')
+          // Proctoring, not interview content: no ack wait, no transcript line.
+          if (d.reviewWarningLine)
+            d.emitSpeak({ turnId: d.newId('turn'), seq: 0, text: speakable(d.reviewWarningLine) })
           break
         case 'REQUEST_LLM_TURN':
           later.push(() => void runLlm(e))
@@ -163,6 +172,21 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     signal: AbortSignal
   ): Promise<{ control: InterviewControl | null; warmupComplete: boolean } | null> {
     const turnId = d.newId('turn')
+    speakingTurn = turnId
+    try {
+      return await speakTurnInner(turnId, s, stream, kind, signal)
+    } finally {
+      if (speakingTurn === turnId) speakingTurn = null
+    }
+  }
+
+  async function speakTurnInner(
+    turnId: string,
+    s: SessionFile,
+    stream: AsyncIterable<LlmChunk>,
+    kind: string,
+    signal: AbortSignal
+  ): Promise<{ control: InterviewControl | null; warmupComplete: boolean } | null> {
     speaking = true
     pushView()
     const t0 = clock.now()
@@ -478,6 +502,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       if (s?.status === 'active') store.save({ ...s, status: 'abandoned', endedAt: clock.now() })
     },
     intent: (i) => enqueue(() => onIntent(i)),
+    // ponytail: spoken is carried for Phase 7 barge-in history; ignored until then
     ack(turnId, seq) {
       acks.get(`${turnId}:${seq}`)?.()
     },
