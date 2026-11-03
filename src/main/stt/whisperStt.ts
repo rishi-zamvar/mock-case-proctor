@@ -4,7 +4,10 @@ import type { Logger } from '../log'
 import type { SttPort, SttResult } from '../ports'
 import type { FromWorker, ToWorker } from './protocol'
 
-export const MODEL_FILES = { turbo: 'ggml-large-v3-turbo-q5_0.bin', base: 'ggml-base.en.bin' } as const
+export const MODEL_FILES = {
+  turbo: 'ggml-large-v3-turbo-q5_0.bin',
+  base: 'ggml-base.en.bin'
+} as const
 export type SttModel = keyof typeof MODEL_FILES
 export type WhisperStatus = 'metal' | 'cpu' | 'failed'
 export type ChildLike = {
@@ -21,7 +24,11 @@ export class SttCrashed extends Error {
   }
 }
 
-type Pending = { resolve(r: SttResult): void; reject(e: Error): void; timer: ReturnType<typeof setTimeout> }
+type Pending = {
+  resolve(r: SttResult): void
+  reject(e: Error): void
+  timer: ReturnType<typeof setTimeout>
+}
 
 export function createWhisperStt(o: {
   fork(): ChildLike

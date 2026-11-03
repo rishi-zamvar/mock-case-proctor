@@ -10,6 +10,7 @@ import { WARMUP_CLOSING_LINE } from './agent/turnText'
 import { startReplayServer } from '../../tests/replay/server'
 import type { FromWorker, ToWorker } from './stt/protocol'
 import type { ChildLike } from './stt/whisperStt'
+import { manualClock } from './session/runner.harness'
 
 const FIXTURE_ROOT = join(__dirname, '../../tests/fixtures/cases')
 const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
@@ -171,19 +172,21 @@ describe('compose', () => {
     expect(lib.error).not.toContain(missing)
   })
 
+  // Manual clock: wall-clock time scaling flaked under parallel-suite CPU load.
   const warnSpeaks = async (tts: string): Promise<unknown[]> => {
     const send = vi.fn()
-    const core = compose(env({ TTS: tts, E2E_TIME_SCALE: '10000' }), {
-      userData: tmp(),
-      log,
-      send
-    })
+    const clock = manualClock()
+    const core = compose(env({ TTS: tts }), { userData: tmp(), log, send, clock })
     const { sessionId } = await core.runner.start('99', { warmup: false })
-    // The deadline fires after T-10, so leaving review proves the warning already ran.
-    await vi.waitFor(() => expect(core.runner.current()?.phase).not.toBe('review'), {
-      timeout: 3000,
-      interval: 2
-    })
+    expect(core.runner.current()?.phase).toBe('review')
+    clock.advance(36 * 60_000) // past T-10 of the 45 min review
+    await vi.waitFor(() =>
+      expect(
+        send.mock.calls.some(([ch, p]) => ch === CH.speak && p.text === REVIEW_WARNING_LINE)
+      ).toBe(tts === 'headtts')
+    )
+    clock.advance(10 * 60_000) // past the deadline: leaving review proves the warning ran once
+    await vi.waitFor(() => expect(core.runner.current()?.phase).not.toBe('review'))
     core.runner.discard(sessionId)
     return send.mock.calls
       .filter(([ch, p]) => ch === CH.speak && p.text === REVIEW_WARNING_LINE)

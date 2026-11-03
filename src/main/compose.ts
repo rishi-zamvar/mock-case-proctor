@@ -15,7 +15,7 @@ import { WARMUP_CLOSING_LINE } from './agent/turnText'
 import { readDeckText } from './domain/cases/deckSource'
 import { casePdfResolver, DEFAULT_LIBRARY_ROOT, listCases, loadCase } from './domain/cases/library'
 import type { Logger } from './log'
-import type { AwakePort, MakeLlm, SttPort } from './ports'
+import type { AwakePort, ClockPort, MakeLlm, SttPort } from './ports'
 import { createSessionRunner, type SessionRunner } from './session/runner'
 import { createSessionStore } from './store/sessionStore'
 import { filteredStt } from './stt/filtered'
@@ -83,6 +83,8 @@ export function compose(
     /** Forks the STT utilityProcess (index.ts); absent in unit tests means whisper is 'failed'. */
     forkStt?: () => ChildLike
     sttModelsDir?: string
+    /** Test seam: a manual clock instead of the (E2E-scaled) wall clock. */
+    clock?: ClockPort
   }
 ): {
   config: AppConfig
@@ -94,7 +96,7 @@ export function compose(
   disposeStt?: () => void
 } {
   const config = readConfig(env, o.userData)
-  const clock = createScaledClock({ scale: config.timeScale })
+  const clock = o.clock ?? createScaledClock({ scale: config.timeScale })
   const store = createSessionStore({ root: config.sessionsDir, now: clock.now, log: o.log })
   o.log.info('stt', config.stt, config.sttModel)
   let stt: SttPort

@@ -26,6 +26,7 @@ const tick = (): Promise<void> => new Promise((r) => setImmediate(r))
 const lastTranscribe = (c: Fake): Extract<ToWorker, { type: 'transcribe' }> =>
   c.sent.filter((m) => m.type === 'transcribe').at(-1) as Extract<ToWorker, { type: 'transcribe' }>
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred test fixture shape
 function setup(timeoutMs?: number) {
   const children: Fake[] = []
   const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
