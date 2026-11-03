@@ -1,0 +1,17 @@
+Third-party components used by the voice and avatar stack (Phase 5)
+
+Downloaded by scripts/fetch-voice-assets.sh into resources/assets/models/ (gitignored):
+- Kokoro-82M v1.0 (onnx-community/Kokoro-82M-v1.0-ONNX-timestamped model, onnx-community/Kokoro-82M-v1.0-ONNX voices)
+  Licence: Apache-2.0
+- avatarsdk.glb (met4citizen/TalkingHead v1.8.2, commit 46b32ee5)
+  "Created at AvatarSDK for non-commercial use" (TalkingHead README, licences section).
+  Personal, non-commercial use only. Note: the model wears a "METAPERSON AVATARS" branded T-shirt.
+
+Vendored from node_modules into the renderer at build time:
+- HeadTTS (@met4citizen/headtts 1.3.0), Copyright (c) 2025 Mika Suominen. Licence: MIT
+- TalkingHead (@met4citizen/talkinghead 1.8.2), Copyright (c) 2023-2024 Mika Suominen. Licence: MIT
+- onnxruntime-web (1.31.0-dev.20260914-8d85527a0), Microsoft. Licence: MIT
+- transformers.js (@huggingface/transformers 4.3.2), Hugging Face. Licence: Apache-2.0
+
+The packaged .app includes ~340 MB of these models (electron-builder asarUnpack resources/**).
+This is intended: the app runs fully offline.
