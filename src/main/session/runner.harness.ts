@@ -75,6 +75,7 @@ export function setup(
     ackTimeoutMs?: number
     clock?: ReturnType<typeof manualClock>
     awake?: AwakePort
+    reviewWarningLine?: string
   } = {}
 ) {
   const root = o.root ?? mkdtempSync(join(tmpdir(), 'runner-'))
@@ -86,6 +87,7 @@ export function setup(
   const transcribe = vi.spyOn(stt, 'transcribe')
   const views: ViewState[] = []
   const speaks: SpeakEvent[] = []
+  const cancels: string[] = []
   const h = { autoAck: o.autoAck ?? true }
   let n = 0
   const runner = createSessionRunner({
@@ -102,6 +104,8 @@ export function setup(
     newId: (p) => `${p}-${++n}`,
     ackTimeoutMs: o.ackTimeoutMs,
     awake: o.awake,
+    emitCancel: (t) => void cancels.push(t),
+    reviewWarningLine: o.reviewWarningLine,
     log
   })
   const file = (id: string): SessionFile =>
@@ -142,6 +146,7 @@ export function setup(
     transcribe,
     views,
     speaks,
+    cancels,
     h,
     runner,
     file,
