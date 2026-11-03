@@ -88,7 +88,8 @@ describe('PERSONA', () => {
     'once',
     'probe what the deck does not show',
     'call interview_control exactly once after speaking',
-    'pushback_done=true only on the turn you deliver it'
+    'pushback_done=true only on the turn you deliver it',
+    'directive=wrap_section: one last sharp question, and set status=sufficient'
   ])('given the persona, when read, then it contains %j', (s) => {
     expect(PERSONA).toContain(s)
   })

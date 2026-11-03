@@ -202,8 +202,11 @@ describe.skipIf(!process.env.LIVE)('interviewer live evals (real Claude)', () =>
     for (let i = 0; i < hard && s.s.machineState.current === first; i++) await turn(s, STRONG[i])
     expect(s.s.machineState.done).toContain(first)
     // left on the partner's own 'sufficient', not forced by the hard cap
+    // enums only (case_99 fixture), so a failure says how the section actually ran
+    const statuses = s.outs.map((o) => o.control?.section_status ?? 'none').join(',')
     expect(
-      s.outs.some((o) => o.control?.section === first && o.control.section_status === 'sufficient')
+      s.outs.some((o) => o.control?.section === first && o.control.section_status === 'sufficient'),
+      `section ${first} statuses ${statuses} (hard ${hard})`
     ).toBe(true)
   }, 600_000)
 
