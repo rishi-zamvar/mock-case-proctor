@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import type { Intent, ViewState } from '../../../shared/ipc'
 import * as reactPdf from 'react-pdf'
 import Session from './Session'
+import type { AvatarBinding, AvatarState } from '../avatar/behaviour'
 
 const CLOCK = 1_700_000_000_000
 
@@ -315,5 +316,57 @@ describe('Session — Phase 4', () => {
     fireEvent.keyDown(document.body, { key: 'ArrowRight', code: 'ArrowRight' })
     fireEvent.keyDown(document.body, { key: 'PageDown', code: 'PageDown' })
     expect(id('talk-btn').textContent).toBe('Talk')
+  })
+})
+
+describe('Session — avatar stage (05-06)', () => {
+  function fake(): AvatarBinding & {
+    setState: Mock<(s: AvatarState) => void>
+    setVisible: Mock<(v: boolean) => void>
+  } {
+    return {
+      host: document.createElement('div'),
+      setVisible: vi.fn<(v: boolean) => void>(),
+      setState: vi.fn<(s: AvatarState) => void>(),
+      isPlaying: () => false,
+      onPlaying: () => () => {}
+    }
+  }
+  const mount = (a: AvatarBinding, o: Partial<ViewState> = {}): ReturnType<typeof render> =>
+    render(<Session view={view(o)} onIntent={vi.fn()} now={() => 1000} avatar={a} />)
+
+  it('given an avatar, when Talk is clicked, then the avatar listens', () => {
+    const a = fake()
+    mount(a)
+    expect(a.setState).toHaveBeenLastCalledWith('idle')
+    fireEvent.click(id('talk-btn'))
+    expect(a.setState).toHaveBeenLastCalledWith('listening')
+  })
+
+  it('given an avatar, when an LLM turn is in flight or in extraction, then it thinks', () => {
+    const a = fake()
+    const { rerender } = mount(a, { speaking: true })
+    expect(a.setState).toHaveBeenLastCalledWith('thinking')
+    rerender(
+      <Session
+        view={view({ phase: 'extraction' })}
+        onIntent={vi.fn()}
+        now={() => 1000}
+        avatar={a}
+      />
+    )
+    expect(a.setState).toHaveBeenLastCalledWith('thinking')
+  })
+
+  it('given an avatar, when the deck is toggled and back, then the same host is detached and re-attached', () => {
+    const a = fake()
+    mount(a)
+    expect(id('avatar-stage').contains(a.host)).toBe(true)
+    fireEvent.click(id('deck-toggle'))
+    expect(a.setVisible).toHaveBeenLastCalledWith(false)
+    expect(document.contains(a.host)).toBe(false)
+    fireEvent.click(id('deck-toggle'))
+    expect(a.setVisible).toHaveBeenLastCalledWith(true)
+    expect(id('avatar-stage').contains(a.host)).toBe(true)
   })
 })
