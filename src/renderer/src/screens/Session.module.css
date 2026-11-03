@@ -150,6 +150,19 @@
   font-size: 16px;
 }
 
+/* brevity band: text colour only, short/brief stay default */
+.timer.ideal {
+  color: var(--accent);
+}
+
+.timer.long {
+  color: var(--warning);
+}
+
+.timer.flagged {
+  color: var(--danger);
+}
+
 .hint {
   color: var(--muted);
   font-size: 12px;

@@ -4,6 +4,8 @@ import DeckViewer from '../deck/DeckViewer'
 import WebcamTile from '../media/WebcamTile'
 import AvatarStage from '../avatar/AvatarStage'
 import { awaitingReply, type AvatarBinding } from '../avatar/behaviour'
+import type { MicCapture } from '../mic/capture'
+import { brevityBand } from '../../../shared/brevity'
 import s from './Session.module.css'
 
 export type SessionProps = {
@@ -11,6 +13,8 @@ export type SessionProps = {
   onIntent(i: Intent): void
   now?: () => number
   avatar?: AvatarBinding
+  mic?: Pick<MicCapture, 'start' | 'stop' | 'setMuted'> // whisper mode only; absent = T1 fake STT
+  stopSpeech?: () => void // synchronous playback stop for barge-in
 }
 
 const LABELS: Record<ViewPhase, string> = {
@@ -34,6 +38,7 @@ const mss = (ms: number): string => {
   return `${Math.floor(t / 60)}:${pad(t % 60)}`
 }
 
+const TALK_PHASES: ViewPhase[] = ['warmup', 'presentation', 'grilling']
 const DECK_TOGGLE: ViewPhase[] = ['presentation', 'extraction', 'grilling', 'wrapup']
 const TOAST_MS = 8000
 
@@ -59,7 +64,9 @@ export default function Session({
   view,
   onIntent,
   now = Date.now,
-  avatar
+  avatar,
+  mic,
+  stopSpeech
 }: SessionProps): React.JSX.Element {
   // Anchor the app clock to the local clock at the moment this view arrived.
   const [recv, setRecv] = useState<Recv>(() => ({ view, at: now() }))
@@ -78,15 +85,16 @@ export default function Session({
   const [, setTick] = useState(0)
   const [deckOpen, setDeckOpen] = useState(false)
   const [camOn, setCamOn] = useState(true)
-  // ponytail: mute is UI state only; Phase 7 gates capture on it
   const [muted, setMuted] = useState(false)
+  useEffect(() => mic?.setMuted(muted), [mic, muted])
   const [warning, setWarning] = useState(false)
   const warnedRef = useRef(view.reviewWarned)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [confirming, setConfirming] = useState(false)
   const recording = startedAt !== null
-  const talkDisabled = !view.canTalk && !recording
+  const canBargeIn = !!mic && view.speaking && TALK_PHASES.includes(view.phase)
+  const talkDisabled = !view.canTalk && !recording && !canBargeIn
 
   useEffect(() => {
     // The raw value always comes from the deadline; ticks never accumulate.
@@ -121,12 +129,27 @@ export default function Session({
 
   const toggleTalk = (): void => {
     if (recording) {
-      onIntent({ type: 'answer', ms: Math.round(now() - startedAt) })
+      const ms = Math.round(now() - startedAt)
       setStartedAt(null)
-    } else if (view.canTalk) {
+      if (mic)
+        void mic
+          .stop()
+          .then((r) => onIntent({ type: 'answer', ms, answerId: r.answerId, chunks: r.chunks }))
+      else onIntent({ type: 'answer', ms })
+    } else if (view.canTalk || canBargeIn) {
+      if (canBargeIn && !view.canTalk) {
+        stopSpeech?.() // synchronous: the avatar goes quiet before main hears the barge-in
+        onIntent({ type: 'bargeIn' })
+      }
       setStartedAt(now())
+      void mic?.start(() => stopRef.current()).catch(() => undefined) // denied mic: stop() still answers
     }
   }
+  // onCap (60 s cap) fires from capture; it must hit the latest stop path, not a stale closure.
+  const stopRef = useRef<() => void>(() => undefined)
+  useEffect(() => {
+    stopRef.current = () => recording && toggleTalk()
+  })
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -226,10 +249,16 @@ export default function Session({
         {recording && (
           <span
             data-testid="answer-timer"
-            className={`${s.timer} tabular`}
+            data-band={brevityBand(now() - startedAt)}
+            className={`${s.timer} ${s[brevityBand(now() - startedAt)] ?? ''} tabular`}
             aria-label="Answer time"
           >
             {mss(now() - startedAt)}
+          </span>
+        )}
+        {view.transcribing && (
+          <span data-testid="transcribing" role="status" className={s.hint}>
+            Transcribing…
           </span>
         )}
         <span className={s.hint}>Space to {recording ? 'finish' : 'talk'}</span>
