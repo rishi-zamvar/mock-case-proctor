@@ -39,9 +39,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md — Scaffold via temp dir, pin stack, Vitest projects, entitlements/builder/secret-scan tests, shared IPC + CSP contracts, sandboxed preload (wave 1)
 - [x] 01-02-PLAN.md — TDD pure security core: log redaction, app:// path/origin safety, strict zod IPC schemas (wave 2)
-- [ ] 01-03-PLAN.md — TDD key domain: dotenv parser, live probe (SDK fetch seam), KeyStore precedence + encrypted atomic persistence (wave 2)
+- [x] 01-03-PLAN.md — TDD key domain: dotenv parser, live probe (SDK fetch seam), KeyStore precedence + encrypted atomic persistence (wave 2)
 - [x] 01-04-PLAN.md — TDD Claude replay/record server + fixture hygiene scan (wave 2)
-- [ ] 01-05-PLAN.md — Renderer: state-switch App, Settings onboarding, Home placeholder, dark tokens + bundled Inter (wave 2)
+- [x] 01-05-PLAN.md — Renderer: state-switch App, Settings onboarding, Home placeholder, dark tokens + bundled Inter (wave 2)
 - [ ] 01-06-PLAN.md — Main composition root: E2E switches, validated IPC, safeStorage cipher, app:// + CSP, locked window (wave 3)
 - [ ] 01-07-PLAN.md — keymgr .env symlink, record real probe fixtures, Playwright harness + shell security/fake-mic E2E (wave 4)
 - [ ] 01-08-PLAN.md — Key onboarding E2E (paste/invalid/offline/auto-fill/replace/clear/relaunch) + key-leak canary (wave 5)
@@ -151,7 +151,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scaffold, Harness & Key Onboarding | 1/9 | In Progress|  |
+| 1. Scaffold, Harness & Key Onboarding | 5/9 | In Progress|  |
 | 2. Core Domain Logic | 0/TBD | Not started | - |
 | 3. Walking Skeleton on Fakes | 0/TBD | Not started | - |
 | 4. Proctored Review Block | 0/TBD | Not started | - |
