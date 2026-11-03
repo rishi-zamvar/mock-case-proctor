@@ -188,6 +188,16 @@ describe('Session', () => {
     expect(id('scoring').textContent).toBe('Scoring your session…')
     expect(id('phase-label').textContent).toBe('Scoring')
     expect((id('talk-btn') as HTMLButtonElement).disabled).toBe(true)
+    expect(q('score-retry')).toBeNull()
+  })
+
+  it('scoring failed shows an alert and a retry button that sends retryScore once', () => {
+    const { onIntent } = setup({ phase: 'scoring', canTalk: false, scoringFailed: true })
+    expect(screen.getByRole('alert').textContent).toContain('Scoring failed')
+    expect(id('score-retry').textContent).toBe('Retry scoring')
+    fireEvent.click(id('score-retry'))
+    expect(onIntent).toHaveBeenCalledTimes(1)
+    expect(onIntent).toHaveBeenCalledWith({ type: 'retryScore' })
   })
 })
 
