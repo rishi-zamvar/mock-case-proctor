@@ -22,3 +22,18 @@ describe('PDF dependencies', () => {
     expect(existsSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs')).toBe(true)
   })
 })
+
+describe('voice dependencies', () => {
+  test.each([
+    ['@met4citizen/talkinghead', '1.8.2'],
+    ['three', '0.186.1'],
+    ['@met4citizen/headtts', '1.3.0'],
+    ['@huggingface/transformers', '4.3.2']
+  ])(
+    'given package.json, when read, then %s is an exact %s devDependency only',
+    (name, version) => {
+      expect(pkg.devDependencies[name]).toBe(version)
+      expect(pkg.dependencies[name]).toBeUndefined()
+    }
+  )
+})
