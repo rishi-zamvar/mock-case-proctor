@@ -1,14 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import {
-  createVoice,
-  getVoice,
-  WARMUP_TEXT,
-  VOICE,
-  type EngineLike,
-  type VoiceDeps
-} from './voice'
+import { createVoice, getVoice, WARMUP_TEXT, VOICE, type EngineLike, type VoiceDeps } from './voice'
 import type { Tts, TtsDevice } from './headtts'
 import type { SynthData } from './speechQueue'
+import type { SpeakEvent } from '../../../shared/ipc'
 
 // TalkingHead-faithful head: one FIFO; idle markers fire synchronously; audio is busy until endAudio().
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -99,7 +93,11 @@ function setup(o: { device?: TtsDevice; makeEngine?: VoiceDeps['makeEngine'] } =
   return { fe, tts, deps, ack, voice }
 }
 
-const ev = (turnId: string, seq: number, text = `line ${seq}`) => ({ turnId, seq, text })
+const ev = (turnId: string, seq: number, text = `line ${seq}`): SpeakEvent => ({
+  turnId,
+  seq,
+  text
+})
 
 afterEach(() => {
   delete (window as { __e2e?: unknown }).__e2e
