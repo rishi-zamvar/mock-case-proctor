@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, type Mock } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import type { Intent, ViewState } from '../../../shared/ipc'
+import * as reactPdf from 'react-pdf'
 import Session from './Session'
 
 const CLOCK = 1_700_000_000_000
@@ -10,7 +11,7 @@ function view(o: Partial<ViewState> = {}): ViewState {
     sessionId: 's1',
     phase: 'grilling',
     card: {
-      id: 'case_99',
+      id: '99',
       number: 99,
       slug: 'fixturely',
       company: 'Fixturely',
@@ -59,13 +60,13 @@ describe('Session', () => {
       document.querySelector('main[data-screen="session"][data-phase="grilling"]')
     ).not.toBeNull()
     expect(id('phase-label').textContent).toBe('Grilling')
-    expect(id('webcam-tile').textContent).toContain('Camera — Phase 4')
+    expect(id('webcam-tile')).not.toBeNull()
     expect(id('avatar-stage').textContent).toContain('Interviewer')
   })
 
-  it('review shows the deck placeholder, countdown and ready button', () => {
+  it('review shows the deck, countdown and ready button', () => {
     const { onIntent } = setup({ phase: 'review', reviewDeadline: CLOCK + 600_000 })
-    expect(id('deck-placeholder').textContent).toContain('Deck viewer — Phase 4')
+    expect(id('deck-viewer')).not.toBeNull()
     expect(q('avatar-stage')).toBeNull()
     expect(id('phase-label').textContent).toBe('Review')
     expect(id('countdown').textContent).toBe('10:00')
@@ -186,5 +187,131 @@ describe('Session', () => {
     expect(id('scoring').textContent).toBe('Scoring your session…')
     expect(id('phase-label').textContent).toBe('Scoring')
     expect((id('talk-btn') as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+describe('Session — Phase 4', () => {
+  const rv = (o: Partial<ViewState> = {}): Partial<ViewState> => ({
+    phase: 'review',
+    reviewDeadline: CLOCK + 600_000,
+    ...o
+  })
+
+  it('review deck loads the case pdf from app://bundle', () => {
+    const doc = vi.spyOn(reactPdf, 'Document')
+    setup(rv())
+    expect(doc.mock.calls[0][0].file).toBe('app://bundle/cases/99/interviewee.pdf')
+    doc.mockRestore()
+  })
+
+  it('deck opens on view.deckPage and reports page changes', () => {
+    const { onIntent } = setup(rv({ deckPage: 3 }))
+    expect(id('deck-viewer').getAttribute('data-page')).toBe('3')
+    fireEvent.click(id('thumb-2'))
+    expect(onIntent).toHaveBeenCalledWith({ type: 'deckPage', page: 2 })
+  })
+
+  it('grilling toggles between the interviewer and the deck', () => {
+    setup()
+    const t = id('deck-toggle')
+    expect(t.getAttribute('aria-pressed')).toBe('false')
+    expect(id('avatar-stage')).not.toBeNull()
+    fireEvent.click(t)
+    expect(id('deck-viewer')).not.toBeNull()
+    expect(q('avatar-stage')).toBeNull()
+    expect(id('deck-toggle').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(id('deck-toggle'))
+    expect(id('avatar-stage')).not.toBeNull()
+    expect(q('deck-viewer')).toBeNull()
+  })
+
+  it.each(['review', 'scoring', 'warmup'] as const)('no deck toggle in %s', (phase) => {
+    setup(rv({ phase }))
+    expect(q('deck-toggle')).toBeNull()
+  })
+
+  it('countdown never moves backward for the same deadline, resets on a new one', () => {
+    let t = 1000
+    const onIntent = vi.fn()
+    const { rerender } = render(
+      <Session view={view(rv())} onIntent={onIntent} now={() => t} />
+    )
+    t += 10_000
+    rerender(<Session view={view(rv())} onIntent={onIntent} now={() => t} />)
+    expect(id('countdown').textContent).toBe('09:50')
+    // a new view anchored 2 s in the past would estimate 2 s higher
+    rerender(<Session view={view(rv({ clockNow: CLOCK + 8000 }))} onIntent={onIntent} now={() => t} />)
+    expect(id('countdown').textContent).toBe('09:50')
+    rerender(
+      <Session
+        view={view(rv({ reviewDeadline: CLOCK + 1_200_000 }))}
+        onIntent={onIntent}
+        now={() => t}
+      />
+    )
+    expect(id('countdown').textContent).toBe('20:00')
+  })
+
+  it('visibilitychange recomputes the countdown immediately', () => {
+    vi.useFakeTimers()
+    const { advance } = setup(rv({ timeScale: 60 }))
+    advance(1000)
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(id('countdown').textContent).toBe('09:00')
+  })
+
+  it('shows the 10-minute toast once when reviewWarned flips, hides after 8 s', () => {
+    vi.useFakeTimers()
+    const onIntent = vi.fn()
+    const { rerender } = render(<Session view={view(rv())} onIntent={onIntent} now={() => 1} />)
+    expect(q('review-warning')).toBeNull()
+    rerender(<Session view={view(rv({ reviewWarned: true }))} onIntent={onIntent} now={() => 1} />)
+    const toast = id('review-warning')
+    expect(toast.getAttribute('role')).toBe('status')
+    expect(toast.textContent).toBe('10 minutes left')
+    act(() => {
+      vi.advanceTimersByTime(8000)
+    })
+    expect(q('review-warning')).toBeNull()
+  })
+
+  it('no toast when mounting with reviewWarned already true', () => {
+    setup(rv({ reviewWarned: true }))
+    expect(q('review-warning')).toBeNull()
+  })
+
+  it('camera toggle turns the tile off; scoring forces it off', () => {
+    setup()
+    const cam = id('cam-toggle')
+    expect(cam.getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(cam)
+    expect(id('cam-toggle').getAttribute('aria-pressed')).toBe('false')
+    expect(id('webcam-tile').getAttribute('data-state')).toBe('off')
+    expect(id('camera-off')).not.toBeNull()
+  })
+
+  it('scoring has the tile off', () => {
+    setup({ phase: 'scoring', canTalk: false })
+    expect(id('webcam-tile').getAttribute('data-state')).toBe('off')
+  })
+
+  it('mic toggle flips its label and sends no intent', () => {
+    const { onIntent } = setup()
+    const mic = id('mic-toggle')
+    expect(mic.getAttribute('aria-pressed')).toBe('false')
+    expect(mic.textContent).toBe('Mute')
+    fireEvent.click(mic)
+    expect(id('mic-toggle').getAttribute('aria-pressed')).toBe('true')
+    expect(id('mic-toggle').textContent).toBe('Unmute')
+    expect(onIntent).not.toHaveBeenCalled()
+  })
+
+  it('deck arrow keys do not trigger talk', () => {
+    setup(rv())
+    fireEvent.keyDown(document.body, { key: 'ArrowRight', code: 'ArrowRight' })
+    fireEvent.keyDown(document.body, { key: 'PageDown', code: 'PageDown' })
+    expect(id('talk-btn').textContent).toBe('Talk')
   })
 })
