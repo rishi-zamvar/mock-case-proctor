@@ -80,7 +80,7 @@ Plans:
 
 Plans:
 - [ ] 03-01-PLAN.md — TDD shared contracts: IPC channels, ViewState/LibraryView/Intent types + strict schemas, ports, versioned session.json schema (wave 1)
-- [ ] 03-02-PLAN.md — TDD app://bundle/cases/<id>/interviewee.pdf route (interviewer packages refused), findCase, readDeckText, fixture PDFs (wave 1)
+- [x] 03-02-PLAN.md — TDD app://bundle/cases/<id>/interviewee.pdf route (interviewer packages refused), findCase, readDeckText, fixture PDFs (wave 1)
 - [ ] 03-03-PLAN.md — TDD SessionStore: atomic tmp+fsync+rename, quarantine, library view (greyed completion, resumable) (wave 2)
 - [ ] 03-04-PLAN.md — TDD fake adapters: scripted FakeLlm, FakeStt with injection, scaled clock (wave 2)
 - [ ] 03-05-PLAN.md — TDD candidate-safe ViewState projection + review-mode reveal (wave 2)
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Scaffold, Harness & Key Onboarding | 5/9 | Complete    | 2026-11-03 |
 | 2. Core Domain Logic | 4/5 | Complete    | 2026-11-03 |
-| 3. Walking Skeleton on Fakes | 0/12 | Planned | - |
+| 3. Walking Skeleton on Fakes | 1/12 | In Progress|  |
 | 4. Proctored Review Block | 0/TBD | Not started | - |
 | 5. Voice Out & Avatar | 0/TBD | Not started | - |
 | 6. Interviewer Agent | 0/TBD | Not started | - |
