@@ -132,7 +132,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     for (const e of effects) {
       switch (e.type) {
         case 'PHASE_CHANGED':
-          if (e.from === 'review') stopTimers()
+          if (e.from === 'review' || e.from === 'warmup') stopTimers()
           if (e.to === 'reviewMode') {
             s.status = 'completed'
             s.endedAt = clock.now()
@@ -472,6 +472,13 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
           ? { kind: 'warmup' }
           : null
     const need = s.pending ?? derived
+    if (m.phase === 'warmup' && m.warmupDeadline !== null) {
+      if (clock.now() >= m.warmupDeadline) {
+        dispatch({ type: 'WARMUP_DONE', now: clock.now() })
+        return { sessionId: id }
+      }
+      armTimer('warmup', m.warmupDeadline)
+    }
     if (m.phase === 'review' && m.reviewDeadline !== null) {
       if (clock.now() >= m.reviewDeadline) {
         dispatch({ type: 'REVIEW_DEADLINE', now: clock.now() })

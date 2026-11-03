@@ -195,10 +195,13 @@ describe('invalid events are ignored', () => {
 })
 
 describe('turn caps and section advance', () => {
+  // Pushback already given, so owed-pushback never holds a section open here.
+  const noPushback = (): InterviewState => ({ ...toGrilling(), pushbackDone: true })
+
   it('sufficient on turn 1 stays in section', () => {
     const s = run(
       [turn(ctl({ section_status: 'sufficient', next_section: 'valuation' }))],
-      toGrilling()
+      noPushback()
     ).state
     expect(s.current).toBe('retention')
     expect(s.turnsInSection).toBe(1)
@@ -224,7 +227,7 @@ describe('turn caps and section advance', () => {
       expected: 'business'
     }
   ])('$name', ({ pre = [], next, expected }) => {
-    const prev = run(pre, toGrilling()).state
+    const prev = run(pre, noPushback()).state
     const from = prev.current
     const s = run(
       [turn(ctl()), turn(ctl({ section_status: 'sufficient', next_section: next }))],
@@ -236,7 +239,7 @@ describe('turn caps and section advance', () => {
   })
 
   it('soft cap (3 continue turns) does not advance', () => {
-    const s = run([turn(ctl()), turn(ctl()), turn(ctl())], toGrilling()).state
+    const s = run([turn(ctl()), turn(ctl()), turn(ctl())], noPushback()).state
     expect(s.current).toBe('retention')
     expect(s.turnsInSection).toBe(3)
   })
@@ -244,7 +247,7 @@ describe('turn caps and section advance', () => {
   it('hard cap force-advances at the 5th turn', () => {
     const four = run(
       Array.from({ length: 4 }, () => turn(ctl())),
-      toGrilling()
+      noPushback()
     ).state
     expect(four.current).toBe('retention')
     const five = reduce(four, turn(ctl())).state
@@ -255,7 +258,7 @@ describe('turn caps and section advance', () => {
   it('null control counts as a continue turn', () => {
     const s = run(
       Array.from({ length: 5 }, () => turn(null)),
-      toGrilling()
+      noPushback()
     ).state
     expect(s.current).toBe('business')
   })
@@ -267,7 +270,7 @@ describe('turn caps and section advance', () => {
         turn(ctl()),
         turn(ctl({ section_status: 'sufficient' }))
       ]).flat(),
-      toGrilling()
+      noPushback()
     ).state
     expect(six.current).toBe('call')
     const r = run([turn(ctl()), turn(ctl({ section_status: 'sufficient' }))], six)
@@ -282,7 +285,7 @@ describe('turn caps and section advance', () => {
         turn(ctl()),
         turn(ctl({ section_status: 'sufficient' }))
       ]).flat(),
-      toGrilling()
+      noPushback()
     ).state
     const s = run(
       [turn(ctl()), turn(ctl({ section_status: 'sufficient', next_section: 'call' }))],

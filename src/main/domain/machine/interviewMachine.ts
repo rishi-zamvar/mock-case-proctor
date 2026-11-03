@@ -128,6 +128,14 @@ export function initialState(): InterviewState {
   }
 }
 
+/** Exactly one "convince me" per session: owed from valuation turn 1, or anywhere in call as the fallback. */
+export function pushbackStatus(s: InterviewState): 'not_yet' | 'now' | 'done' {
+  if (s.pushbackDone) return 'done'
+  if (s.phase !== 'grilling') return 'not_yet'
+  if (s.current === PUSHBACK_SECTION && s.turnsInSection >= 1) return 'now'
+  return s.current === 'call' ? 'now' : 'not_yet'
+}
+
 const ignore = (state: InterviewState): Result => ({ state, effects: [] })
 
 function go(
@@ -155,10 +163,19 @@ function toReview(state: InterviewState, now: number): Result {
   return go(state, 'review', now, { reviewDeadline: deadline, reviewWarned: false }, timers)
 }
 
+function toWarmup(state: InterviewState, now: number): Result {
+  const deadline = now + WARMUP_MS
+  return go(state, 'warmup', now, { warmupDeadline: deadline }, [
+    { type: 'START_TIMER', id: 'warmup', deadline }
+  ])
+}
+
 /** Leaving review: warm-up first if it was deferred to 'after', else the presentation. */
 function afterReview(state: InterviewState, now: number): Result {
   const { warmup, warmupPosition } = state.config
-  return go(state, warmup && warmupPosition === 'after' ? 'warmup' : 'presentation', now)
+  return warmup && warmupPosition === 'after'
+    ? toWarmup(state, now)
+    : go(state, 'presentation', now)
 }
 
 const grillRequest = (state: InterviewState): Effect => ({
@@ -172,18 +189,26 @@ function agentTurn(state: InterviewState, now: number, control: InterviewControl
   const turns = state.turnsInSection + 1
   const failedProbes = state.failedProbes + (control?.probe_failed ? 1 : 0)
   const hard = state.caps?.hard ?? Infinity
-  const sufficient = control?.section_status === 'sufficient' && turns > 1
+  const pushbackDone = state.pushbackDone || control?.pushback_done === true
+  const owed = pushbackStatus(state) === 'now' && control?.pushback_done !== true
+  const sufficient = control?.section_status === 'sufficient' && turns > 1 && !owed
 
   if (turns < hard && !sufficient) {
     return {
-      state: { ...state, turnsInSection: turns, failedProbes, hintAllowed: failedProbes >= 2 },
+      state: {
+        ...state,
+        turnsInSection: turns,
+        failedProbes,
+        hintAllowed: failedProbes >= 2,
+        pushbackDone
+      },
       effects: [{ type: 'PERSIST' }]
     }
   }
 
   const done = state.current ? [...state.done, state.current] : state.done
   const remaining = state.plan.filter((s) => !done.includes(s))
-  const reset = { done, turnsInSection: 0, failedProbes: 0, hintAllowed: false }
+  const reset = { done, turnsInSection: 0, failedProbes: 0, hintAllowed: false, pushbackDone }
   if (remaining.length === 0) {
     return go(state, 'wrapup', now, { ...reset, current: null }, [
       { type: 'REQUEST_LLM_TURN', kind: 'wrapup' }
@@ -223,7 +248,7 @@ export function reduce(state: InterviewState, event: InterviewEvent): Result {
       if (event.type !== 'START') return ignore(state)
       const started = { ...state, config: { ...DEFAULT_CONFIG, ...event.config }, startedAt: now }
       return started.config.warmup && started.config.warmupPosition === 'before'
-        ? go(started, 'warmup', now)
+        ? toWarmup(started, now)
         : toReview(started, now)
     }
     case 'warmup':
@@ -264,7 +289,8 @@ export function reduce(state: InterviewState, event: InterviewEvent): Result {
         caps: turnCaps(state.config.budgetMin, plan.length),
         turnsInSection: 0,
         failedProbes: 0,
-        hintAllowed: false
+        hintAllowed: false,
+        grillStartedAt: now
       }
       return go(state, 'grilling', now, next, [grillRequest(next)])
     }
