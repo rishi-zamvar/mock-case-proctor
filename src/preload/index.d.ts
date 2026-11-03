@@ -1,8 +1,10 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+import type { Api, E2EHooks } from '../shared/ipc'
 
 declare global {
   interface Window {
-    electron: ElectronAPI
-    api: unknown
+    api: Api
+    __e2e?: E2EHooks
   }
 }
+
+export {}
