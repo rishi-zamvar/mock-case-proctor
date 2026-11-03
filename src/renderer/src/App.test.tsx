@@ -1,13 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type {
-  KeyStatus,
-  LibraryView,
-  SaveResult,
-  SpeakEvent,
-  ViewState
-} from '../../shared/ipc'
+import type { KeyStatus, LibraryView, SaveResult, SpeakEvent, ViewState } from '../../shared/ipc'
 import App from './App'
 
 const KEY = 'paste-key-' + 'q'.repeat(6)
@@ -65,6 +59,7 @@ const REVEAL: ViewState['reveal'] = {
   keyNumbers: []
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred mock shape
 function mockApi(status: KeyStatus, lib: () => Promise<LibraryView> = async () => libraryView()) {
   const cb: { view?: (v: ViewState) => void; speak?: (s: SpeakEvent) => void } = {}
   const offView = vi.fn()
@@ -96,8 +91,8 @@ function mockApi(status: KeyStatus, lib: () => Promise<LibraryView> = async () =
   return { api, cb, offView, offSpeak }
 }
 
-const main = (s: string) => document.querySelector(`main[data-screen="${s}"]`)
-const home = () => screen.findByRole('heading', { name: 'Case library' })
+const main = (s: string): Element | null => document.querySelector(`main[data-screen="${s}"]`)
+const home = (): Promise<HTMLElement> => screen.findByRole('heading', { name: 'Case library' })
 
 describe('App routing', () => {
   beforeEach(() => vi.restoreAllMocks())
@@ -147,7 +142,9 @@ describe('App routing', () => {
     render(<App />)
     await home()
     act(() => cb.view!(viewState()))
-    expect(document.querySelector('main[data-screen="session"][data-phase="grilling"]')).not.toBeNull()
+    expect(
+      document.querySelector('main[data-screen="session"][data-phase="grilling"]')
+    ).not.toBeNull()
     fireEvent.click(screen.getByTestId('talk-btn'))
     fireEvent.click(screen.getByTestId('talk-btn'))
     expect(api.session.intent).toHaveBeenCalledWith(expect.objectContaining({ type: 'answer' }))

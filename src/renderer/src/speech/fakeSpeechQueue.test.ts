@@ -24,7 +24,10 @@ describe('fake speech queue', () => {
     vi.advanceTimersByTime(59)
     expect(ack).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(1)
-    expect(ack.mock.calls).toEqual([['t', 0], ['t', 1]])
+    expect(ack.mock.calls).toEqual([
+      ['t', 0],
+      ['t', 1]
+    ])
   })
 
   it('given pending items, when cleared, then no further acks fire', () => {
