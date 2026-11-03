@@ -102,7 +102,16 @@ Plans:
   2. The 10-minute-warning event fires at T-10 (spoken by the partner once Phase 5 lands; a caption until then). "Ready" skips straight to the presentation.
   3. Before the session starts, a mic-check level meter visibly moves for the fake WAV mic and flags a silent input.
   4. A mirrored webcam self-view tile appears Zoom-style, on a stream separate from the mic, and nothing from it is recorded or written to disk. The Mac stays awake during the review.
-**Plans**: TBD
+**Plans**: 7 plans in 3 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — TDD reducer T-10 REVIEW_WARNING + contracts (ViewState deckPage/reviewWarned, deckPage intent, AwakePort) (wave 1)
+- [ ] 04-02-PLAN.md — react-pdf 11 DeckViewer (labels, keys, zoom, thumbnail rail), dep-pin test, 4-page fixture deck (wave 1)
+- [ ] 04-03-PLAN.md — MicCheck level meter + silence watch, mirrored WebcamTile, no-recording guard (wave 1)
+- [ ] 04-04-PLAN.md — createAwake display-sleep blocker + ensureMediaAccess (macOS TCC) (wave 1)
+- [ ] 04-05-PLAN.md — Runner warning timer (resume-safe), deck page persistence, awake hold/release; index/compose wiring, no View menu (wave 2)
+- [ ] 04-06-PLAN.md — Session deck stage + Deck toggle, monotonic countdown, T-10 toast, webcam tile + toggles; start-sheet setup check (wave 2)
+- [ ] 04-07-PLAN.md — E2E review/media specs, flow + packaged updates, Phase 4 gate (wave 3)
 **UI hint**: yes
 
 ### Phase 5: Voice Out & Avatar
