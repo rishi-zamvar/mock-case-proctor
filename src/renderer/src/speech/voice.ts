@@ -114,7 +114,8 @@ export function createVoice(o: {
         setDevice(tts.device)
         // shader compile happens here, not on the first real line (Pitfall 10); the result is discarded
         if (tts.device !== 'none') await tts.synthesize(WARMUP_TEXT)
-      } catch {
+      } catch (err) {
+        console.error('[voice] warm-up failed', err)
         if (dev === null) setDevice('none')
       }
       if (dev === 'none') readyFail(new Error('tts unavailable'))

@@ -66,18 +66,21 @@ export async function connectTts(o: {
       splitSentences: false,
       dtypeWasm: 'fp32' // same local model.onnx as webgpu, so the fallback needs no extra download
     })
-  } catch {
+  } catch (err) {
+    console.error('[voice] headtts load failed', err)
     return none
   }
 
   try {
     await (endpoint === 'webgpu' ? tts.connect() : tts.connect({ endpoints: ['wasm'] }))
-  } catch {
+  } catch (err) {
+    console.error(`[voice] headtts connect (${endpoint}) failed`, err)
     if (endpoint === 'wasm') return none
     endpoint = 'wasm'
     try {
       await tts.connect({ endpoints: ['wasm'] })
-    } catch {
+    } catch (err2) {
+      console.error('[voice] headtts connect (wasm) failed', err2)
       return none
     }
   }
