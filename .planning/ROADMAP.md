@@ -42,7 +42,7 @@ Plans:
 - [x] 01-03-PLAN.md — TDD key domain: dotenv parser, live probe (SDK fetch seam), KeyStore precedence + encrypted atomic persistence (wave 2)
 - [x] 01-04-PLAN.md — TDD Claude replay/record server + fixture hygiene scan (wave 2)
 - [x] 01-05-PLAN.md — Renderer: state-switch App, Settings onboarding, Home placeholder, dark tokens + bundled Inter (wave 2)
-- [ ] 01-06-PLAN.md — Main composition root: E2E switches, validated IPC, safeStorage cipher, app:// + CSP, locked window (wave 3)
+- [x] 01-06-PLAN.md — Main composition root: E2E switches, validated IPC, safeStorage cipher, app:// + CSP, locked window (wave 3)
 - [ ] 01-07-PLAN.md — keymgr .env symlink, record real probe fixtures, Playwright harness + shell security/fake-mic E2E (wave 4)
 - [ ] 01-08-PLAN.md — Key onboarding E2E (paste/invalid/offline/auto-fill/replace/clear/relaunch) + key-leak canary (wave 5)
 - [ ] 01-09-PLAN.md — Phase gate: package + codesign verify + packaged smoke, live API probe, 3x E2E, push (wave 6)
