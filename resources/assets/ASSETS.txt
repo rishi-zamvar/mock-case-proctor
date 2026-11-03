@@ -1,0 +1,1 @@
+Runtime assets (avatar, models) unpacked from the asar. A non-dot file keeps this dir in the package: electron-builder drops dotfiles.
