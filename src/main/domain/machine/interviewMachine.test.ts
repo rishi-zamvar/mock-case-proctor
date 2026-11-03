@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_CONFIG,
+  REVIEW_WARNING_MS,
   initialState,
   reduce,
   type Effect,
@@ -441,5 +442,87 @@ describe('persistability', () => {
     ).not.toThrow()
     expect(g.phase).toBe('grilling')
     expect(g.done).toEqual([])
+  })
+})
+
+describe('review warning (T-10)', () => {
+  const review = (): InterviewState =>
+    run([{ type: 'START', now: 0, config: { warmup: false } }]).state
+  const warn = (now: number): InterviewEvent => ({ type: 'REVIEW_WARNING', now })
+
+  it('given START without warmup at 0 when entering review then review and warning timers are armed', () => {
+    const { state, effects } = run([{ type: 'START', now: 0, config: { warmup: false } }])
+    expect(REVIEW_WARNING_MS).toBe(600_000)
+    expect(effects).toContainEqual({ type: 'START_TIMER', id: 'review', deadline: 2_700_000 })
+    expect(effects).toContainEqual({ type: 'START_TIMER', id: 'warning', deadline: 2_100_000 })
+    expect(state.reviewWarned).toBe(false)
+  })
+
+  it('given review when REVIEW_WARNING at deadline-10min then warned and effect+persist emitted', () => {
+    const r = reduce(review(), warn(2_100_000))
+    expect(r.state.reviewWarned).toBe(true)
+    expect(r.state.phase).toBe('review')
+    expect(r.effects).toEqual([{ type: 'REVIEW_WARNING', at: 2_100_000 }, { type: 'PERSIST' }])
+  })
+
+  it('given already warned when REVIEW_WARNING again then ignored (fires once)', () => {
+    const once = reduce(review(), warn(2_100_000)).state
+    const r = reduce(once, warn(2_200_000))
+    expect(r.effects).toEqual([])
+    expect(r.state).toEqual(once)
+  })
+
+  it.each([2_099_999, 2_700_000, 3_000_000])(
+    'given review when REVIEW_WARNING at %d (outside window) then ignored',
+    (at) => {
+      const s = review()
+      const r = reduce(s, warn(at))
+      expect(r.effects).toEqual([])
+      expect(r.state).toEqual(s)
+    }
+  )
+
+  it.each<[string, InterviewEvent[]]>([
+    ['warmup', [{ type: 'START', now: 0 }]],
+    [
+      'presentation',
+      [
+        { type: 'START', now: 0, config: { warmup: false } },
+        { type: 'READY', now: 1 }
+      ]
+    ]
+  ])('given %s when REVIEW_WARNING then ignored', (_name, events) => {
+    const s = run(events).state
+    const r = reduce(s, warn(2_100_000))
+    expect(r.effects).toEqual([])
+    expect(r.state).toEqual(s)
+  })
+
+  it('given grilling when REVIEW_WARNING then ignored', () => {
+    const s = toGrilling()
+    const r = reduce(s, warn(T0 + 35 * 60_000))
+    expect(r.effects).toEqual([])
+    expect(r.state).toEqual(s)
+  })
+
+  it('given reviewMs of 5 min when entering review then no warning timer is armed', () => {
+    const { effects } = run([
+      { type: 'START', now: 0, config: { warmup: false, reviewMs: 5 * 60_000 } }
+    ])
+    expect(effects).toContainEqual({ type: 'START_TIMER', id: 'review', deadline: 300_000 })
+    expect(effects.some((e) => e.type === 'START_TIMER' && e.id === 'warning')).toBe(false)
+  })
+
+  it("given warmup 'before' when WARMUP_DONE enters review then the warning timer is armed", () => {
+    const { effects, state } = run([
+      { type: 'START', now: T0 },
+      { type: 'WARMUP_DONE', now: T0 + 1 }
+    ])
+    expect(state.reviewWarned).toBe(false)
+    expect(effects).toContainEqual({
+      type: 'START_TIMER',
+      id: 'warning',
+      deadline: T0 + 1 + 35 * 60_000
+    })
   })
 })

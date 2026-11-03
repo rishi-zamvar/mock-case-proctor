@@ -109,4 +109,18 @@ describe('SessionFileSchema', () => {
     }
     expect(() => SessionFileSchema.parse(file)).not.toThrow()
   })
+  it('given a persisted machineState without reviewWarned when parsed then it defaults to false', () => {
+    const f = minimal()
+    const ms = { ...(f.machineState as Record<string, unknown>) }
+    delete ms.reviewWarned
+    const parsed = SessionFileSchema.parse({ ...f, machineState: ms })
+    expect(parsed.machineState.reviewWarned).toBe(false)
+  })
+
+  it('given deckPage when parsed then absent and 1..500 pass; 0, 501 and 2.5 throw', () => {
+    expect(SessionFileSchema.parse(minimal()).deckPage).toBeUndefined()
+    expect(SessionFileSchema.parse({ ...minimal(), deckPage: 7 }).deckPage).toBe(7)
+    for (const deckPage of [0, 501, 2.5])
+      expect(() => SessionFileSchema.parse({ ...minimal(), deckPage })).toThrow()
+  })
 })
