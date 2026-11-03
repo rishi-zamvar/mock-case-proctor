@@ -145,12 +145,15 @@ describe('FEW_SHOT', () => {
 const RETENTION_RE = /retention|churn|grr|nrr|cohort|renewal/i
 
 describe('SECTION_GOALS and probeLabels', () => {
-  it.each(SECTION_IDS)('given section %s, when looked up, then a goal and >=1 leak-safe label', (id) => {
-    expect(SECTION_GOALS[id].length).toBeGreaterThan(10)
-    const labels = probeLabels(brief, id)
-    expect(labels.length).toBeGreaterThanOrEqual(1)
-    for (const l of labels) expect(checkUtterance(l.label, brief), l.label).toEqual({ ok: true })
-  })
+  it.each(SECTION_IDS)(
+    'given section %s, when looked up, then a goal and >=1 leak-safe label',
+    (id) => {
+      expect(SECTION_GOALS[id].length).toBeGreaterThan(10)
+      const labels = probeLabels(brief, id)
+      expect(labels.length).toBeGreaterThanOrEqual(1)
+      for (const l of labels) expect(checkUtterance(l.label, brief), l.label).toEqual({ ok: true })
+    }
+  )
 
   it('given case 99, when retention, then every retention flag row with its id', () => {
     const labels = probeLabels(brief, 'retention')
@@ -217,7 +220,10 @@ describe('proctorNote', () => {
 
   it('given the first grilling turn, when framing, then it names the opening points and asks where to start', () => {
     const n = proctorNote(
-      req({ directive: 'framing', openingLabels: ['churn risk', 'great comps'] }, { turnInSection: 0 }),
+      req(
+        { directive: 'framing', openingLabels: ['churn risk', 'great comps'] },
+        { turnInSection: 0 }
+      ),
       brief
     )
     expect(n).toContain('directive=framing')
@@ -234,12 +240,17 @@ describe('proctorNote', () => {
   })
 
   it('given a FakeLlm-shaped request without proctor, when rendered, then a valid note with defaults', () => {
-    const n = proctorNote({ kind: 'grill', section: 'business', turnInSection: 0, history: [] }, brief)
+    const n = proctorNote(
+      { kind: 'grill', section: 'business', turnInSection: 0, history: [] },
+      brief
+    )
     expect(n).toContain('section=business')
     expect(n).toContain('directive=framing')
     expect(n).toContain('pushback=not_yet')
     expect(n).toContain('hint_allowed=false')
-    expect(() => proctorNote({ kind: 'wrapup', turnInSection: 0, history: [] }, brief)).not.toThrow()
+    expect(() =>
+      proctorNote({ kind: 'wrapup', turnInSection: 0, history: [] }, brief)
+    ).not.toThrow()
   })
 
   it('given the same input, when rendered twice, then identical and free of deck text and say lines', () => {

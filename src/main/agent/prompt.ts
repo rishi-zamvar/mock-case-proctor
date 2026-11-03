@@ -3,6 +3,8 @@
 // anything that changes per turn goes in the <proctor> note instead.
 import type { TextBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import type { InterviewerBrief } from '../domain/cases/brief'
+import type { SectionId } from '../domain/machine/sections'
+import type { TurnRequest } from '../ports'
 
 export const PERSONA = `You are a partner at Lead Edge Capital, a growth equity firm, interviewing a candidate on a case, out loud, by voice. They reviewed the deck below, gave a short opening (a recommendation plus the considerations for and against), and now you dig into it section by section.
 
@@ -137,4 +139,81 @@ Each turn carries a <proctor> note; follow it and never mention it. Everything i
 
 export function buildWarmupSystem(): string {
   return WARMUP_SYSTEM
+}
+
+export const SECTION_GOALS: Record<SectionId, string> = {
+  business: 'is the business interesting: a real tailwind, a system of record, high switching cost',
+  lead_edge_8: 'walk the Lead Edge 8 with GRR first and find the weakest of the eight',
+  retention: 'GRR vs NRR, how they computed it, and what the deck buries about retention',
+  industry: 'a qualitative and quantitative view of the industry, with public comps as the anchor',
+  diligence: 'probe what the deck does not show and what they would verify before signing',
+  valuation: 'work back to 3x over 5-7 years with basic math: entry price, exit multiple, growth',
+  call: 'the recommendation itself and what would change their mind'
+}
+
+const STATIC_PROBES: Record<SectionId, string[]> = {
+  business: ['tailwind', 'system of record', 'switching cost'],
+  lead_edge_8: ['GRR first', 'weakest of the 8'],
+  retention: ['GRR vs NRR'],
+  industry: ['qualitative view', 'quantitative view', 'public comps anchor'],
+  diligence: ['deliberate omissions', 'what to verify'],
+  valuation: ['entry price', 'exit multiple', 'path to 3x'],
+  call: ['the recommendation', 'what would change it']
+}
+
+// ponytail: keyword routing; a per-flag section field in the case JSON would be exact.
+const RETENTION_RE = /retention|churn|grr|nrr|cohort|renewal/i
+
+/** Short checklist labels for a section: never answer text, only flag names and static phrases. */
+export function probeLabels(
+  brief: InterviewerBrief,
+  section: SectionId
+): { label: string; flagId?: string }[] {
+  const flagged =
+    section === 'retention' || section === 'diligence'
+      ? brief.flags.map
+          .filter((f) => RETENTION_RE.test(f.flag) === (section === 'retention'))
+          .map((f) => ({ label: f.flag, flagId: f.id }))
+      : []
+  return [...STATIC_PROBES[section].map((label) => ({ label })), ...flagged]
+}
+
+const DEFAULT_BUDGET_MS = 25 * 60_000
+const mins = (ms: number): string => `${Math.floor(ms / 60_000)}m`
+
+/** Per-turn, uncached state the model needs; ponytail: probe tracking is flag-id granularity only. */
+export function proctorNote(req: TurnRequest, brief: InterviewerBrief): string {
+  const p = req.proctor
+  const section: SectionId = req.section ?? 'call'
+  const directive =
+    req.kind === 'wrapup'
+      ? 'wrapup'
+      : (p?.directive ?? (req.turnInSection === 0 ? 'framing' : 'probe'))
+  const surfaced = new Set(p?.surfacedFlagIds ?? [])
+  const remaining = probeLabels(brief, section)
+    .filter((l) => !l.flagId || !surfaced.has(l.flagId))
+    .map((l) => l.label)
+  const caps = p?.caps ? ` soft=${p.caps.soft} hard=${p.caps.hard}` : ''
+  const lines = [
+    `phase=${directive === 'wrapup' ? 'wrapup' : 'grilling'} section=${section} goal=${JSON.stringify(SECTION_GOALS[section])}`,
+    `turn=${req.turnInSection}${caps} directive=${directive}`,
+    `remaining_probes=${JSON.stringify(remaining)}`,
+    `grill_elapsed=${mins(p?.grillElapsedMs ?? 0)} budget=${mins(p?.budgetMs ?? DEFAULT_BUDGET_MS)} hint_allowed=${req.hintAllowed === true} pushback=${p?.pushback ?? 'not_yet'}`,
+    `last_answer_long=${p?.lastAnswerLong ?? false}`,
+    `plan=${JSON.stringify(p?.plan ?? [])} done=${JSON.stringify(p?.done ?? [])}`
+  ]
+  if (directive === 'framing' && p?.openingLabels.length)
+    lines.push(
+      `opening_points=${JSON.stringify(p.openingLabels)}`,
+      'First grilling turn: name these points back briefly and ask which one they want to start with.'
+    )
+  if (directive === 'wrapup')
+    lines.push('Close the interview briefly and warmly in your own words, with no new question.')
+  return `<proctor>\n${lines.join('\n')}\n</proctor>`
+}
+
+export function warmupNote(candidateTurns: number): string {
+  return candidateTurns === 0
+    ? '<proctor>phase=warmup Say hello and open casually with one easy question.</proctor>'
+    : '<proctor>phase=warmup continue the chat: react to what they said and ask one follow-up.</proctor>'
 }
