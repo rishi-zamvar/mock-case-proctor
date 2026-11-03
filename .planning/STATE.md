@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-11-03T07:26:34.584Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-11-03T07:26:46.101Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 13
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 2 (Core Domain Logic) — EXECUTING
-Plan: 3 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -63,6 +63,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P09 | 9min | 3 tasks | 6 files |
 | Phase 02 P01 | 6min | 2 tasks | 8 files |
 | Phase 02 P05 | 3min | 2 tasks | 6 files |
+| Phase 02 P04 | 9min | 2 tasks | 5 files |
+| Phase 02 P03 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -90,6 +92,9 @@ Recent decisions affecting current work:
 - [Phase 02]: src/main/domain/cases/ un-ignored (cases/ rule swallowed it)
 - [Phase 02]: Leak guard: banned grams = answer-key 8-grams minus deck 8-grams; banned terms match whole tokens; banned_term checked before ngram
 - [Phase 02]: parseNumbers ignores bare number words without scale/unit
+- [Phase 02]: speakable: tight hyphen ranges only; spaced ranges need en dash
+- [Phase 02]: Splitter early chunk at first ,;:— + whitespace with >=6 words before; flush resets early flag per turn
+- [Phase 02]: Reducer: reviewDeadline set on review entry; next grill request comes from ANSWER_FINAL; END_REQUESTED also accepted in warmup
 
 ### Pending Todos
 
@@ -104,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T07:26:34.581Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-11-03T07:26:46.098Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

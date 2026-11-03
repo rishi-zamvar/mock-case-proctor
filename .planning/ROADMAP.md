@@ -61,8 +61,8 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — TDD token/{fn:} resolver + deck page splitter, case_99_fixture, .gitignore negation (wave 1)
-- [ ] 02-03-PLAN.md — TDD section catalog, plan merge, turn caps, pure interview reducer (wave 1)
-- [ ] 02-04-PLAN.md — TDD speakable() normaliser + lexicon (real census) and streaming sentence splitter (wave 1)
+- [x] 02-03-PLAN.md — TDD section catalog, plan merge, turn caps, pure interview reducer (wave 1)
+- [x] 02-04-PLAN.md — TDD speakable() normaliser + lexicon (real census) and streaming sentence splitter (wave 1)
 - [x] 02-05-PLAN.md — TDD leak guard, canonical number parser, brevity bands (wave 1)
 - [ ] 02-02-PLAN.md — TDD CaseCard contract, InterviewerBrief, case loader, STT prompt; 12-case + leak-guard real integration (wave 2)
 
@@ -159,7 +159,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Scaffold, Harness & Key Onboarding | 5/9 | Complete    | 2026-11-03 |
-| 2. Core Domain Logic | 0/TBD | Not started | - |
+| 2. Core Domain Logic | 4/5 | In Progress|  |
 | 3. Walking Skeleton on Fakes | 0/TBD | Not started | - |
 | 4. Proctored Review Block | 0/TBD | Not started | - |
 | 5. Voice Out & Avatar | 0/TBD | Not started | - |

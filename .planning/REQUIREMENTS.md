@@ -39,7 +39,7 @@
 
 ### Session Flow (FLOW)
 
-- [ ] **FLOW-01**: A pure, code-owned state machine runs the phases in order: warm-up, review, presentation, grilling, wrap-up, scoring, review mode.
+- [x] **FLOW-01**: A pure, code-owned state machine runs the phases in order: warm-up, review, presentation, grilling, wrap-up, scoring, review mode.
 - [ ] **FLOW-02**: Optional warm-up: a 5–10 minute casual chat with the partner before "here is the project". It can be skipped.
 - [ ] **FLOW-03**: Proctored review:
   - The interviewee PDF is shown in the window.
@@ -48,7 +48,7 @@
   - A "Ready" button skips ahead.
 - [ ] **FLOW-04**: Presentation. Rishi gives a one-sentence recap, a recommendation, and considerations for and against. It is timed and never interrupted by the avatar.
 - [ ] **FLOW-05**: A structured call extracts the section order from Rishi's opening. Standard sections he didn't raise are appended at the end, and the omission is recorded.
-- [ ] **FLOW-06**: The grilling has a target of about 25 minutes, configurable. Each section has a soft and a hard turn cap enforced in code. The interviewer's "section sufficient" signal is ignored on a section's first turn.
+- [x] **FLOW-06**: The grilling has a target of about 25 minutes, configurable. Each section has a soft and a hard turn cap enforced in code. The interviewer's "section sufficient" signal is ignored on a section's first turn.
 - [ ] **FLOW-07**: The session is saved atomically after every turn and can be resumed after a crash or restart.
 - [ ] **FLOW-08**: Rishi can end a session early, and the partial session is still scored.
 
@@ -85,7 +85,7 @@
 ### Voice Out & Avatar (VOUT)
 
 - [ ] **VOUT-01**: The interviewer speaks with a lifelike local voice that costs nothing to run (HeadTTS/Kokoro on WebGPU). Startup asserts WebGPU is in use and shows a banner if it falls back.
-- [ ] **VOUT-02**: Text is normalised for speech before it reaches the voice: $184M, 4.1x, 48.2%, bps, acronyms such as ARR, NRR, GRR, CAGR.
+- [x] **VOUT-02**: Text is normalised for speech before it reaches the voice: $184M, 4.1x, 48.2%, bps, acronyms such as ARR, NRR, GRR, CAGR.
 - [ ] **VOUT-03**: A 3D talking-head avatar (TalkingHead.js) lip-syncs to the voice and has idle, listening and thinking behaviour.
 - [ ] **VOUT-04**: Claude's reply streams one sentence at a time into the voice. Measured over a session, the median time from Rishi pressing stop to the avatar's first word is at most 3 s, logged per stage.
 - [ ] **VOUT-05**: Barge-in. Pressing Talk while the avatar is speaking stops it immediately and cancels the stream. Only what was actually spoken is kept in the history.
@@ -152,12 +152,12 @@
 | BAR-01 | Phase 3 | Pending |
 | BAR-02 | Phase 3 | Pending |
 | BAR-03 | Phase 2 | Complete |
-| FLOW-01 | Phase 2 | Pending |
+| FLOW-01 | Phase 2 | Complete |
 | FLOW-02 | Phase 6 | Pending |
 | FLOW-03 | Phase 4 | Pending |
 | FLOW-04 | Phase 6 | Pending |
 | FLOW-05 | Phase 6 | Pending |
-| FLOW-06 | Phase 2 | Pending |
+| FLOW-06 | Phase 2 | Complete |
 | FLOW-07 | Phase 3 | Pending |
 | FLOW-08 | Phase 3 | Pending |
 | VIN-01 | Phase 7 | Pending |
@@ -174,7 +174,7 @@
 | INT-07 | Phase 6 | Pending |
 | INT-08 | Phase 6 | Pending |
 | VOUT-01 | Phase 5 | Pending |
-| VOUT-02 | Phase 2 | Pending |
+| VOUT-02 | Phase 2 | Complete |
 | VOUT-03 | Phase 5 | Pending |
 | VOUT-04 | Phase 7 | Pending |
 | VOUT-05 | Phase 7 | Pending |
