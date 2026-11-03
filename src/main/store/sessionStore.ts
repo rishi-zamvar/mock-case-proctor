@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { SessionFileSchema, type SessionFile } from './sessionSchema'
 import type { CaseCard, LibraryView } from '../../shared/ipc'
 import type { Logger } from '../log'
+import { LibraryViewSchema } from '../../shared/schemas'
 
 export interface SessionStore {
   save(s: SessionFile): void
@@ -103,8 +104,41 @@ export function createSessionStore(o: {
     return n
   }
 
-  function libraryView(_cards: CaseCard[]): LibraryView {
-    throw new Error('not implemented')
+  // Completion is derived from the session files on every call (LIB-02), never memoised.
+  function libraryView(cards: CaseCard[]): LibraryView {
+    const all = list()
+    const cases = cards.map((card) => {
+      let best: SessionFile | null = null
+      for (const s of all) {
+        if (s.caseId !== card.id || s.status !== 'completed' || !s.scorecard) continue
+        if (!best || (s.endedAt ?? s.startedAt) > (best.endedAt ?? best.startedAt)) best = s
+      }
+      return {
+        card,
+        completed: best
+          ? { at: best.endedAt ?? best.startedAt, score: best.scorecard!.total }
+          : null
+      }
+    })
+    let resumable: LibraryView['resumable'] = null
+    for (const s of all) {
+      const card = s.status === 'active' ? cards.find((c) => c.id === s.caseId) : undefined
+      if (!card) continue
+      const p = s.machineState.phase
+      resumable = {
+        sessionId: s.id,
+        caseId: s.caseId,
+        company: card.company,
+        phase: p === 'idle' ? 'warmup' : p
+      }
+      break
+    }
+    return LibraryViewSchema.parse({
+      cases,
+      resumable,
+      quarantined: takeQuarantined(),
+      error: null
+    })
   }
 
   return { save, load, list, takeQuarantined, libraryView }
