@@ -28,6 +28,7 @@ function fakeTrack(): { enabled: boolean; stop: () => void } {
   return { enabled: true, stop: vi.fn() }
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function setup(sampleRate = RATE) {
   const tracks = [fakeTrack(), fakeTrack()]
   const stream = { getAudioTracks: () => tracks, getTracks: () => tracks } as unknown as MediaStream
@@ -157,7 +158,9 @@ describe('createMicCapture', () => {
   it('given __e2e and a loaded WAV, when the next recording starts, then it captures the WAV instead of the mic', async () => {
     ;(window as { __e2e?: unknown }).__e2e = true
     const { mic, ctx, getUserMedia } = setup()
-    const probe = (window as unknown as { __mic: { load(b: string): Promise<number>; ended(): Promise<void> } }).__mic
+    const probe = (
+      window as unknown as { __mic: { load(b: string): Promise<number>; ended(): Promise<void> } }
+    ).__mic
     expect(await probe.load(btoa('RIFF'))).toBe(1234)
     await mic.start(() => {})
     expect(ctx.createBufferSource).toHaveBeenCalledTimes(1)

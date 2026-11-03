@@ -7,7 +7,11 @@ function loud(n: number): Float32Array {
   return a
 }
 
-function pushAll(acc: ReturnType<typeof createAccumulator>, pcm: Float32Array, block = 4096): string[] {
+function pushAll(
+  acc: ReturnType<typeof createAccumulator>,
+  pcm: Float32Array,
+  block = 4096
+): string[] {
   const out: string[] = []
   for (let i = 0; i < pcm.length; i += block) out.push(acc.push(pcm.slice(i, i + block)))
   return out
