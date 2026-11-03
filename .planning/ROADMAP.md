@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Scaffold, Harness & Key Onboarding | 5/9 | Complete    | 2026-11-03 |
 | 2. Core Domain Logic | 4/5 | Complete    | 2026-11-03 |
-| 3. Walking Skeleton on Fakes | 12/12 | Complete   | 2026-11-03 |
+| 3. Walking Skeleton on Fakes | 12/12 | Complete    | 2026-11-03 |
 | 4. Proctored Review Block | 0/TBD | Not started | - |
 | 5. Voice Out & Avatar | 0/TBD | Not started | - |
 | 6. Interviewer Agent | 0/TBD | Not started | - |
