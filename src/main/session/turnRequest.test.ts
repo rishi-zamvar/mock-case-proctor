@@ -73,9 +73,9 @@ describe('buildTurnRequest', () => {
   it('given valuation turn 1, when built, then pushback is now until done', () => {
     const m = grilling({ current: 'valuation', turnsInSection: 1 })
     expect(buildTurnRequest(sess(m), grill, 0).proctor?.pushback).toBe('now')
-    expect(
-      buildTurnRequest(sess({ ...m, pushbackDone: true }), grill, 0).proctor?.pushback
-    ).toBe('done')
+    expect(buildTurnRequest(sess({ ...m, pushbackDone: true }), grill, 0).proctor?.pushback).toBe(
+      'done'
+    )
   })
 
   it('given an interrupted answer, when it is the last candidate turn, then lastAnswerLong', () => {
@@ -83,9 +83,9 @@ describe('buildTurnRequest', () => {
     const m = grilling({ interruptedAnswerId: 't1' })
     expect(buildTurnRequest(sess(m, { transcript }), grill, 0).proctor?.lastAnswerLong).toBe(true)
     const later = [...transcript, turn('t3', 'candidate')]
-    expect(
-      buildTurnRequest(sess(m, { transcript: later }), grill, 0).proctor?.lastAnswerLong
-    ).toBe(false)
+    expect(buildTurnRequest(sess(m, { transcript: later }), grill, 0).proctor?.lastAnswerLong).toBe(
+      false
+    )
     expect(
       buildTurnRequest(sess(grilling(), { transcript: [] }), grill, 0).proctor?.lastAnswerLong
     ).toBe(false)
