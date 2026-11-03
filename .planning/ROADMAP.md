@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Interviewer Agent** - A Claude partner grounded in the case's answer key that follows Rishi's structure and grills him (completed 2026-11-03)
 - [x] **Phase 7: Voice In & Barge-In** - Push-to-talk local speech-to-text, sentence streaming within 3 s, interruptible avatar (completed 2026-11-03)
 - [x] **Phase 8: Review Mode & Trends** - Evidence-quoted rubric scorecard, flag map, code-computed checks, reveal and cross-session trends (completed 2026-11-03)
-- [ ] **Phase 9: Packaged Live Sign-off** - A full live session on the signed `.app` against the real Claude API, passing the live evals
+- [x] **Phase 9: Packaged Live Sign-off** - A full live session on the signed `.app` against the real Claude API, passing the live evals (completed 2026-11-03)
 
 ## Phase Details
 
@@ -218,7 +218,7 @@ Plans:
   1. A T3 `@live` run on the packaged, ad-hoc-signed arm64 `.app` completes a full session from library to review mode. Whisper is on Metal, HeadTTS is on WebGPU, and the native files are unpacked from the asar archive.
   2. The live evals pass: no answer-key leaks, pushback on a wrong GRR, and every section completing within its cap.
   3. A median-latency report against the 3 s target is produced from the live run. The app runs offline apart from the Claude connection, permissions are prompted again after `tccutil reset`, and memory does not grow unbounded across 3 back-to-back sessions.
-**Plans:** 11/11 plans complete
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 09-01-PLAN.md — latencyStages/p90 (TDD), shared E2E drivers + tap, case-02/wrong-GRR WAVs, @t3 packaged live + offline + soak spec
@@ -240,4 +240,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Interviewer Agent | 0/TBD | Complete    | 2026-11-03 |
 | 7. Voice In & Barge-In | 3/10 | Complete    | 2026-11-03 |
 | 8. Review Mode & Trends | 0/TBD | Complete    | 2026-11-03 |
-| 9. Packaged Live Sign-off | 0/TBD | Not started | - |
+| 9. Packaged Live Sign-off | 0/TBD | Complete    | 2026-11-03 |
