@@ -56,7 +56,7 @@
 
 - [x] **VIN-01**: Push-to-talk. Rishi presses a button (or Space) to start and presses again to stop each answer. A visible timer runs for each answer.
 - [x] **VIN-02**: Local speech-to-text (whisper.cpp large-v3-turbo on Metal), seeded with the case glossary and finance vocabulary.
-- [ ] **VIN-03**: The text of each answer is shown after it is transcribed.
+- [x] **VIN-03**: The text of each answer is shown after it is transcribed.
 - [ ] **VIN-04**: Near-silent recordings are treated as "no answer". Whisper's typical hallucinations ("Thank you.") and repeated phrases are filtered out.
 - [x] **VIN-05**: A mic check (level meter) runs before the session starts.
 
@@ -162,7 +162,7 @@
 | FLOW-08 | Phase 3 | Complete |
 | VIN-01 | Phase 7 | Complete |
 | VIN-02 | Phase 7 | Complete |
-| VIN-03 | Phase 7 | Pending |
+| VIN-03 | Phase 7 | Complete |
 | VIN-04 | Phase 7 | Pending |
 | VIN-05 | Phase 4 | Complete |
 | INT-01 | Phase 6 | Complete |
