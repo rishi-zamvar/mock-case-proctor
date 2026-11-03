@@ -73,7 +73,8 @@ describe('parseControl', () => {
       control: null,
       anomalies: ['invalid']
     })
-    const { evidence: _e, ...missing } = valid
+    const missing: Record<string, unknown> = { ...valid }
+    delete missing.evidence
     expect(parseControl(missing, ctx)).toEqual({ control: null, anomalies: ['invalid'] })
     expect(parseControl('nope', ctx)).toEqual({ control: null, anomalies: ['invalid'] })
   })
