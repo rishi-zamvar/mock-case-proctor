@@ -3,6 +3,7 @@ import type { ViewState } from '../../../shared/ipc'
 import s from './ReviewMode.module.css'
 import Debrief from './review/Debrief'
 import TranscriptPanel, { type TranscriptFocus } from './review/TranscriptPanel'
+import Trends from './review/Trends'
 
 export type ReviewModeProps = { view: ViewState; onBack(): void }
 
@@ -85,7 +86,7 @@ export default function ReviewMode({ view, onBack }: ReviewModeProps): React.JSX
             <TranscriptPanel lines={reveal.transcript} focused={focused} />
           </>
         ) : (
-          <p className={`${s.card} ${s.muted}`}>Trends arrive in Phase 8</p>
+          <Trends />
         )}
       </div>
     </main>

@@ -20,7 +20,8 @@ export default function Sparkline({
     const c = Math.min(max, Math.max(min, v))
     return +(H - ((c - min) / (max - min || 1)) * H).toFixed(2)
   }
-  const x = (i: number): number => +(values.length > 1 ? (i / (values.length - 1)) * W : W / 2).toFixed(2)
+  const x = (i: number): number =>
+    +(values.length > 1 ? (i / (values.length - 1)) * W : W / 2).toFixed(2)
   const pts = values.flatMap((v, i) => (v === null ? [] : [[x(i), y(v)] as const]))
   const last = pts[pts.length - 1]
   return (

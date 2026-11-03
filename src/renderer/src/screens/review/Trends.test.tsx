@@ -53,7 +53,14 @@ function summary(i: number, over: Partial<SessionSummary> = {}): SessionSummary 
     at: 1_700_000_000_000 + i,
     total: 18 + i * 4,
     band: 'another',
-    dims: { clear_call: 3, lead_edge_8: 3, retention: 2 + i, valuation: 3, back_solve: 2, quality_poise: 4 },
+    dims: {
+      clear_call: 3,
+      lead_edge_8: 3,
+      retention: 2 + i,
+      valuation: 3,
+      back_solve: 2,
+      quality_poise: 4
+    },
     flagFoundRate: 0.5 + i * 0.25,
     avgAnswerMs: 60000 + i * 10000,
     numberAccuracy: i === 0 ? null : 0.9,
@@ -124,10 +131,12 @@ describe('Trends', () => {
       'Skips GRR'
     ])
     const rows = screen.getAllByTestId('progress-row')
-    expect(rows.map((r) => [r.getAttribute('data-dim'), r.getAttribute('data-direction')])).toEqual([
-      ['retention', 'up'],
-      ['valuation', 'down']
-    ])
+    expect(rows.map((r) => [r.getAttribute('data-dim'), r.getAttribute('data-direction')])).toEqual(
+      [
+        ['retention', 'up'],
+        ['valuation', 'down']
+      ]
+    )
     expect(within(rows[0]).getByLabelText('up').textContent).toBe('↑')
     expect(within(rows[1]).getByLabelText('down').textContent).toBe('↓')
     expect(id('carried-fix').getAttribute('data-improved')).toBe('yes')
@@ -148,7 +157,11 @@ describe('Trends', () => {
 
   it('insufficient says more sessions are needed', async () => {
     render(
-      <Trends load={() => Promise.resolve({ status: 'insufficient', summaries: [summary(0)], insights: null })} />
+      <Trends
+        load={() =>
+          Promise.resolve({ status: 'insufficient', summaries: [summary(0)], insights: null })
+        }
+      />
     )
     expect((await screen.findByTestId('trends-insufficient')).textContent).toContain(
       'Trends need at least 2 scored sessions'
