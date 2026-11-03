@@ -1,9 +1,16 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createSpeechQueue, type SynthData, type SynthResult } from './speechQueue'
+import { createSpeechQueue, type HeadLike, type SynthData, type SynthResult } from './speechQueue'
 
 // Mirrors TalkingHead 1.8.2: one FIFO of markers and audio; idle markers fire synchronously;
 // audio keeps it busy until endAudio(); stopSpeaking() clears everything so pending markers never fire.
-function fakeHead() {
+type Mocked<T> = { [K in keyof T]: T[K] & ReturnType<typeof vi.fn> }
+type FakeHead = {
+  head: Mocked<HeadLike>
+  played: SynthData[]
+  readonly isSpeaking: boolean
+  endAudio(): void
+}
+function fakeHead(): FakeHead {
   type Item = { marker: () => void } | { audio: SynthData }
   let fifo: Item[] = []
   let busy = false
@@ -18,7 +25,7 @@ function fakeHead() {
       }
     }
   }
-  const head = {
+  const head: Mocked<HeadLike> = {
     speakAudio: vi.fn((data: SynthData) => {
       fifo.push({ audio: data })
       pump()
@@ -45,7 +52,8 @@ function fakeHead() {
   }
 }
 
-function deferred<T>() {
+type Deferred<T> = { promise: Promise<T>; resolve(v: T): void; reject(e: unknown): void }
+function deferred<T>(): Deferred<T> {
   let resolve!: (v: T) => void
   let reject!: (e: unknown) => void
   const promise = new Promise<T>((res, rej) => {
@@ -59,12 +67,16 @@ const flush = async (): Promise<void> => {
   for (let i = 0; i < 20; i++) await Promise.resolve()
 }
 
-const data = (seq: number, visemes = seq + 1): SynthData => ({ seq, visemes: Array(visemes).fill(0) })
+const data = (seq: number, visemes = seq + 1): SynthData => ({
+  seq,
+  visemes: Array(visemes).fill(0)
+})
 const ok = (seq: number, visemes?: number): SynthResult => ({ ok: true, data: data(seq, visemes) })
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- test harness, inferred shape
 function setup(opts: { ready?: Promise<void> } = {}) {
   const h = fakeHead()
-  const synth = new Map<string, ReturnType<typeof deferred<SynthResult>>>()
+  const synth = new Map<string, Deferred<SynthResult>>()
   const tts = {
     synthesize: vi.fn((text: string) => {
       const d = deferred<SynthResult>()
@@ -102,7 +114,19 @@ function setup(opts: { ready?: Promise<void> } = {}) {
     expect(new Set(keys).size).toBe(keys.length)
     expect([...keys].sort()).toEqual([...enqueued].sort())
   }
-  return { h, tts, ack, onPlaying, events, q, enqueue, resolve, reject, playedSeqs, assertExactlyOnce }
+  return {
+    h,
+    tts,
+    ack,
+    onPlaying,
+    events,
+    q,
+    enqueue,
+    resolve,
+    reject,
+    playedSeqs,
+    assertExactlyOnce
+  }
 }
 
 describe('speech queue', () => {
