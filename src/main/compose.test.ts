@@ -144,13 +144,15 @@ describe('compose', () => {
       send
     })
     const { sessionId } = await core.runner.start('99', { warmup: false })
-    await vi.waitFor(() => expect(core.runner.current()?.reviewWarned).toBe(true), {
+    // The deadline fires after T-10, so leaving review proves the warning already ran.
+    await vi.waitFor(() => expect(core.runner.current()?.phase).not.toBe('review'), {
       timeout: 3000,
       interval: 2
     })
-    await new Promise((r) => setTimeout(r, 10))
     core.runner.discard(sessionId)
-    return send.mock.calls.filter(([ch]) => ch === CH.speak).map(([, p]) => p)
+    return send.mock.calls
+      .filter(([ch, p]) => ch === CH.speak && p.text === REVIEW_WARNING_LINE)
+      .map(([, p]) => p)
   }
 
   it('given TTS=headtts, when the T-10 warning fires, then the warning line is sent once', async () => {

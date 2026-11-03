@@ -25,6 +25,7 @@ import { createKeyStore } from './keys/keyStore'
 import { createSafeStorageCipher } from './keys/cipher'
 import { probeKey } from './keys/probe'
 import { resolveDotenvPath } from './keys/dotenv'
+import type { TtsMode } from '../shared/ipc'
 
 // Before ready: Chromium switches and scheme privileges are read at startup.
 const e2e = applyE2ESwitches(app, process.env)
@@ -34,7 +35,7 @@ process.on('unhandledRejection', (e) => log.error('unhandled', e))
 
 const devUrl = process.env.ELECTRON_RENDERER_URL
 
-function createWindow(e2e: boolean): BrowserWindow {
+function createWindow(e2e: boolean, tts: TtsMode): BrowserWindow {
   const win = new BrowserWindow({
     show: false,
     width: 1280,
@@ -48,7 +49,9 @@ function createWindow(e2e: boolean): BrowserWindow {
       nodeIntegration: false,
       webSecurity: true,
       backgroundThrottling: false,
-      additionalArguments: e2e ? ['--e2e'] : []
+      // Spike-proven: lets the first interviewer line play without a user gesture.
+      autoplayPolicy: 'no-user-gesture-required',
+      additionalArguments: [...(e2e ? ['--e2e'] : []), `--tts=${tts}`]
     }
   })
   win.on('ready-to-show', () => {
@@ -112,7 +115,7 @@ app.whenReady().then(async () => {
   )
   // Non-blocking TCC prompt; a denial degrades to Camera off / mic unavailable, never a crash.
   void ensureMediaAccess({ platform: process.platform, e2e, prefs: systemPreferences, log })
-  win = createWindow(e2e)
+  win = createWindow(e2e, core.config.tts)
 })
 
 app.on('window-all-closed', () => app.quit())
