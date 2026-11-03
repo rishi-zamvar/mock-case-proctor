@@ -13,7 +13,9 @@ import type { SectionId } from './sections'
 
 const T0 = 1_000_000
 
-function run(events: InterviewEvent[], from: InterviewState = initialState()) {
+type Run = { state: InterviewState; effects: Effect[] }
+
+function run(events: InterviewEvent[], from: InterviewState = initialState()): Run {
   let state = from
   const effects: Effect[] = []
   for (const e of events) {
@@ -36,7 +38,10 @@ const turn = (control: InterviewControl | null, now = T0 + 10): InterviewEvent =
 })
 
 /** idle → grilling with the given candidate order (default config). */
-function toGrilling(order: string[] = ['retention'], config?: InterviewEvent & { type: 'START' }) {
+function toGrilling(
+  order: string[] = ['retention'],
+  config?: InterviewEvent & { type: 'START' }
+): InterviewState {
   return run([
     config ?? { type: 'START', now: T0 },
     { type: 'WARMUP_DONE', now: T0 + 1 },
@@ -187,7 +192,10 @@ describe('invalid events are ignored', () => {
 
 describe('turn caps and section advance', () => {
   it('sufficient on turn 1 stays in section', () => {
-    const s = run([turn(ctl({ section_status: 'sufficient', next_section: 'valuation' }))], toGrilling()).state
+    const s = run(
+      [turn(ctl({ section_status: 'sufficient', next_section: 'valuation' }))],
+      toGrilling()
+    ).state
     expect(s.current).toBe('retention')
     expect(s.turnsInSection).toBe(1)
   })
@@ -230,7 +238,10 @@ describe('turn caps and section advance', () => {
   })
 
   it('hard cap force-advances at the 5th turn', () => {
-    const four = run(Array.from({ length: 4 }, () => turn(ctl())), toGrilling()).state
+    const four = run(
+      Array.from({ length: 4 }, () => turn(ctl())),
+      toGrilling()
+    ).state
     expect(four.current).toBe('retention')
     const five = reduce(four, turn(ctl())).state
     expect(five.current).toBe('business')
@@ -238,7 +249,10 @@ describe('turn caps and section advance', () => {
   })
 
   it('null control counts as a continue turn', () => {
-    const s = run(Array.from({ length: 5 }, () => turn(null)), toGrilling()).state
+    const s = run(
+      Array.from({ length: 5 }, () => turn(null)),
+      toGrilling()
+    ).state
     expect(s.current).toBe('business')
   })
 
@@ -266,13 +280,22 @@ describe('turn caps and section advance', () => {
       ]).flat(),
       toGrilling()
     ).state
-    const s = run([turn(ctl()), turn(ctl({ section_status: 'sufficient', next_section: 'call' }))], six).state
+    const s = run(
+      [turn(ctl()), turn(ctl({ section_status: 'sufficient', next_section: 'call' }))],
+      six
+    ).state
     expect(s.current).toBe('call')
   })
 })
 
 describe('hints', () => {
-  const answer: InterviewEvent = { type: 'ANSWER_FINAL', now: T0 + 30, answerId: 'a1', text: 'x', ms: 1000 }
+  const answer: InterviewEvent = {
+    type: 'ANSWER_FINAL',
+    now: T0 + 30,
+    answerId: 'a1',
+    text: 'x',
+    ms: 1000
+  }
 
   it('one failed probe does not allow a hint', () => {
     const s = run([turn(ctl({ probe_failed: true }))], toGrilling()).state
@@ -322,7 +345,8 @@ describe('interrupts', () => {
     answerId,
     elapsedMs
   })
-  const interrupts = (effects: Effect[]) => effects.filter((e) => e.type === 'INTERRUPT_SUGGESTED')
+  const interrupts = (effects: Effect[]): Effect[] =>
+    effects.filter((e) => e.type === 'INTERRUPT_SUGGESTED')
 
   it('never interrupts the presentation', () => {
     const pres = run([
@@ -350,7 +374,10 @@ describe('END_REQUESTED', () => {
   const presentation = reduce(review, { type: 'READY', now: T0 + 1 }).state
   const extraction = reduce(presentation, { type: 'PRESENTATION_DONE', now: T0 + 2 }).state
   const grilling = toGrilling()
-  const wrapup = run(Array.from({ length: 35 }, () => turn(null)), grilling).state
+  const wrapup = run(
+    Array.from({ length: 35 }, () => turn(null)),
+    grilling
+  ).state
   const scoring = reduce(wrapup, { type: 'WRAPUP_DONE', now: T0 + 3 }).state
   const reviewMode = reduce(scoring, { type: 'SCORED', now: T0 + 4 }).state
 
