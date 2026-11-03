@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, type Mock } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
-import type { ViewState } from '../../../shared/ipc'
+import type { Intent, ViewState } from '../../../shared/ipc'
 import Session from './Session'
 
 const CLOCK = 1_700_000_000_000
@@ -34,10 +34,13 @@ function view(o: Partial<ViewState> = {}): ViewState {
   }
 }
 
-function setup(o: Partial<ViewState> = {}) {
+function setup(o: Partial<ViewState> = {}): ReturnType<typeof render> & {
+  onIntent: Mock<(i: Intent) => void>
+  advance: (ms: number) => number
+} {
   let t = 1000
   const now = (): number => t
-  const onIntent = vi.fn()
+  const onIntent = vi.fn<(i: Intent) => void>()
   const r = render(<Session view={view(o)} onIntent={onIntent} now={now} />)
   return { onIntent, advance: (ms: number) => (t += ms), ...r }
 }
@@ -50,7 +53,9 @@ afterEach(() => vi.useRealTimers())
 describe('Session', () => {
   it('renders the root with phase', () => {
     setup()
-    expect(document.querySelector('main[data-screen="session"][data-phase="grilling"]')).not.toBeNull()
+    expect(
+      document.querySelector('main[data-screen="session"][data-phase="grilling"]')
+    ).not.toBeNull()
     expect(id('phase-label').textContent).toBe('Grilling')
     expect(id('webcam-tile').textContent).toContain('Camera — Phase 4')
     expect(id('avatar-stage').textContent).toContain('Interviewer')
