@@ -46,6 +46,8 @@ export type RunnerDeps = {
   warmupClosingLine?: string
   /** Unscaled clock for latency stamps (Pitfall 5). Default Date.now. */
   realNow?: () => number
+  /** Called once after a scorecard is saved (trends recompute). */
+  onScored?: (sessionId: string) => void
   log: Logger
 }
 
@@ -88,6 +90,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   let interjectCount = 0
   const realNow = d.realNow ?? Date.now
   let transcribing = false
+  let scoringFailed = false
   let prompt: string | undefined
   const answers = createAnswerAssembler({ stt: d.stt, prompt: () => prompt })
   type Latency = NonNullable<SessionFile['timings'][number]['latency']>
@@ -116,7 +119,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       clockNow: clock.now(),
       timeScale: clock.scale,
       speaking,
-      transcribing
+      transcribing,
+      scoringFailed
     })
     d.emitView(lastView)
   }
@@ -427,14 +431,14 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       }
     } catch (e) {
       if (signal.aborted || isAbort(e)) return
-      // ponytail: one silent retry; a visible retry control if failures prove common
       if (attempt > 0) d.log.error('llm turn failed', pending.kind)
       await enqueue(() => {
         if (inflight === ac) inflight = null
         if (session !== s) return
         speaking = false
         if (attempt === 0) {
-          sayLine(SORRY_LINE)
+          // Scoring retries silently: the avatar idles, nothing to apologise for.
+          if (pending.kind !== 'score') sayLine(SORRY_LINE)
           pushView()
           void runLlm(need, 1)
         } else if (pending.kind === 'extraction') {
@@ -442,7 +446,10 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
           s.pending = null
           store.save(s)
           dispatch({ type: 'SECTION_PLAN_SET', now: clock.now(), order: [] })
-        } else pushView()
+        } else {
+          if (pending.kind === 'score') scoringFailed = true
+          pushView()
+        }
       })
       return
     }
@@ -455,6 +462,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       store.save(s)
       if (next) dispatch(next)
       else pushView()
+      if (next?.type === 'SCORED') d.onScored?.(s.id)
     })
   }
 
@@ -558,6 +566,12 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         abortInflight()
         speaking = false
         return dispatch({ type: 'END_REQUESTED', now })
+      case 'retryScore':
+        if (phase !== 'scoring' || !scoringFailed || inflight) return
+        scoringFailed = false
+        pushView()
+        void runLlm({ kind: 'score' })
+        return
       case 'deckPage':
         // Not gated on speaking: looking at the deck is always fine.
         if (!DECK.includes(phase) || i.page === s.deckPage) return
@@ -575,6 +589,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     prompt = sttPrompt(brief)
     answers.reset()
     transcribing = false
+    scoringFailed = false
     pendingLat = null
     liveLat = null
     live = null
