@@ -1,0 +1,97 @@
+/* Fake mode: identical to the Phase 4 placeholder. */
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 2);
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.placeholder .ring {
+  width: 120px;
+  height: 120px;
+}
+
+.ring {
+  border-radius: 50%;
+  background: var(--elevated);
+  border: 3px solid transparent;
+  transition: border-color 150ms ease;
+}
+
+.ring[data-speaking='true'] {
+  border-color: var(--accent);
+}
+
+/* Avatar mode: video-call tile. */
+.stage {
+  position: relative;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.slot {
+  position: absolute;
+  inset: 0;
+}
+
+.slot > * {
+  width: 100%;
+  height: 100%;
+}
+
+.tag {
+  position: absolute;
+  left: calc(var(--space) * 2);
+  bottom: calc(var(--space) * 2);
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  padding: calc(var(--space) / 2) var(--space);
+  border-radius: var(--radius);
+  background: rgb(11 15 20 / 70%);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tag .ring {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+}
+
+.tag .ring[data-speaking='true'] {
+  background: var(--accent);
+}
+
+.thinking {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--space) * 2);
+  transform: translateX(-50%);
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking {
+    animation: none;
+  }
+
+  .ring {
+    transition: none;
+  }
+}
