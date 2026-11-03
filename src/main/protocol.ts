@@ -40,3 +40,18 @@ export function isAppOrigin(url: string, devUrl?: string): boolean {
     return false
   }
 }
+
+/** null = not a case route (fall through to roots). 'deny' = case route but refused (404). string = the case id. */
+export function resolveCasePdfRequest(url: string): string | 'deny' | null {
+  let u: URL
+  try {
+    u = new URL(url)
+  } catch {
+    return null
+  }
+  if (u.protocol !== 'app:' || u.host !== 'bundle') return null
+  const raw = url.slice('app://bundle'.length).split(/[?#]/)[0]
+  if (!raw.startsWith('/cases') && !u.pathname.startsWith('/cases')) return null
+  // Exact raw match only: encoded and dot-segment variants are refused, never normalised.
+  return /^\/cases\/(\d{2})\/interviewee\.pdf$/.exec(raw)?.[1] ?? 'deny'
+}
