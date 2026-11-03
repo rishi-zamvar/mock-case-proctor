@@ -64,7 +64,7 @@ Plans:
 - [x] 02-03-PLAN.md — TDD section catalog, plan merge, turn caps, pure interview reducer (wave 1)
 - [x] 02-04-PLAN.md — TDD speakable() normaliser + lexicon (real census) and streaming sentence splitter (wave 1)
 - [x] 02-05-PLAN.md — TDD leak guard, canonical number parser, brevity bands (wave 1)
-- [ ] 02-02-PLAN.md — TDD CaseCard contract, InterviewerBrief, case loader, STT prompt; 12-case + leak-guard real integration (wave 2)
+- [x] 02-02-PLAN.md — TDD CaseCard contract, InterviewerBrief, case loader, STT prompt; 12-case + leak-guard real integration (wave 2)
 
 ### Phase 3: Walking Skeleton on Fakes
 **Goal**: Rishi can click through an entire session (library to review mode) on fake components, and the session survives crashes. Nothing from the interviewer package ever reaches the window.

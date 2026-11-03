@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-11-03T07:26:46.101Z"
+status: verifying
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-11-03T07:29:47.598Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 
 Phase: 2 (Core Domain Logic) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-11-03
 
 Progress: [░░░░░░░░░░] 0%
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P05 | 3min | 2 tasks | 6 files |
 | Phase 02 P04 | 9min | 2 tasks | 5 files |
 | Phase 02 P03 | 5min | 2 tasks | 4 files |
+| Phase 02 P02 | 4min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,8 @@ Recent decisions affecting current work:
 - [Phase 02]: speakable: tight hyphen ranges only; spaced ranges need en dash
 - [Phase 02]: Splitter early chunk at first ,;:— + whitespace with >=6 words before; flush resets early flag per turn
 - [Phase 02]: Reducer: reviewDeadline set on review entry; next grill request comes from ANSWER_FINAL; END_REQUESTED also accepted in warmup
+- [Phase 02]: Real leak test probes the first deck-free 10-word ideal-answer window
+- [Phase 02]: listCases skips case dirs without _work/data JSON; loadCase throws 'case NN not found'
 
 ### Pending Todos
 
@@ -109,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T07:26:46.098Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-11-03T07:29:47.595Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
