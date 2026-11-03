@@ -74,6 +74,8 @@ describe('WebcamTile', () => {
     expect(stop).toHaveBeenCalledTimes(1)
     expect(v.srcObject).toBeNull()
     expect(tile().getAttribute('data-state')).toBe('off')
+    // The .video class sets display:block, which beats [hidden]; off must remove the element.
+    expect(screen.queryByTestId('webcam-video')).toBeNull()
   })
 
   it('given a live camera, when unmounted, then tracks stop', async () => {

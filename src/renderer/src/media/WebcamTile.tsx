@@ -46,19 +46,19 @@ export default function WebcamTile(props: Props): React.JSX.Element {
 
   return (
     <div data-testid="webcam-tile" data-state={state} className={styles.tile}>
-      <video
-        ref={videoRef}
-        data-testid="webcam-video"
-        className={`${styles.video} ${styles.mirror}`}
-        autoPlay
-        muted
-        playsInline
-        hidden={state === 'off'}
-      />
-      {state === 'off' && (
+      {state === 'off' ? (
         <p data-testid="camera-off" className={styles.off}>
           Camera off
         </p>
+      ) : (
+        <video
+          ref={videoRef}
+          data-testid="webcam-video"
+          className={`${styles.video} ${styles.mirror}`}
+          autoPlay
+          muted
+          playsInline
+        />
       )}
       <span className={styles.label}>{label}</span>
     </div>
