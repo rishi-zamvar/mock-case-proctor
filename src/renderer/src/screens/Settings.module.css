@@ -1,0 +1,52 @@
+.page {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 2);
+  width: 100%;
+  max-width: 480px;
+  padding: calc(var(--space) * 3);
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius);
+}
+
+.card h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.card p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  gap: var(--space);
+}
+
+.row input {
+  flex: 1;
+}
+
+.ok {
+  color: var(--accent);
+}
+
+.danger {
+  color: var(--danger);
+}
+
+.warning {
+  color: var(--warning);
+}
