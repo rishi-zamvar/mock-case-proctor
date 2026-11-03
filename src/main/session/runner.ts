@@ -5,6 +5,7 @@ import type { InterviewerBrief } from '../domain/cases/brief'
 import {
   initialState,
   reduce,
+  REVIEW_WARNING_MS,
   type Effect,
   type InterviewControl,
   type InterviewEvent
@@ -13,7 +14,7 @@ import { checkUtterance } from '../domain/text/leakGuard'
 import { createSentenceSplitter } from '../domain/text/sentenceSplitter'
 import { speakable } from '../domain/text/speakable'
 import type { Logger } from '../log'
-import type { ClockPort, LlmChunk, LlmPort, MakeLlm, SttPort } from '../ports'
+import type { AwakePort, ClockPort, LlmChunk, LlmPort, MakeLlm, SttPort } from '../ports'
 import type { SessionStore } from '../store/sessionStore'
 import type { PendingTurn, SessionFile } from '../store/sessionSchema'
 import { toViewState } from './view'
@@ -30,6 +31,8 @@ export type RunnerDeps = {
   newId(prefix: 'session' | 'turn'): string
   /** An unacked sentence counts as spoken after this. Default 30 s. */
   ackTimeoutMs?: number
+  /** Keeps the display awake for the life of a session. */
+  awake?: AwakePort
   log: Logger
 }
 
@@ -43,6 +46,7 @@ export interface SessionRunner {
 }
 
 const TALK = ['warmup', 'presentation', 'grilling']
+const DECK = ['review', 'presentation', 'extraction', 'grilling', 'wrapup']
 const isAbort = (e: unknown): boolean => (e as Error)?.name === 'AbortError'
 
 export function createSessionRunner(d: RunnerDeps): SessionRunner {
@@ -54,7 +58,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   let llm: LlmPort
   let inflight: AbortController | null = null
   let speaking = false
-  let cancelTimer: (() => void) | null = null
+  const timers = new Map<'review' | 'warning', () => void>()
   let lastView: ViewState | null = null
   const acks = new Map<string, () => void>()
   let queue: Promise<unknown> = Promise.resolve()
@@ -76,16 +80,25 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     d.emitView(lastView)
   }
 
-  function stopTimer(): void {
-    cancelTimer?.()
-    cancelTimer = null
+  function stopTimers(): void {
+    for (const cancel of timers.values()) cancel()
+    timers.clear()
   }
 
-  function armTimer(deadline: number): void {
-    stopTimer()
-    cancelTimer = clock.setTimer(
-      deadline,
-      () => void enqueue(() => dispatch({ type: 'REVIEW_DEADLINE', now: clock.now() }))
+  function armTimer(id: 'review' | 'warning', at: number): void {
+    timers.get(id)?.()
+    timers.set(
+      id,
+      clock.setTimer(at, () => {
+        timers.delete(id)
+        void enqueue(() =>
+          dispatch(
+            id === 'review'
+              ? { type: 'REVIEW_DEADLINE', now: clock.now() }
+              : { type: 'REVIEW_WARNING', now: clock.now() }
+          )
+        )
+      })
     )
   }
 
@@ -109,15 +122,20 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     for (const e of effects) {
       switch (e.type) {
         case 'PHASE_CHANGED':
-          if (e.from === 'review') stopTimer()
+          if (e.from === 'review') stopTimers()
           if (e.to === 'reviewMode') {
             s.status = 'completed'
             s.endedAt = clock.now()
+            d.awake?.release()
           }
           if (e.to === 'warmup') later.push(() => void runLlm({ kind: 'warmup' }))
           break
         case 'START_TIMER':
-          armTimer(e.deadline)
+          armTimer(e.id, e.deadline)
+          break
+        case 'REVIEW_WARNING':
+          // Phase 5 speaks "Ten minutes left." here
+          d.log.info('review warning')
           break
         case 'REQUEST_LLM_TURN':
           later.push(() => void runLlm(e))
@@ -359,6 +377,12 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         abortInflight()
         speaking = false
         return dispatch({ type: 'END_REQUESTED', now })
+      case 'deckPage':
+        // Not gated on speaking: looking at the deck is always fine.
+        if (!DECK.includes(phase) || i.page === s.deckPage) return
+        s.deckPage = i.page
+        store.save(s)
+        return pushView()
     }
   }
 
@@ -370,7 +394,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   async function start(caseId: string, opts: StartOptions): Promise<{ sessionId: string }> {
     return enqueue(() => {
       abortInflight()
-      stopTimer()
+      stopTimers()
       speaking = false
       const now = clock.now()
       for (const old of store.list())
@@ -391,6 +415,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
       }
       store.save(s)
       session = s
+      d.awake?.hold()
       dispatch({ type: 'START', now, config: { warmup: opts.warmup } })
       return { sessionId: s.id }
     })
@@ -401,10 +426,11 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     const s = store.load(id)
     if (!s || s.status !== 'active') throw new Error('session not resumable')
     abortInflight()
-    stopTimer()
+    stopTimers()
     speaking = false
     bind(s.caseId)
     session = s
+    d.awake?.hold()
     const m = s.machineState
     const last = s.transcript.at(-1)
     const lastCandidate = last?.speaker === 'candidate' ? last.phase : null
@@ -424,7 +450,12 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
         dispatch({ type: 'REVIEW_DEADLINE', now: clock.now() })
         return { sessionId: id }
       }
-      armTimer(m.reviewDeadline)
+      armTimer('review', m.reviewDeadline)
+      if (!m.reviewWarned && m.config.reviewMs > REVIEW_WARNING_MS) {
+        const warnAt = m.reviewDeadline - REVIEW_WARNING_MS
+        if (clock.now() >= warnAt) dispatch({ type: 'REVIEW_WARNING', now: clock.now() })
+        else armTimer('warning', warnAt)
+      }
     }
     pushView()
     if (need) void runLlm(need)
@@ -437,10 +468,11 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     discard(id) {
       if (session?.id === id) {
         abortInflight()
-        stopTimer()
+        stopTimers()
         speaking = false
         session = null
         lastView = null
+        d.awake?.release()
       }
       const s = store.load(id)
       if (s?.status === 'active') store.save({ ...s, status: 'abandoned', endedAt: clock.now() })
