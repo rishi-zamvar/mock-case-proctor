@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-11-03T09:12:58.130Z"
+stopped_at: Completed 05-07-PLAN.md
+last_updated: "2026-11-03T09:15:08.296Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 41
-  completed_plans: 39
+  completed_plans: 40
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 05
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -91,6 +91,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05 P01 | 25min | 3 tasks | 13 files |
 | Phase 05 P06 | 4min | 2 tasks | 5 files |
 | Phase 05 P05 | 4min | 2 tasks | 6 files |
+| Phase 05 P07 | 6min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -152,6 +153,7 @@ Recent decisions affecting current work:
 - [Phase 05]: AvatarStage: fake mode keeps exact T1 placeholder; avatar mode = dark tile + bottom-left name tag with speaking dot
 - [Phase 05]: Avatar logic in pure avatarCore.ts (tested); avatarEngine.ts is thin TalkingHead glue
 - [Phase 05]: voice.ts queue ready rejects on device none so seqs ack false immediately
+- [Phase 05]: App is the sole getVoice caller (lazy useState); missing api.config = fake; voice.resume on Start and Resume
 
 ### Pending Todos
 
@@ -166,6 +168,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T09:12:58.127Z
-Stopped at: Completed 05-05-PLAN.md
+Last session: 2026-11-03T09:15:08.293Z
+Stopped at: Completed 05-07-PLAN.md
 Resume file: None
