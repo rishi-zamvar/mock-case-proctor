@@ -102,48 +102,48 @@ const sessionOf = (id: string, card: Scorecard): SessionFile => ({
   scorecard: card
 })
 
-describe('reviewer + trends against recorded Opus responses (case_99)', () => {
-  it.each(['strong', 'average', 'weak'] as const)(
-    'reviewer-%s: schema-valid scorecard from one structured call',
-    async (name, ctx) => {
-      if (RECORD && !realKey()) ctx.skip('RECORD=1 needs ANTHROPIC_API_KEY in .env')
-      const card = await grade(name)
-      if (name === 'strong')
-        for (const r of card.rubric) expect(r.evidence.length, r.id).toBeGreaterThan(0)
-    },
-    600_000
-  )
+describe.skipIf(RECORD && !realKey())(
+  'reviewer + trends against recorded Opus responses (case_99)',
+  () => {
+    it.each(['strong', 'average', 'weak'] as const)(
+      'reviewer-%s: schema-valid scorecard from one structured call',
+      async (name) => {
+        const card = await grade(name)
+        if (name === 'strong')
+          for (const r of card.rubric) expect(r.evidence.length, r.id).toBeGreaterThan(0)
+      },
+      600_000
+    )
 
-  it('orders strong > average > weak', (ctx) => {
-    if (RECORD && !realKey()) ctx.skip('RECORD=1 needs ANTHROPIC_API_KEY in .env')
-    const { strong, average, weak } = cards
-    expect(strong && average && weak).toBeTruthy()
-    expect(strong!.total).toBeGreaterThan(average!.total)
-    expect(average!.total).toBeGreaterThan(weak!.total)
-  })
+    it('orders strong > average > weak', () => {
+      const { strong, average, weak } = cards
+      expect(strong && average && weak).toBeTruthy()
+      expect(strong!.total).toBeGreaterThan(average!.total)
+      expect(average!.total).toBeGreaterThan(weak!.total)
+    })
 
-  it('trends-run: insights over weak -> average -> strong pick a next case from unseen', async (ctx) => {
-    if (RECORD && !realKey()) ctx.skip('RECORD=1 needs ANTHROPIC_API_KEY in .env')
-    const { strong, average, weak } = cards
-    expect(strong && average && weak).toBeTruthy()
-    // Distinct, increasing scoredAt so oldest = weak.
-    const ordered = [weak!, average!, strong!].map((c, i) => ({ ...c, scoredAt: 2_000_000 + i }))
-    const summaries = ordered.map((c, i) => toSummary(sessionOf(`s${i}`, c)))
-    const unseen = [
-      { id: '98', vertical: 'Fictional logistics SaaS', level: 2 },
-      { id: '97', vertical: 'Fictional healthcare SaaS', level: 3 }
-    ]
-    const { client, requests } = clientFor('trends-run')
-    const insights = await createTrendsAgent({
-      client,
-      model: DEFAULT_REVIEWER_MODEL,
-      log: log()
-    })({ summaries, unseen }, new AbortController().signal)
-    expect(TrendsInsightsSchema.safeParse(insights).success).toBe(true)
-    expect(insights.progress.some((p) => p.direction === 'up')).toBe(true)
-    if (insights.nextCase) expect(['98', '97']).toContain(insights.nextCase.caseId)
-    const reqs = await requests()
-    expect(reqs).toHaveLength(1)
-    expect(JSON.stringify(reqs[0])).not.toContain('<candidate_said>')
-  }, 300_000)
-})
+    it('trends-run: insights over weak -> average -> strong pick a next case from unseen', async () => {
+      const { strong, average, weak } = cards
+      expect(strong && average && weak).toBeTruthy()
+      // Distinct, increasing scoredAt so oldest = weak.
+      const ordered = [weak!, average!, strong!].map((c, i) => ({ ...c, scoredAt: 2_000_000 + i }))
+      const summaries = ordered.map((c, i) => toSummary(sessionOf(`s${i}`, c)))
+      const unseen = [
+        { id: '98', vertical: 'Fictional logistics SaaS', level: 2 },
+        { id: '97', vertical: 'Fictional healthcare SaaS', level: 3 }
+      ]
+      const { client, requests } = clientFor('trends-run')
+      const insights = await createTrendsAgent({
+        client,
+        model: DEFAULT_REVIEWER_MODEL,
+        log: log()
+      })({ summaries, unseen }, new AbortController().signal)
+      expect(TrendsInsightsSchema.safeParse(insights).success).toBe(true)
+      expect(insights.progress.some((p) => p.direction === 'up')).toBe(true)
+      if (insights.nextCase) expect(['98', '97']).toContain(insights.nextCase.caseId)
+      const reqs = await requests()
+      expect(reqs).toHaveLength(1)
+      expect(JSON.stringify(reqs[0])).not.toContain('<candidate_said>')
+    }, 300_000)
+  }
+)
