@@ -77,7 +77,8 @@ describe.skipIf(!process.env.SLOW)('whisper turbo q5_0', () => {
   it('turbo transcribes the finance fixture and reports latency', async () => {
     expectFinanceNumbers(await engine.transcribe(finance, PROMPT))
     const long = new Float32Array(16000 * 120)
-    for (let o = 0; o < long.length; o += finance.length) long.set(finance.subarray(0, long.length - o), o)
+    for (let o = 0; o < long.length; o += finance.length)
+      long.set(finance.subarray(0, long.length - o), o)
     for (const secs of [10, 30, 60, 120]) {
       const t = Date.now()
       await engine.transcribe(long.slice(0, 16000 * secs), PROMPT)
