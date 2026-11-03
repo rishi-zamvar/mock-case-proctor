@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Core Domain Logic** - Pure, test-first state machine, case loader, leak guard and speech normaliser (completed 2026-11-03)
 - [x] **Phase 3: Walking Skeleton on Fakes** - Every screen and the full session flow clickable on fakes, with the barrier and persistence enforced (completed 2026-11-03)
 - [x] **Phase 4: Proctored Review Block** - In-window deck, a drift-free 45-minute countdown, webcam tile and mic check (completed 2026-11-03)
-- [ ] **Phase 5: Voice Out & Avatar** - Local Kokoro voice on WebGPU and a lip-synced TalkingHead partner
+- [x] **Phase 5: Voice Out & Avatar** - Local Kokoro voice on WebGPU and a lip-synced TalkingHead partner (completed 2026-11-03)
 - [ ] **Phase 6: Interviewer Agent** - A Claude partner grounded in the case's answer key that follows Rishi's structure and grills him
 - [ ] **Phase 7: Voice In & Barge-In** - Push-to-talk local speech-to-text, sentence streaming within 3 s, interruptible avatar
 - [ ] **Phase 8: Review Mode & Trends** - Evidence-quoted rubric scorecard, flag map, code-computed checks, reveal and cross-session trends
@@ -195,7 +195,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Core Domain Logic | 4/5 | Complete    | 2026-11-03 |
 | 3. Walking Skeleton on Fakes | 12/12 | Complete    | 2026-11-03 |
 | 4. Proctored Review Block | 7/7 | Complete    | 2026-11-03 |
-| 5. Voice Out & Avatar | 2/8 | In Progress|  |
+| 5. Voice Out & Avatar | 2/8 | Complete    | 2026-11-03 |
 | 6. Interviewer Agent | 0/TBD | Not started | - |
 | 7. Voice In & Barge-In | 0/TBD | Not started | - |
 | 8. Review Mode & Trends | 0/TBD | Not started | - |
