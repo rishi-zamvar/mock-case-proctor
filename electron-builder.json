@@ -1,0 +1,30 @@
+{
+  "appId": "com.rishizamvar.mockcaseproctor",
+  "productName": "Mock Case Proctor",
+  "directories": { "buildResources": "build", "output": "release" },
+  "files": [
+    "!**/.vscode/*",
+    "!src/*",
+    "!tests/*",
+    "!electron.vite.config.{js,ts,mjs,cjs}",
+    "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,README.md}",
+    "!{.env,.env.*,.npmrc}",
+    "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}",
+    "!{.planning,research,release,test-results,playwright-report,coverage}/**"
+  ],
+  "asarUnpack": ["resources/**", "**/*.node"],
+  "npmRebuild": false,
+  "mac": {
+    "target": [{ "target": "dir", "arch": ["arm64"] }],
+    "identity": "-",
+    "hardenedRuntime": true,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+    "extendInfo": {
+      "NSMicrophoneUsageDescription": "Mock Case Proctor listens to your answers during a mock interview.",
+      "NSCameraUsageDescription": "Mock Case Proctor shows your webcam as a self-view tile. It is never recorded.",
+      "NSDocumentsFolderUsageDescription": "Mock Case Proctor reads your mock case library in Documents."
+    },
+    "notarize": false
+  }
+}
