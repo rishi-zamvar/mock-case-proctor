@@ -202,7 +202,7 @@ Plans:
 - [ ] 08-03-PLAN.md — assembleScorecard (verify/cap/total/band) + computeChecks; fake scorer and reveal use it (wave 2)
 - [ ] 08-04-PLAN.md — store.listSummaries, summaries-only TrendsAgent (real + fake), trends.json-cached service (wave 2)
 - [ ] 08-05-PLAN.md — Review mode scorecard UI: header, debrief-ordered cards, clickable evidence, checks, reveal, searchable transcript (wave 2)
-- [ ] 08-06-PLAN.md — Runner scoring flow: opening plan input, silent retry, "Scoring failed — retry", onScored hook (wave 2)
+- [x] 08-06-PLAN.md — Runner scoring flow: opening plan input, silent retry, "Scoring failed — retry", onScored hook (wave 2)
 - [ ] 08-07-PLAN.md — ReviewerAgent: prompt, GradeSchema, PROMPT_VERSION, createReviewer via messages.parse (wave 3)
 - [ ] 08-08-PLAN.md — Trends tab: inline SVG sparklines + agent insights (wave 3)
 - [ ] 08-09-PLAN.md — compose/IPC/preload wiring (REVIEWER, REVIEWER_MODEL, trends:get) + interviewer isolation test (wave 4)
