@@ -10,9 +10,10 @@ import {
   protocol,
   safeStorage,
   session,
-  systemPreferences
+  systemPreferences,
+  utilityProcess
 } from 'electron'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { applyE2ESwitches } from './e2e'
 import { APP_SCHEME_PRIVILEGES, registerAppProtocol } from './appProtocol'
 import { isAppOrigin } from './protocol'
@@ -25,7 +26,8 @@ import { createKeyStore, type KeyStore } from './keys/keyStore'
 import { createSafeStorageCipher } from './keys/cipher'
 import { probeKey } from './keys/probe'
 import { resolveDotenvPath } from './keys/dotenv'
-import type { TtsMode } from '../shared/ipc'
+import type { SttMode, TtsMode } from '../shared/ipc'
+import type { ChildLike } from './stt/whisperStt'
 
 // Before ready: Chromium switches and scheme privileges are read at startup.
 const e2e = applyE2ESwitches(app, process.env)
@@ -35,7 +37,7 @@ process.on('unhandledRejection', (e) => log.error('unhandled', e))
 
 const devUrl = process.env.ELECTRON_RENDERER_URL
 
-function createWindow(e2e: boolean, tts: TtsMode): BrowserWindow {
+function createWindow(e2e: boolean, tts: TtsMode, stt: SttMode): BrowserWindow {
   const win = new BrowserWindow({
     show: false,
     width: 1280,
@@ -51,7 +53,7 @@ function createWindow(e2e: boolean, tts: TtsMode): BrowserWindow {
       backgroundThrottling: false,
       // Spike-proven: lets the first interviewer line play without a user gesture.
       autoplayPolicy: 'no-user-gesture-required',
-      additionalArguments: [...(e2e ? ['--e2e'] : []), `--tts=${tts}`]
+      additionalArguments: [...(e2e ? ['--e2e'] : []), `--tts=${tts}`, `--stt=${stt}`]
     }
   })
   win.on('ready-to-show', () => {
@@ -77,8 +79,24 @@ app.whenReady().then(async () => {
     send: (ch, p) => {
       if (win && !win.isDestroyed()) win.webContents.send(ch, p)
     },
-    awake: createAwake(powerSaveBlocker, log)
+    awake: createAwake(powerSaveBlocker, log),
+    forkStt: () => {
+      const c = utilityProcess.fork(join(__dirname, 'sttWorker.js'), [], {
+        serviceName: 'stt-worker',
+        stdio: 'pipe'
+      })
+      // Drain without logging: whisper text never goes to logs.
+      c.stdout?.resume()
+      c.stderr?.resume()
+      return c as unknown as ChildLike
+    },
+    // Native whisper can't read inside the asar; resources/** is asarUnpacked.
+    sttModelsDir: join(app.getAppPath(), 'resources', 'assets', 'models', 'whisper').replace(
+      `${sep}app.asar${sep}`,
+      `${sep}app.asar.unpacked${sep}`
+    )
   })
+  app.on('will-quit', () => core.disposeStt?.())
   const roots = {
     bundle: join(__dirname, '../renderer'),
     assets: join(app.getAppPath(), 'resources', 'assets')
@@ -109,7 +127,13 @@ app.whenReady().then(async () => {
 
   registerIpc(
     ipcMain,
-    { keyStore, runner: core.runner, library: core.library, e2eSay: core.e2eSay },
+    {
+      keyStore,
+      runner: core.runner,
+      library: core.library,
+      e2eSay: core.e2eSay,
+      sttStatus: core.sttStatus
+    },
     devUrl
   )
   // No View menu: its Cmd+= / Cmd+- page zoom and reload would fight the deck viewer's zoom keys.
@@ -118,7 +142,7 @@ app.whenReady().then(async () => {
   )
   // Non-blocking TCC prompt; a denial degrades to Camera off / mic unavailable, never a crash.
   void ensureMediaAccess({ platform: process.platform, e2e, prefs: systemPreferences, log })
-  win = createWindow(e2e, core.config.tts)
+  win = createWindow(e2e, core.config.tts, core.config.stt)
 })
 
 app.on('window-all-closed', () => app.quit())

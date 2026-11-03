@@ -1,10 +1,18 @@
 // Sandboxed preload: may import only `electron` and relative files (bundled).
 import { contextBridge, ipcRenderer } from 'electron'
 import type { IpcRendererEvent } from 'electron'
-import { CH, type Api, type E2EHooks, type IpcTapEntry, type TtsMode } from '../shared/ipc'
+import {
+  CH,
+  type Api,
+  type E2EHooks,
+  type IpcTapEntry,
+  type SttMode,
+  type TtsMode
+} from '../shared/ipc'
 
 const E2E = process.argv.includes('--e2e')
 const TTS: TtsMode = process.argv.includes('--tts=headtts') ? 'headtts' : 'fake'
+const STT: SttMode = process.argv.includes('--stt=whisper') ? 'whisper' : 'fake'
 // E2E redaction tap: every main->renderer payload (invoke results + pushes) is recorded under --e2e only.
 const tap: IpcTapEntry[] = []
 const record = (channel: string, payload: unknown): void => {
@@ -37,8 +45,16 @@ const api: Api = {
     resume: (id) => inv(CH.sessionResume, id),
     discard: (id) => inv(CH.sessionDiscard, id)
   },
-  config: { tts: TTS },
-  speak: { ack: (turnId, seq, spoken) => inv(CH.speakAck, turnId, seq, spoken ?? true) },
+  config: { tts: TTS, stt: STT },
+  stt: {
+    // Not via inv: the E2E tap must never hold audio.
+    chunk: (id, idx, pcm) => ipcRenderer.invoke(CH.sttChunk, id, idx, pcm),
+    status: () => inv(CH.sttStatus)
+  },
+  speak: {
+    ack: (turnId, seq, spoken) => inv(CH.speakAck, turnId, seq, spoken ?? true),
+    started: (t, s) => inv(CH.speakStarted, t, s)
+  },
   onView: subscribe(CH.view),
   onSpeak: subscribe(CH.speak),
   onSpeakCancel: subscribe(CH.speakCancel)
