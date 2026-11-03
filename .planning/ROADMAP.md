@@ -45,7 +45,7 @@ Plans:
 - [x] 01-06-PLAN.md — Main composition root: E2E switches, validated IPC, safeStorage cipher, app:// + CSP, locked window (wave 3)
 - [x] 01-07-PLAN.md — keymgr .env symlink, record real probe fixtures, Playwright harness + shell security/fake-mic E2E (wave 4)
 - [x] 01-08-PLAN.md — Key onboarding E2E (paste/invalid/offline/auto-fill/replace/clear/relaunch) + key-leak canary (wave 5)
-- [ ] 01-09-PLAN.md — Phase gate: package + codesign verify + packaged smoke, live API probe, 3x E2E, push (wave 6)
+- [x] 01-09-PLAN.md — Phase gate: package + codesign verify + packaged smoke, live API probe, 3x E2E, push (wave 6)
 **UI hint**: yes
 
 ### Phase 2: Core Domain Logic

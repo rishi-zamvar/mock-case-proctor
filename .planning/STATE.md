@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-11-03T07:05:16.991Z"
+status: verifying
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-11-03T07:09:01.713Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 
 Phase: 1 (Scaffold, Harness & Key Onboarding) — EXECUTING
 Plan: 9 of 9
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-11-03
 
 Progress: [░░░░░░░░░░] 0%
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P06 | 8min | 2 tasks | 11 files |
 | Phase 01 P07 | 10min | 2 tasks | 11 files |
 | Phase 01 P08 | 4min | 2 tasks | 2 files |
+| Phase 01 P09 | 9min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 01]: No corsEnabled on app:// scheme: built app renders without CORS errors
 - [Phase 01]: app:// cross-origin refusal proven via main net.fetch (no corsEnabled); handler returns 404 on missing files
 - [Phase 01]: Real safeStorage + use-mock-keychain persists across relaunch; E2E_FAKE_CIPHER fallback not needed
+- [Phase 01]: resources/assets keeps non-dot placeholder ASSETS.txt (electron-builder drops dotfiles)
+- [Phase 01]: test:live rebuilds out/ before @live run
 
 ### Pending Todos
 
@@ -95,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T07:05:16.987Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-11-03T07:09:01.710Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
