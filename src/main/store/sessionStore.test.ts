@@ -266,3 +266,21 @@ describe('SessionStore libraryView', () => {
     expect(() => LibraryViewSchema.parse(store.libraryView(cards))).not.toThrow()
   })
 })
+
+describe('SessionStore listSummaries', () => {
+  const at = (total: number, scoredAt: number): Scorecard => ({ ...scored(total), scoredAt })
+
+  it('given mixed sessions when listing summaries then only scored completed ones appear, oldest first', () => {
+    const { root, store } = setup()
+    store.save(session({ id: 'late', status: 'completed', endedAt: 1, scorecard: at(20, 300) }))
+    store.save(session({ id: 'early', status: 'completed', endedAt: 2, scorecard: at(12, 100) }))
+    store.save(session({ id: 'noscore', status: 'completed', endedAt: 3 }))
+    store.save(session({ id: 'gone', status: 'abandoned', endedAt: 4 }))
+    store.save(session({ id: 'live' }))
+    plant(root, 'bad', '{not json')
+    const out = store.listSummaries()
+    expect(out.map((s) => s.sessionId)).toEqual(['early', 'late'])
+    expect(out[0]).toMatchObject({ caseId: '99', at: 100, total: 12 })
+    expect(JSON.stringify(out)).not.toContain('transcript-secret')
+  })
+})
