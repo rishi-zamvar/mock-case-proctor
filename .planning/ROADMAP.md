@@ -169,7 +169,19 @@ Plans:
   3. Claude's reply streams into the voice one sentence at a time. The per-stage timestamps (stop, transcript, first token, first audio) are logged for every turn, and the median from stop to first word is at most 3 s over a T2 session.
   4. Pressing Talk while the avatar speaks stops it immediately (under 50 ms locally) and cancels the stream. Only the sentences actually spoken are kept in the history, which stays alternating and truthful.
   5. A T2 E2E run (real STT and TTS, replayed Claude, WAV fixtures as the mic) completes the full voice loop through the grilling.
-**Plans**: TBD
+**Plans**: 10 plans in 4 waves
+
+Plans:
+- [ ] 07-01-PLAN.md — whisper-cpp-node + models (cache-move, sha, disk guard) + engine.ts with real-whisper int test (wave 1)
+- [ ] 07-02-PLAN.md — TDD pure STT: voiced-frame gate, hallucination/n-gram cleaner, filteredStt, chunk assembler, port contracts (wave 1)
+- [ ] 07-03-PLAN.md — Renderer capture: 16 kHz worklet, chunk accumulator (quietest cut, 5-min cap), mute, __mic WAV hook, shared brevityBand (wave 1)
+- [ ] 07-04-PLAN.md — whisperStt utilityProcess adapter (serialised, crash/respawn, Metal status, warm) + worker entry (wave 2)
+- [ ] 07-05-PLAN.md — TDD ClaudeLlm.interrupted: barge-in history keeps only spoken text, alternating (wave 2)
+- [ ] 07-06-PLAN.md — IPC/schema/timings contracts + runner real answer flow, transcribing, no-answer, latency stamps (wave 2)
+- [ ] 07-07-PLAN.md — TDD runner barge-in: spoken-ack tracking, truthful transcript + LLM history (wave 3)
+- [ ] 07-08-PLAN.md — Main wiring: STT config, whisper compose + pre-warm, fork + asar-unpacked model path, IPC + preload (wave 3)
+- [ ] 07-09-PLAN.md — Renderer wiring: push-to-talk capture, barge-in, brevity band, transcribing, speak:started, STT banner (wave 3)
+- [ ] 07-10-PLAN.md — T2 full voice-loop E2E (latency + barge-in gates), packaged whisper smoke, live latency, sign-off (wave 4)
 **UI hint**: yes
 
 ### Phase 8: Review Mode & Trends
