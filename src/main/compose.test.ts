@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { CH } from '../shared/ipc'
-import { SpeakEventSchema, ViewStateSchema } from '../shared/schemas'
-import { compose, readConfig } from './compose'
+import { SpeakCancelSchema, SpeakEventSchema, ViewStateSchema } from '../shared/schemas'
+import { compose, readConfig, REVIEW_WARNING_LINE } from './compose'
 import { DEFAULT_LIBRARY_ROOT } from './domain/cases/library'
 
 const FIXTURE_ROOT = join(__dirname, '../../tests/fixtures/cases')
@@ -18,7 +18,8 @@ describe('readConfig', () => {
       casesRoot: DEFAULT_LIBRARY_ROOT,
       sessionsDir: '/ud/sessions',
       timeScale: 1,
-      e2e: false
+      e2e: false,
+      tts: 'headtts'
     })
   })
 
@@ -51,6 +52,15 @@ describe('readConfig', () => {
     [{ TTS: 'kokoro' }, 'TTS=kokoro']
   ])('given unavailable adapter env %j, when read, then it throws', (env, name) => {
     expect(() => readConfig(env, '/ud')).toThrow(`adapter not available in this build: ${name}`)
+  })
+
+  it.each([
+    [{}, 'headtts'],
+    [{ E2E: '1' }, 'fake'],
+    [{ TTS: 'headtts', E2E: '1' }, 'headtts'],
+    [{ TTS: 'fake' }, 'fake']
+  ])('given env %j, when read, then tts is %s', (env, tts) => {
+    expect(readConfig(env, '/ud').tts).toBe(tts)
   })
 
   it('given LLM fake, when read, then it is accepted', () => {
@@ -98,6 +108,7 @@ describe('compose', () => {
     for (const [ch, p] of send.mock.calls) {
       if (ch === CH.view) expect(ViewStateSchema.safeParse(p).success).toBe(true)
       else if (ch === CH.speak) expect(SpeakEventSchema.safeParse(p).success).toBe(true)
+      else if (ch === CH.speakCancel) expect(SpeakCancelSchema.safeParse(p).success).toBe(true)
       else throw new Error(`unexpected channel ${ch}`)
     }
     core.runner.discard(sessionId)
@@ -123,5 +134,44 @@ describe('compose', () => {
       error: 'Case library not found. Set CASES_ROOT.'
     })
     expect(lib.error).not.toContain(missing)
+  })
+
+  const warnSpeaks = async (tts: string): Promise<unknown[]> => {
+    const send = vi.fn()
+    const core = compose(env({ TTS: tts, E2E_TIME_SCALE: '100000' }), {
+      userData: tmp(),
+      log,
+      send
+    })
+    const { sessionId } = await core.runner.start('99', { warmup: false })
+    await vi.waitFor(() => expect(core.runner.current()?.reviewWarned).toBe(true), {
+      timeout: 3000,
+      interval: 2
+    })
+    await new Promise((r) => setTimeout(r, 10))
+    core.runner.discard(sessionId)
+    return send.mock.calls.filter(([ch]) => ch === CH.speak).map(([, p]) => p)
+  }
+
+  it('given TTS=headtts, when the T-10 warning fires, then the warning line is sent once', async () => {
+    const speaks = await warnSpeaks('headtts')
+    expect(speaks).toHaveLength(1)
+    expect(speaks[0]).toMatchObject({ seq: 0, text: REVIEW_WARNING_LINE })
+  })
+
+  it('given TTS=fake, when the T-10 warning fires, then nothing is spoken', async () => {
+    expect(await warnSpeaks('fake')).toEqual([])
+  })
+
+  it('given a warm-up turn mid-speech, when skipped, then a schema-valid speak:cancel is sent', async () => {
+    const send = vi.fn()
+    const core = compose(env(), { userData: tmp(), log, send })
+    const { sessionId } = await core.runner.start('99', { warmup: true })
+    await vi.waitFor(() => expect(send.mock.calls.some(([ch]) => ch === CH.speak)).toBe(true))
+    await core.runner.intent({ type: 'skipWarmup' })
+    const cancels = send.mock.calls.filter(([ch]) => ch === CH.speakCancel).map(([, p]) => p)
+    expect(cancels).toHaveLength(1)
+    expect(SpeakCancelSchema.parse(cancels[0]).turnId).toMatch(/^t_/)
+    core.runner.discard(sessionId)
   })
 })
