@@ -2,9 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import type { Intent, ViewPhase, ViewState } from '../../../shared/ipc'
 import DeckViewer from '../deck/DeckViewer'
 import WebcamTile from '../media/WebcamTile'
+import AvatarStage from '../avatar/AvatarStage'
+import { awaitingReply, type AvatarBinding } from '../avatar/behaviour'
 import s from './Session.module.css'
 
-export type SessionProps = { view: ViewState; onIntent(i: Intent): void; now?: () => number }
+export type SessionProps = {
+  view: ViewState
+  onIntent(i: Intent): void
+  now?: () => number
+  avatar?: AvatarBinding
+}
 
 const LABELS: Record<ViewPhase, string> = {
   warmup: 'Warm-up',
@@ -51,7 +58,8 @@ export function nextRemaining(
 export default function Session({
   view,
   onIntent,
-  now = Date.now
+  now = Date.now,
+  avatar
 }: SessionProps): React.JSX.Element {
   // Anchor the app clock to the local clock at the moment this view arrived.
   const [recv, setRecv] = useState<Recv>(() => ({ view, at: now() }))
@@ -158,15 +166,12 @@ export default function Session({
             onPageChange={(page) => onIntent({ type: 'deckPage', page })}
           />
         ) : (
-          <div data-testid="avatar-stage" className={s.placeholder}>
-            <div
-              data-testid="speaking-ring"
-              data-speaking={String(view.speaking)}
-              className={s.ring}
-              aria-hidden="true"
-            />
-            <span>Interviewer</span>
-          </div>
+          <AvatarStage
+            speaking={view.speaking}
+            listening={recording}
+            waiting={awaitingReply(view)}
+            avatar={avatar}
+          />
         )}
       </section>
 
