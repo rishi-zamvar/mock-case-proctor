@@ -12,8 +12,11 @@ const IDS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
 describe.skipIf(!HAS_LIB)(`real case library at ${ROOT}`, () => {
   it.each(IDS)('given case %s, when fully resolved, then zero placeholders are left', (id) => {
     const data = JSON.parse(readFileSync(join(ROOT, `_work/data/case_${id}.json`), 'utf8'))
-    const { tokens: _t, params: _p, ...rest } = data
+    const rest = { ...data, tokens: undefined, params: undefined }
     const out = resolveDeep(rest, makeResolver(data))
-    expect(JSON.stringify(out)).not.toMatch(LEFTOVER_RE)
+    // check string leaves, not JSON.stringify: compact JSON objects like {"a":1} match LEFTOVER_RE
+    const left: string[] = []
+    resolveDeep(out, (s) => (LEFTOVER_RE.test(s) && left.push(s), s))
+    expect(left).toEqual([])
   })
 })

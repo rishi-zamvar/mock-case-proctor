@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { LEFTOVER_RE, makeFnRef, makeResolver, resolveDeep, resolveString, type Tokens } from './resolve'
+import {
+  LEFTOVER_RE,
+  makeFnRef,
+  makeResolver,
+  resolveDeep,
+  resolveString,
+  type Tokens
+} from './resolve'
 
 const tokens: Tokens = {
   grr: { v: 0.85, fmt: 'pct', s: '85%' },
@@ -45,12 +52,19 @@ describe('makeFnRef', () => {
     expect(makeFnRef({ deck, bank: { house } })(k)).toBe(out)
   })
 
-  it.each([['dup'], ['s9.x'], ['nothere']])('given {fn:%s} not matching exactly one note, then it throws', (k) => {
-    expect(() => makeFnRef({ deck, bank: { house: 'H1' } })(k)).toThrow(/matches \d+ notes/)
-  })
+  it.each([['dup'], ['s9.x'], ['nothere']])(
+    'given {fn:%s} not matching exactly one note, then it throws',
+    (k) => {
+      expect(() => makeFnRef({ deck, bank: { house: 'H1' } })(k)).toThrow(/matches \d+ notes/)
+    }
+  )
 
   it('given an insert, when {fn:ins1.x}, then it resolves via the lowercased insert id', () => {
-    const f = makeFnRef({ deck: {}, inserts: [{ id: 'INS1', notes: { numbered: [{ id: 'x' }] } }], bank: { house: 'H1' } })
+    const f = makeFnRef({
+      deck: {},
+      inserts: [{ id: 'INS1', notes: { numbered: [{ id: 'x' }] } }],
+      bank: { house: 'H1' }
+    })
     expect(f('ins1.x')).toBe('note (1)')
   })
 })
@@ -74,9 +88,12 @@ describe('fixture case_99', () => {
   it('given the fixture, when every field but tokens/params is resolved, then no placeholder is left', () => {
     const path = join(process.cwd(), 'tests/fixtures/cases/_work/data/case_99.json')
     const data = JSON.parse(readFileSync(path, 'utf8'))
-    const { tokens: _t, params: _p, ...rest } = data
+    const rest = { ...data, tokens: undefined, params: undefined }
     const out = resolveDeep(rest, makeResolver(data))
-    expect(JSON.stringify(out)).not.toMatch(LEFTOVER_RE)
+    // check string leaves, not JSON.stringify: compact JSON objects like {"a":1} match LEFTOVER_RE
+    const left: string[] = []
+    resolveDeep(out, (s) => (LEFTOVER_RE.test(s) && left.push(s), s))
+    expect(left).toEqual([])
     expect(out.answer_key.intended_read).toContain('$12.0M')
   })
 })
