@@ -124,7 +124,7 @@
   flex-direction: column;
   gap: calc(var(--space) * 2);
   width: 100%;
-  max-width: 400px;
+  max-width: 520px;
   padding: calc(var(--space) * 3);
   background: var(--elevated);
   border: var(--border);
@@ -148,4 +148,24 @@
 .page :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.setupTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.setupRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: calc(var(--space) * 2);
+  align-items: center;
 }

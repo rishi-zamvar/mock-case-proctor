@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LibraryView, StartOptions, ViewPhase } from '../../../shared/ipc'
+import MicCheck from '../media/MicCheck'
+import WebcamTile from '../media/WebcamTile'
 import styles from './Library.module.css'
 
 export type LibraryProps = {
@@ -181,6 +183,19 @@ export default function Library(p: LibraryProps): React.JSX.Element {
               />
               Include 5–10 min warm-up chat
             </label>
+            <section
+              data-testid="setup-check"
+              aria-labelledby="setup-title"
+              className={styles.setup}
+            >
+              <h3 id="setup-title" className={styles.setupTitle}>
+                Check your setup
+              </h3>
+              <div className={styles.setupRow}>
+                <MicCheck />
+                <WebcamTile on label="Preview" />
+              </div>
+            </section>
             <div className={styles.actions}>
               <button data-testid="sheet-cancel" type="button" onClick={close}>
                 Cancel
