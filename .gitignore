@@ -21,3 +21,5 @@ cases/
 case-data/
 *.app
 *.tsbuildinfo
+src/renderer/public/vendor/
+.planning/phases/05-voice-out-avatar/audition/
