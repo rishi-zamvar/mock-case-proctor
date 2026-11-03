@@ -30,7 +30,13 @@ const control = (over: Record<string, unknown> = {}): Record<string, unknown> =>
   ...over
 })
 
-const mockLog = (): Logger & { all: () => unknown[] } => {
+type MockLog = Logger & {
+  info: ReturnType<typeof vi.fn>
+  warn: ReturnType<typeof vi.fn>
+  error: ReturnType<typeof vi.fn>
+  all: () => unknown[]
+}
+const mockLog = (): MockLog => {
   const l = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   return {
     ...l,
@@ -44,7 +50,7 @@ function setup(
 ): {
   make: (b?: InterviewerBrief) => LlmPort
   requests: Record<string, unknown>[]
-  log: ReturnType<typeof mockLog>
+  log: MockLog
 } {
   const stub = sseFetch(responses, opts)
   const client = new Anthropic({
@@ -66,7 +72,10 @@ const grill = (history: HistoryTurn[], over: Partial<TurnRequest> = {}): TurnReq
   ...over
 })
 
-async function collect(it: AsyncIterable<LlmChunk>, onChunk?: (c: LlmChunk) => void) {
+async function collect(
+  it: AsyncIterable<LlmChunk>,
+  onChunk?: (c: LlmChunk) => void
+): Promise<LlmChunk[]> {
   const out: LlmChunk[] = []
   for await (const c of it) {
     out.push(c)
@@ -96,15 +105,18 @@ describe('createClaudeLlm streamTurn', () => {
       sseEvents({
         text: ['REPLY_SECRET how ', 'did you get ', 'that number?'],
         control: control(),
-        usage: { cache_read_input_tokens: 900, cache_creation_input_tokens: 5, output_tokens: 77, input_tokens: 12 }
+        usage: {
+          cache_read_input_tokens: 900,
+          cache_creation_input_tokens: 5,
+          output_tokens: 77,
+          input_tokens: 12
+        }
       })
     ])
     const chunks = await collect(make().streamTurn(grill(h1), new AbortController().signal))
-    expect(chunks.filter((c) => c.type === 'text').map((c) => (c as { delta: string }).delta)).toEqual([
-      'REPLY_SECRET how ',
-      'did you get ',
-      'that number?'
-    ])
+    expect(
+      chunks.filter((c) => c.type === 'text').map((c) => (c as { delta: string }).delta)
+    ).toEqual(['REPLY_SECRET how ', 'did you get ', 'that number?'])
     const ctl = chunks.filter((c) => c.type === 'control')
     expect(ctl).toHaveLength(1)
     expect(ctl[0]).toMatchObject({
@@ -112,7 +124,13 @@ describe('createClaudeLlm streamTurn', () => {
     })
     expect(chunks[chunks.length - 1]).toEqual({
       type: 'done',
-      usage: { inputTokens: 12, outputTokens: 77, cacheRead: 900, cacheWrite: 5, stopReason: 'tool_use' }
+      usage: {
+        inputTokens: 12,
+        outputTokens: 77,
+        cacheRead: 900,
+        cacheWrite: 5,
+        stopReason: 'tool_use'
+      }
     })
     expect(chunks.findIndex((c) => c.type === 'control')).toBeGreaterThan(
       chunks.findLastIndex((c) => c.type === 'text')

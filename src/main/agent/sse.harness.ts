@@ -74,7 +74,10 @@ export function sseEvents(o: {
     'message_delta',
     {
       type: 'message_delta',
-      delta: { stop_reason: o.stopReason ?? (o.control ? 'tool_use' : 'end_turn'), stop_sequence: null },
+      delta: {
+        stop_reason: o.stopReason ?? (o.control ? 'tool_use' : 'end_turn'),
+        stop_sequence: null
+      },
       usage
     }
   ])
