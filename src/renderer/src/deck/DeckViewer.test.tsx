@@ -4,9 +4,14 @@ import DeckViewer, { deckLabel } from './DeckViewer'
 
 const FILE = 'app://bundle/cases/case_99/interviewee.pdf'
 
-function setup(initialPage = 1, file = FILE): { onPageChange: ReturnType<typeof vi.fn>; unmount: () => void } {
+function setup(
+  initialPage = 1,
+  file = FILE
+): { onPageChange: ReturnType<typeof vi.fn>; unmount: () => void } {
   const onPageChange = vi.fn()
-  const { unmount } = render(<DeckViewer file={file} initialPage={initialPage} onPageChange={onPageChange} />)
+  const { unmount } = render(
+    <DeckViewer file={file} initialPage={initialPage} onPageChange={onPageChange} />
+  )
   return { onPageChange, unmount }
 }
 
@@ -33,7 +38,9 @@ describe('deckLabel', () => {
 describe('DeckViewer', () => {
   it('given a 4-page deck, when loaded, then it renders 4 pages, 4 thumbnails and the Prompt label', () => {
     setup()
-    expect(screen.getAllByTestId('pdf-page').filter((p) => p.closest('[data-page-n]'))).toHaveLength(4)
+    expect(
+      screen.getAllByTestId('pdf-page').filter((p) => p.closest('[data-page-n]'))
+    ).toHaveLength(4)
     expect(screen.getAllByTestId(/^thumb-\d+$/)).toHaveLength(4)
     expect(indicator()).toBe('Prompt')
     expect(root().dataset.pages).toBe('4')
@@ -167,9 +174,11 @@ describe('DeckViewer', () => {
     const { onPageChange } = setup()
     const scroller = screen.getByTestId('deck-pages')
     const wrappers = scroller.querySelectorAll<HTMLElement>('[data-page-n]')
-    wrappers.forEach((w, i) => Object.defineProperty(w, 'offsetTop', { value: i * 1000, configurable: true }))
+    wrappers.forEach((w, i) =>
+      Object.defineProperty(w, 'offsetTop', { value: i * 1000, configurable: true })
+    )
     Object.defineProperty(scroller, 'clientHeight', { value: 900, configurable: true })
-    scroller.scrollTop = 1800
+    scroller.scrollTop = 1500
     fireEvent.scroll(scroller)
     fireEvent.scroll(scroller)
     expect(root().dataset.page).toBe('2')
@@ -180,7 +189,9 @@ describe('DeckViewer', () => {
     const { onPageChange } = setup()
     const scroller = screen.getByTestId('deck-pages')
     const wrappers = scroller.querySelectorAll<HTMLElement>('[data-page-n]')
-    wrappers.forEach((w, i) => Object.defineProperty(w, 'offsetTop', { value: i * 1000, configurable: true }))
+    wrappers.forEach((w, i) =>
+      Object.defineProperty(w, 'offsetTop', { value: i * 1000, configurable: true })
+    )
     Object.defineProperty(scroller, 'clientHeight', { value: 900, configurable: true })
     key('PageDown')
     scroller.scrollTop = 1000

@@ -22,7 +22,11 @@ vi.mock('react-pdf', async () => {
     return React.createElement('div', { 'data-testid': 'pdf-document' }, children)
   }
   function Page({ pageNumber, width }: { pageNumber: number; width?: number }): React.ReactElement {
-    return React.createElement('div', { 'data-testid': 'pdf-page', 'data-n': pageNumber, 'data-width': width })
+    return React.createElement('div', {
+      'data-testid': 'pdf-page',
+      'data-n': pageNumber,
+      'data-width': width
+    })
   }
   return { pdfjs: { GlobalWorkerOptions: {} }, Document, Page }
 })
