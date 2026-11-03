@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-12-PLAN.md
-last_updated: "2026-11-03T08:39:36.695Z"
-last_activity: 2026-11-03 -- Phase 4 execution started
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-11-03T08:41:16.557Z"
+last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 33
-  completed_plans: 26
+  completed_plans: 27
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 4 (Proctored Review Block) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 4
-Last activity: 2026-11-03 -- Phase 4 execution started
+Plan: 2 of 7
+Status: Ready to execute
+Last activity: 2026-11-03
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -78,6 +78,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P10 | 6min | 2 tasks | 7 files |
 | Phase 03 P11 | 15min | 2 tasks | 9 files |
 | Phase 03 P12 | 22min | 3 tasks | 2 files |
+| Phase 04 P04 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,7 @@ Recent decisions affecting current work:
 - [Phase 03]: E2E_TIME_SCALE honoured only under E2E=1
 - [Phase 03]: T1 flow suite relaunches on a finished profile rather than sharing one app across tests
 - [Phase 03]: Crash E2E kills mid-speech; interviewer line saved only after acks, so pending turn is on disk
+- [Phase 04]: ensureMediaAccess: one try per kind around status read + ask; never rejects
 
 ### Pending Todos
 
@@ -136,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T08:26:02.649Z
-Stopped at: Completed 03-12-PLAN.md
+Last session: 2026-11-03T08:41:16.554Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None

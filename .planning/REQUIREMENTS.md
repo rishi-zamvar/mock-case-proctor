@@ -58,7 +58,7 @@
 - [ ] **VIN-02**: Local speech-to-text (whisper.cpp large-v3-turbo on Metal), seeded with the case glossary and finance vocabulary.
 - [ ] **VIN-03**: The text of each answer is shown after it is transcribed.
 - [ ] **VIN-04**: Near-silent recordings are treated as "no answer". Whisper's typical hallucinations ("Thank you.") and repeated phrases are filtered out.
-- [ ] **VIN-05**: A mic check (level meter) runs before the session starts.
+- [x] **VIN-05**: A mic check (level meter) runs before the session starts.
 
 ### Interviewer Agent (INT)
 
@@ -89,7 +89,7 @@
 - [ ] **VOUT-03**: A 3D talking-head avatar (TalkingHead.js) lip-syncs to the voice and has idle, listening and thinking behaviour.
 - [ ] **VOUT-04**: Claude's reply streams one sentence at a time into the voice. Measured over a session, the median time from Rishi pressing stop to the avatar's first word is at most 3 s, logged per stage.
 - [ ] **VOUT-05**: Barge-in. Pressing Talk while the avatar is speaking stops it immediately and cancels the stream. Only what was actually spoken is kept in the history.
-- [ ] **VOUT-06**: A webcam self-view tile (mirrored, never recorded) appears Zoom-style next to the avatar.
+- [x] **VOUT-06**: A webcam self-view tile (mirrored, never recorded) appears Zoom-style next to the avatar.
 
 ### Review Mode (REV)
 
@@ -164,7 +164,7 @@
 | VIN-02 | Phase 7 | Pending |
 | VIN-03 | Phase 7 | Pending |
 | VIN-04 | Phase 7 | Pending |
-| VIN-05 | Phase 4 | Pending |
+| VIN-05 | Phase 4 | Complete |
 | INT-01 | Phase 6 | Pending |
 | INT-02 | Phase 6 | Pending |
 | INT-03 | Phase 6 | Pending |
@@ -178,7 +178,7 @@
 | VOUT-03 | Phase 5 | Pending |
 | VOUT-04 | Phase 7 | Pending |
 | VOUT-05 | Phase 7 | Pending |
-| VOUT-06 | Phase 4 | Pending |
+| VOUT-06 | Phase 4 | Complete |
 | REV-01 | Phase 8 | Pending |
 | REV-02 | Phase 8 | Pending |
 | REV-03 | Phase 8 | Pending |
