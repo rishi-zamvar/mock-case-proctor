@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import os from 'node:os'
 import path from 'node:path'
-import { resolveSafePath, resolveAppRequest, isAppOrigin } from './protocol'
+import { resolveSafePath, resolveAppRequest, isAppOrigin, resolveCasePdfRequest } from './protocol'
 
 const root = path.join(os.tmpdir(), 'root')
 
@@ -55,5 +55,36 @@ describe('isAppOrigin', () => {
     expect(isAppOrigin('http://localhost:5173/', 'http://localhost:5173')).toBe(true)
     expect(isAppOrigin('http://localhost:5174/', 'http://localhost:5173')).toBe(false)
     expect(isAppOrigin('http://localhost:5173/', undefined)).toBe(false)
+  })
+})
+
+describe('resolveCasePdfRequest', () => {
+  it.each([
+    ['app://bundle/cases/02/interviewee.pdf', '02'],
+    ['app://bundle/cases/99/interviewee.pdf?x=1', '99']
+  ])('given %s, when resolved, then returns case id %s', (url, id) => {
+    expect(resolveCasePdfRequest(url)).toBe(id)
+  })
+  it.each([
+    'app://bundle/index.html',
+    'app://bundle/assets/x.js',
+    'app://assets/x',
+    'app://bundle/CASES/02/interviewee.pdf'
+  ])('given non-case url %s, when resolved, then null', (url) => {
+    expect(resolveCasePdfRequest(url)).toBeNull()
+  })
+  it.each([
+    'app://bundle/cases/02/interviewer.pdf',
+    'app://bundle/cases/02/case_02_pawshub_interviewer_package.pdf',
+    'app://bundle/cases/2/interviewee.pdf',
+    'app://bundle/cases/abc/interviewee.pdf',
+    'app://bundle/cases/02/../02/interviewee.pdf',
+    'app://bundle/cases/02/%2e%2e/interviewee.pdf',
+    'app://bundle/cases/%30%32/interviewee.pdf',
+    'app://bundle/cases/02/interviewee.pdf/',
+    'app://bundle/cases/',
+    'app://bundle/cases'
+  ])('given refused case url %s, when resolved, then deny', (url) => {
+    expect(resolveCasePdfRequest(url)).toBe('deny')
   })
 })
