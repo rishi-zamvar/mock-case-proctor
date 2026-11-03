@@ -199,7 +199,7 @@ Plans:
 Plans:
 - [x] 08-01-PLAN.md — v2 scorecard/checks/reveal/trends contracts + legacy scorecard upgrade; consumers kept green (wave 1)
 - [x] 08-02-PLAN.md — TDD deterministic checks: numbers vs case tokens, led-with-call, brevity, flag map, quote verification, bands (wave 1)
-- [ ] 08-03-PLAN.md — assembleScorecard (verify/cap/total/band) + computeChecks; fake scorer and reveal use it (wave 2)
+- [x] 08-03-PLAN.md — assembleScorecard (verify/cap/total/band) + computeChecks; fake scorer and reveal use it (wave 2)
 - [x] 08-04-PLAN.md — store.listSummaries, summaries-only TrendsAgent (real + fake), trends.json-cached service (wave 2)
 - [ ] 08-05-PLAN.md — Review mode scorecard UI: header, debrief-ordered cards, clickable evidence, checks, reveal, searchable transcript (wave 2)
 - [x] 08-06-PLAN.md — Runner scoring flow: opening plan input, silent retry, "Scoring failed — retry", onScored hook (wave 2)

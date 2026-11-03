@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-04-PLAN.md
-last_updated: "2026-11-03T12:19:53.196Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-11-03T12:20:22.907Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 72
-  completed_plans: 65
+  completed_plans: 66
   percent: 88
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 08
-Plan: 4 of 11 (08-01, 08-02 done)
+Plan: 5 of 11 (08-01, 08-02 done)
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -116,6 +116,7 @@ Progress: [█████████░] 88%
 | Phase 08 P01 | 6min | 2 tasks | 17 files |
 | Phase 08 P06 | 2min | 2 tasks | 6 files |
 | Phase 08 P04 | 12min | 2 tasks | 4 files |
+| Phase 08 P03 | 9min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -212,6 +213,7 @@ Recent decisions affecting current work:
 - [Phase 08]: SessionFileSchema wraps a session-level preprocess so legacy scorecards upgrade with scoredAt = endedAt ?? startedAt; v2 band labels Ready/Close, one fix/Run another
 - [Phase 08]: Score failures retry silently once, then scoringFailed + retryScore button; RunnerDeps.onScored(sessionId) fires after the scorecard save
 - [Phase 08]: Trends: unknown dimension ids rejected by SDK zod enum validation; failures never cached
+- [Phase 08]: assembleScorecard is the single draft->Scorecard path; evidence verifies against all candidate lines
 
 ### Pending Todos
 
@@ -226,6 +228,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T12:19:53.192Z
-Stopped at: Completed 08-04-PLAN.md
+Last session: 2026-11-03T12:20:22.903Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None

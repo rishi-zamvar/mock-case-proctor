@@ -94,8 +94,8 @@
 ### Review Mode (REV)
 
 - [x] **REV-01**: The rubric scorecard uses the playbook's 6 dimensions, scored out of 30 with bands. Every score quotes evidence from the transcript, and the quote is checked against the transcript.
-- [ ] **REV-02**: The flag map shows each case flag as found, found after a hint, or missed.
-- [ ] **REV-03**: Deterministic checks, computed in code rather than by the LLM:
+- [x] **REV-02**: The flag map shows each case flag as found, found after a hint, or missed.
+- [x] **REV-03**: Deterministic checks, computed in code rather than by the LLM:
   - whether the numbers Rishi stated match the case data;
   - brevity of each answer (30–60 s ideal, over 90 s flagged);
   - whether he led with a call;
@@ -180,8 +180,8 @@
 | VOUT-05 | Phase 7 | Complete |
 | VOUT-06 | Phase 4 | Complete |
 | REV-01 | Phase 8 | Complete |
-| REV-02 | Phase 8 | Pending |
-| REV-03 | Phase 8 | Pending |
+| REV-02 | Phase 8 | Complete |
+| REV-03 | Phase 8 | Complete |
 | REV-04 | Phase 8 | Complete |
 | REV-05 | Phase 3 | Complete |
 | REV-06 | Phase 8 | Complete |
