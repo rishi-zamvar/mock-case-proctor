@@ -3,7 +3,7 @@ import { ViewStateSchema } from '../../shared/schemas'
 import { createFakeLlm } from '../adapters/fakeLlm'
 import type { MakeLlm } from '../ports'
 import { SessionFileSchema } from '../store/sessionSchema'
-import { lines, REVIEW_MS, setup, withGrill } from './runner.harness'
+import { fakeAwake, lines, REVIEW_MS, setup, WARN_MS, withGrill } from './runner.harness'
 
 describe('SessionRunner start and warm-up', () => {
   it('given start with warm-up, when the greeting is spoken and acked, then session is active and transcript has 1 line', async () => {
@@ -277,5 +277,87 @@ describe('SessionRunner end early', () => {
     expect(t.file(a).status).toBe('abandoned')
     expect(t.file(a).endedAt).toBeDefined()
     expect(t.file(b).status).toBe('active')
+  })
+})
+
+describe('SessionRunner review warning', () => {
+  const warned = (t: ReturnType<typeof setup>): number =>
+    t.log.info.mock.calls.filter((c) => c[0] === 'review warning').length
+
+  it('given review, when the clock reaches deadline - 10 min, then warned once and still in review', async () => {
+    const t = setup()
+    const { sessionId } = await t.runner.start('99', { warmup: false })
+    expect(t.clock.pending()).toBe(2)
+    t.clock.advance(REVIEW_MS - WARN_MS)
+    await t.until(() => t.view().reviewWarned === true)
+    expect(t.view().phase).toBe('review')
+    expect(t.file(sessionId).machineState.reviewWarned).toBe(true)
+    t.clock.advance(60_000)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(warned(t)).toBe(1)
+    t.clock.advance(REVIEW_MS)
+    await t.until(() => t.view().phase === 'presentation')
+    expect(warned(t)).toBe(1)
+    expect(t.clock.pending()).toBe(0)
+  })
+
+  it('given review, when ready before the warning, then both timers are cancelled', async () => {
+    const t = setup()
+    await t.runner.start('99', { warmup: false })
+    await t.runner.intent({ type: 'ready' })
+    expect(t.clock.pending()).toBe(0)
+    t.clock.advance(REVIEW_MS)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(warned(t)).toBe(0)
+  })
+})
+
+describe('SessionRunner deck page', () => {
+  it('given review, when the deck page changes, then it is saved and in the view; same page does not save', async () => {
+    const t = setup()
+    const { sessionId } = await t.runner.start('99', { warmup: false })
+    expect(t.view().deckPage).toBe(1)
+    await t.runner.intent({ type: 'deckPage', page: 3 })
+    expect(t.file(sessionId).deckPage).toBe(3)
+    expect(t.view().deckPage).toBe(3)
+    const n = t.save.mock.calls.length
+    await t.runner.intent({ type: 'deckPage', page: 3 })
+    expect(t.save.mock.calls.length).toBe(n)
+  })
+
+  it('given reviewMode, when the deck page changes, then ignored', async () => {
+    const t = setup()
+    const { sessionId } = await t.runner.start('99', { warmup: false })
+    await t.runner.intent({ type: 'end' })
+    await t.until(() => t.view().phase === 'reviewMode')
+    await t.runner.intent({ type: 'deckPage', page: 4 })
+    expect(t.file(sessionId).deckPage).toBeUndefined()
+    expect(t.view().deckPage).toBe(1)
+  })
+})
+
+describe('SessionRunner awake', () => {
+  it('given a session, when started then completed, then the display is held then released', async () => {
+    const awake = fakeAwake()
+    const t = setup({ awake })
+    await t.runner.start('99', { warmup: false })
+    expect(awake.hold).toHaveBeenCalledTimes(1)
+    expect(awake.release).not.toHaveBeenCalled()
+    await t.runner.intent({ type: 'end' })
+    await t.until(() => t.view().phase === 'reviewMode')
+    expect(awake.release).toHaveBeenCalledTimes(1)
+  })
+
+  it('given the current session, when discarded, then released; resume holds', async () => {
+    const awake = fakeAwake()
+    const t = setup({ awake })
+    const { sessionId } = await t.runner.start('99', { warmup: false })
+    t.runner.discard(sessionId)
+    expect(awake.release).toHaveBeenCalledTimes(1)
+    const b = setup({ root: t.root, awake })
+    const { sessionId: id2 } = await b.runner.start('99', { warmup: false })
+    const c = setup({ root: t.root, awake })
+    await c.runner.resume(id2)
+    expect(awake.hold).toHaveBeenCalledTimes(3)
   })
 })

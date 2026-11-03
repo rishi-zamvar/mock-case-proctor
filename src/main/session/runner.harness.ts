@@ -7,7 +7,7 @@ import type { SpeakEvent, ViewState } from '../../shared/ipc'
 import { createFakeLlm, type FakeLlmOptions } from '../adapters/fakeLlm'
 import { createFakeStt } from '../adapters/fakeStt'
 import { loadCase } from '../domain/cases/library'
-import type { ClockPort, LlmChunk, MakeLlm } from '../ports'
+import type { AwakePort, ClockPort, LlmChunk, MakeLlm } from '../ports'
 import { createSessionStore } from '../store/sessionStore'
 import type { SessionFile } from '../store/sessionSchema'
 import { createSessionRunner } from './runner'
@@ -15,6 +15,11 @@ import { createSessionRunner } from './runner'
 export const FIXTURE_ROOT = join(__dirname, '../../../tests/fixtures/cases')
 export const deck = readFileSync(join(FIXTURE_ROOT, 'case_99_fixture/deck.txt'), 'utf8')
 export const REVIEW_MS = 45 * 60_000
+export const WARN_MS = 10 * 60_000
+export const fakeAwake = (): AwakePort & { hold: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> } => ({
+  hold: vi.fn(),
+  release: vi.fn()
+})
 
 export function manualClock(t = 1_000_000): ClockPort & {
   advance(ms: number): void
@@ -71,6 +76,7 @@ export function setup(
     makeLlm?: MakeLlm
     ackTimeoutMs?: number
     clock?: ReturnType<typeof manualClock>
+    awake?: AwakePort
   } = {}
 ) {
   const root = o.root ?? mkdtempSync(join(tmpdir(), 'runner-'))
@@ -97,6 +103,7 @@ export function setup(
     },
     newId: (p) => `${p}-${++n}`,
     ackTimeoutMs: o.ackTimeoutMs,
+    awake: o.awake,
     log
   })
   const file = (id: string): SessionFile =>

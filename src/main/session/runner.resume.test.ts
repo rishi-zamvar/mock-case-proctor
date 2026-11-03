@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createFakeLlm } from '../adapters/fakeLlm'
 import { loadCase } from '../domain/cases/library'
 import type { MakeLlm } from '../ports'
-import { deck, FIXTURE_ROOT, manualClock, REVIEW_MS, setup } from './runner.harness'
+import { deck, FIXTURE_ROOT, manualClock, REVIEW_MS, setup, WARN_MS } from './runner.harness'
 
 const card = loadCase(FIXTURE_ROOT, '99', deck).card
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
@@ -183,5 +183,47 @@ describe('SessionRunner discard', () => {
     const f = a.file(id)
     expect(f.status).toBe('abandoned')
     expect(f.transcript.filter((x) => x.speaker === 'interviewer')).toHaveLength(0)
+  })
+})
+
+describe('SessionRunner resume review warning', () => {
+  const warned = (t: ReturnType<typeof setup>): number =>
+    t.log.info.mock.calls.filter((c) => c[0] === 'review warning').length
+
+  it('given review before T-10 not warned, when resumed, then the warning is re-armed and fires at deadline - 10 min', async () => {
+    const a = setup()
+    const { sessionId: id } = await a.runner.start('99', { warmup: false })
+    const b = setup({ root: a.root })
+    await b.runner.resume(id)
+    expect(b.clock.pending()).toBe(2)
+    b.clock.advance(REVIEW_MS - WARN_MS - 1)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(b.view().reviewWarned).toBe(false)
+    b.clock.advance(1)
+    await b.until(() => b.view().reviewWarned === true)
+    expect(warned(b)).toBe(1)
+  })
+
+  it('given review inside the last 10 min not warned, when resumed, then warned immediately', async () => {
+    const a = setup()
+    const { sessionId: id } = await a.runner.start('99', { warmup: false })
+    const b = setup({ root: a.root, clock: manualClock(a.clock.now() + REVIEW_MS - 5 * 60_000) })
+    await b.runner.resume(id)
+    expect(b.view().reviewWarned).toBe(true)
+    expect(b.view().phase).toBe('review')
+    expect(b.file(id).machineState.reviewWarned).toBe(true)
+    expect(b.clock.pending()).toBe(1)
+  })
+
+  it('given review already warned, when resumed, then no warning timer and no second warning', async () => {
+    const a = setup()
+    const { sessionId: id } = await a.runner.start('99', { warmup: false })
+    a.clock.advance(REVIEW_MS - WARN_MS)
+    await a.until(() => a.file(id).machineState.reviewWarned === true)
+    const b = setup({ root: a.root, clock: manualClock(a.clock.now() + 60_000) })
+    await b.runner.resume(id)
+    expect(b.clock.pending()).toBe(1)
+    expect(warned(b)).toBe(0)
+    expect(b.view().reviewWarned).toBe(true)
   })
 })
