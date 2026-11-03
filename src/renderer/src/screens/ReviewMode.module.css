@@ -191,7 +191,8 @@
 
 .transcript {
   margin: 0;
-  padding-left: calc(var(--space) * 3);
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--space);
@@ -402,4 +403,52 @@ p > .label {
   gap: calc(var(--space) / 2) calc(var(--space) * 1.5);
   color: var(--muted);
   font-size: 12px;
+}
+
+.transcriptHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2);
+  margin-bottom: var(--space);
+}
+
+.card .transcriptHead h2 {
+  margin: 0;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+}
+
+.search input {
+  padding: calc(var(--space) / 2) var(--space);
+}
+
+.line {
+  display: grid;
+  grid-template-columns: calc(var(--space) * 5) 1fr;
+  gap: var(--space);
+  padding: calc(var(--space) / 2) var(--space);
+  border-radius: calc(var(--radius) / 2);
+  scroll-margin: calc(var(--space) * 4);
+}
+
+.lineOn {
+  background: var(--elevated);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.time {
+  color: var(--muted);
+  font-size: 12px;
+  padding-top: 2px;
+}
+
+.transcript mark {
+  background: var(--warning);
+  color: var(--bg);
+  border-radius: 2px;
 }
