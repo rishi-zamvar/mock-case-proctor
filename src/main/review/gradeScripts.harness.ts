@@ -173,10 +173,11 @@ export const WEAK: Turn[] = build([
   ['c', 'call', 'You are right, maybe we should pass, the price is probably too high.', 12_000]
 ])
 
-const ctl = (
-  section: SectionId,
-  over: Partial<InterviewControl> = {}
-): InterviewControl => ({ section, section_status: 'sufficient', ...over })
+const ctl = (section: SectionId, over: Partial<InterviewControl> = {}): InterviewControl => ({
+  section,
+  section_status: 'sufficient',
+  ...over
+})
 
 export const CONTROLS: Record<'strong' | 'average' | 'weak', Ctl[]> = {
   strong: [

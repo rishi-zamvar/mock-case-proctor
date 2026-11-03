@@ -1,0 +1,120 @@
+{
+  "method": "POST",
+  "path": "/v1/messages",
+  "body": {
+    "model": "claude-opus-5-5",
+    "max_tokens": 4096,
+    "output_config": {
+      "effort": "medium",
+      "format": {
+        "type": "json_schema",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "recurring_weaknesses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "progress_by_dimension": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "{enum: [\"clear_call\",\"lead_edge_8\",\"retention\",\"valuation\",\"back_solve\",\"quality_poise\"]}"
+                  },
+                  "direction": {
+                    "type": "string",
+                    "description": "{enum: [\"up\",\"flat\",\"down\"]}"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "direction",
+                  "note"
+                ]
+              }
+            },
+            "carried_forward_fix": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "fix": {
+                      "type": "string"
+                    },
+                    "improved": {
+                      "type": "string",
+                      "description": "{enum: [\"yes\",\"no\",\"unclear\"]}"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "fix",
+                    "improved",
+                    "note"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "next_case_suggestion": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "case_id": {
+                      "type": "string"
+                    },
+                    "why": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "case_id",
+                    "why"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "readiness": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "recurring_weaknesses",
+            "progress_by_dimension",
+            "carried_forward_fix",
+            "next_case_suggestion",
+            "readiness"
+          ],
+          "description": "{$schema: \"https://json-schema.org/draft/2020-12/schema\"}"
+        }
+      }
+    },
+    "system": "You are a Lead Edge Capital case-interview coach reading compact scorecard summaries of a candidate's past mock cases (oldest first). Each summary has a total out of 30 and six 1-5 dimension scores; 26/30 is the readiness bar.\n- recurring_weaknesses: dimensions scored low (<=3) in 2 or more sessions, phrased as short coaching points.\n- progress_by_dimension: one entry per dimension, comparing early to recent sessions.\n- carried_forward_fix: did the latest session improve on the previous session's fix? null if there is no previous session.\n- next_case_suggestion: pick a case_id from the unseen list ONLY, aimed at the weakest area; null if the list is empty.\n- readiness: one or two sentences on distance to 26/30.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{\"summaries\":[{\"sessionId\":\"s0\",\"caseId\":\"99\",\"at\":2000000,\"total\":6,\"band\":\"another\",\"dims\":{\"clear_call\":1,\"lead_edge_8\":1,\"retention\":1,\"valuation\":1,\"back_solve\":1,\"quality_poise\":1},\"flagFoundRate\":0,\"avgAnswerMs\":60400,\"numberAccuracy\":0.5,\"brevity\":{\"short\":2,\"brief\":0,\"ideal\":0,\"long\":1,\"flagged\":2},\"fix\":\"Read the footnotes and compute retention correctly: state GRR as 85%, flag that it covers only tenured customers, and build the call and price from that. Then lead with the call and hold it with data.\"},{\"sessionId\":\"s1\",\"caseId\":\"99\",\"at\":2000001,\"total\":11,\"band\":\"another\",\"dims\":{\"clear_call\":2,\"lead_edge_8\":2,\"retention\":2,\"valuation\":1,\"back_solve\":2,\"quality_poise\":2},\"flagFoundRate\":0.25,\"avgAnswerMs\":47142.857142857145,\"numberAccuracy\":0.8,\"brevity\":{\"short\":0,\"brief\":0,\"ideal\":6,\"long\":0,\"flagged\":1},\"fix\":\"Read every footnote before opening, and lead with a firm, priced call. Here: pass at the ask, because 85% GRR is tenured-only, and name roughly $12M pre-money as the price that flips it. Then hold that call under pushback.\"},{\"sessionId\":\"s2\",\"caseId\":\"99\",\"at\":2000002,\"total\":22,\"band\":\"close\",\"dims\":{\"clear_call\":4,\"lead_edge_8\":3,\"retention\":5,\"valuation\":2,\"back_solve\":4,\"quality_poise\":4},\"flagFoundRate\":1,\"avgAnswerMs\":51857.142857142855,\"numberAccuracy\":0.7272727272727273,\"brevity\":{\"short\":0,\"brief\":0,\"ideal\":7,\"long\":0,\"flagged\":0},\"fix\":\"Anchor price to the actual comps (4-6x backdrop, WidgetPeer A at 5.0x with 92% GRR) and make your invest price consistent with your breakeven back-solve instead of quoting $30M and $12M side by side.\"}],\"unseen\":[{\"id\":\"98\",\"vertical\":\"Fictional logistics SaaS\",\"level\":2},{\"id\":\"97\",\"vertical\":\"Fictional healthcare SaaS\",\"level\":3}]}"
+      }
+    ]
+  }
+}
