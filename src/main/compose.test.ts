@@ -103,6 +103,15 @@ describe('compose', () => {
     core.runner.discard(sessionId)
   })
 
+  it('given an awake port, when a session starts, then the display is held once', async () => {
+    const awake = { hold: vi.fn(), release: vi.fn() }
+    const core = compose(env(), { userData: tmp(), log, send: vi.fn(), awake })
+    const { sessionId } = await core.runner.start('99', { warmup: false })
+    expect(awake.hold).toHaveBeenCalledTimes(1)
+    core.runner.discard(sessionId)
+    expect(awake.release).toHaveBeenCalledTimes(1)
+  })
+
   it('given a missing cases root, when library(), then returns a pathless error without throwing', () => {
     const missing = join(tmp(), 'nope')
     const core = compose(env({ CASES_ROOT: missing }), { userData: tmp(), log, send: vi.fn() })
