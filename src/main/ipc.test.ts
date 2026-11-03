@@ -188,9 +188,16 @@ describe('registerIpc session channels', () => {
   it('given valid ack args, when speak:ack, then forwards; a negative seq rejects', async () => {
     const { call, runner } = full()
     await expect(call('speak:ack', 't', 0)).resolves.toBeUndefined()
-    expect(runner.ack).toHaveBeenCalledWith('t', 0)
+    expect(runner.ack).toHaveBeenCalledWith('t', 0, true)
     await expect(call('speak:ack', 't', -1)).rejects.toThrow('invalid arguments')
     expect(runner.ack).toHaveBeenCalledTimes(1)
+  })
+
+  it('given spoken=false, when speak:ack, then the runner receives spoken=false', async () => {
+    const { call, runner } = full()
+    await call('speak:ack', 't', 2, false)
+    expect(runner.ack).toHaveBeenCalledWith('t', 2, false)
+    await expect(call('speak:ack', 't', 2, 'yes')).rejects.toThrow('invalid arguments')
   })
 
   it('given text, when e2e:say, then forwards; over 2000 chars rejects', async () => {

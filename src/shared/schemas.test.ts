@@ -10,7 +10,8 @@ import {
   StartArgsSchema,
   IdArgsSchema,
   AckArgsSchema,
-  SpeakEventSchema
+  SpeakEventSchema,
+  SpeakCancelSchema
 } from './schemas'
 
 describe('KeyStatusSchema', () => {
@@ -219,9 +220,31 @@ describe('IPC argument schemas', () => {
   })
   it.each([
     ['negative seq', ['t1', -1]],
-    ['fractional seq', ['t1', 1.5]]
+    ['fractional seq', ['t1', 1.5]],
+    ['non-boolean spoken', ['t1', 0, 'yes']],
+    ['empty turn id', ['', 0]],
+    ['four elements', ['t1', 0, true, 1]]
   ])('given %s when parsed then AckArgs throws', (_n, bad) => {
     expect(() => AckArgsSchema.parse(bad)).toThrow()
+  })
+})
+
+describe('AckArgsSchema spoken flag', () => {
+  it.each([[['t1', 0, true]], [['t1', 0, false]]])('given %j when parsed then it passes', (a) => {
+    expect(AckArgsSchema.parse(a)).toEqual(a)
+  })
+})
+
+describe('SpeakCancelSchema', () => {
+  it('given a turn id when parsed then it passes', () => {
+    expect(SpeakCancelSchema.parse({ turnId: 't_1' })).toEqual({ turnId: 't_1' })
+  })
+  it.each([
+    ['extra key', { turnId: 't_1', text: 'x' }],
+    ['empty turn id', { turnId: '' }],
+    ['over-long turn id', { turnId: 'x'.repeat(81) }]
+  ])('given %s when parsed then it throws', (_n, bad) => {
+    expect(() => SpeakCancelSchema.parse(bad)).toThrow()
   })
 })
 
