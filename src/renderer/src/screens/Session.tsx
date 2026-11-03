@@ -181,7 +181,16 @@ export default function Session({
             10 minutes left
           </div>
         )}
-        {phase === 'scoring' ? (
+        {phase === 'scoring' && view.scoringFailed ? (
+          <div className={s.placeholder}>
+            <p role="alert" className={s.failed}>
+              Scoring failed
+            </p>
+            <button data-testid="score-retry" onClick={() => onIntent({ type: 'retryScore' })}>
+              Retry scoring
+            </button>
+          </div>
+        ) : phase === 'scoring' ? (
           <div data-testid="scoring" className={s.placeholder} role="status">
             Scoring your session…
           </div>
