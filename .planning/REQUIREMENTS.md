@@ -80,7 +80,7 @@
 - [x] **INT-05**: The interviewer probes what the deck does NOT show. The mandatory "You said X. I think it's the opposite. Convince me" pushback is used on every case.
 - [x] **INT-06**: Each turn ends with a record-only `interview_control` tool call (section, status, evidence, flags surfaced, hint given). Code validates it.
 - [x] **INT-07**: Rishi's text is wrapped and treated as data, so prompt injection from the transcript can't change the interviewer's rules.
-- [ ] **INT-08**: Each case gets a fresh interviewer with no memory of other sessions.
+- [x] **INT-08**: Each case gets a fresh interviewer with no memory of other sessions.
 
 ### Voice Out & Avatar (VOUT)
 
@@ -172,7 +172,7 @@
 | INT-05 | Phase 6 | Complete |
 | INT-06 | Phase 6 | Complete |
 | INT-07 | Phase 6 | Complete |
-| INT-08 | Phase 6 | Pending |
+| INT-08 | Phase 6 | Complete |
 | VOUT-01 | Phase 5 | Complete |
 | VOUT-02 | Phase 2 | Complete |
 | VOUT-03 | Phase 5 | Complete |
