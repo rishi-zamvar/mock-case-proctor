@@ -1,12 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, type Mock } from 'vitest'
 import type { SttPort } from '../ports'
 import { filteredStt } from './filtered'
 
 const SR = 16000
-const sine = Float32Array.from({ length: SR }, (_, i) => 0.5 * Math.sin((2 * Math.PI * 1000 * i) / SR))
-const innerReturning = (text: string) => {
+const sine = Float32Array.from(
+  { length: SR },
+  (_, i) => 0.5 * Math.sin((2 * Math.PI * 1000 * i) / SR)
+)
+const innerReturning = (
+  text: string
+): { inner: SttPort; transcribe: Mock<SttPort['transcribe']> } => {
   const transcribe = vi.fn<SttPort['transcribe']>(async () => ({ text }))
-  return { inner: { transcribe } satisfies SttPort, transcribe }
+  return { inner: { transcribe }, transcribe }
 }
 
 describe('filteredStt', () => {
@@ -37,7 +42,9 @@ describe('filteredStt', () => {
 
   it('given a logger, when transcribed, then it logs the voiced ms only, never the transcript', async () => {
     const info = vi.fn()
-    await filteredStt(innerReturning(' Retention is 85%. ').inner, { log: { info } }).transcribe(sine)
+    await filteredStt(innerReturning(' Retention is 85%. ').inner, { log: { info } }).transcribe(
+      sine
+    )
     expect(info).toHaveBeenCalledWith('stt voiced', expect.any(Number))
     expect(JSON.stringify(info.mock.calls)).not.toContain('Retention')
   })

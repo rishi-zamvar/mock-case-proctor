@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { FRAME, MIN_VOICED_MS, voicedMs } from './gate'
 
 const SR = 16000
-const sine = (ms: number, amp = 0.5) =>
-  Float32Array.from({ length: (SR * ms) / 1000 }, (_, i) => amp * Math.sin((2 * Math.PI * 1000 * i) / SR))
+const sine = (ms: number, amp = 0.5): Float32Array =>
+  Float32Array.from(
+    { length: (SR * ms) / 1000 },
+    (_, i) => amp * Math.sin((2 * Math.PI * 1000 * i) / SR)
+  )
 
 describe('voicedMs', () => {
   it('given 3 s of digital silence, when gated, then 0 ms voiced', () => {

@@ -1,23 +1,36 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { SttPort, SttResult } from '../ports'
-import { createAnswerAssembler } from './answers'
+import { createAnswerAssembler, type AnswerAssembler } from './answers'
 
-const deferred = () => {
+type Deferred = {
+  promise: Promise<SttResult>
+  resolve: (r: SttResult) => void
+  reject: (e: unknown) => void
+}
+const deferred = (): Deferred => {
   let resolve!: (r: SttResult) => void
   let reject!: (e: unknown) => void
   const promise = new Promise<SttResult>((a, b) => ((resolve = a), (reject = b)))
   return { promise, resolve, reject }
 }
-const pcm = (n: number) => new Float32Array([n])
+const pcm = (n: number): Float32Array => new Float32Array([n])
 
-function setup(arrivalTimeoutMs?: number) {
-  const pending: ReturnType<typeof deferred>[] = []
+function setup(arrivalTimeoutMs?: number): {
+  a: AnswerAssembler
+  transcribe: Mock<SttPort['transcribe']>
+  pending: Deferred[]
+} {
+  const pending: Deferred[] = []
   const transcribe = vi.fn<SttPort['transcribe']>(() => {
     const d = deferred()
     pending.push(d)
     return d.promise
   })
-  const a = createAnswerAssembler({ stt: { transcribe }, prompt: () => 'case vocab', arrivalTimeoutMs })
+  const a = createAnswerAssembler({
+    stt: { transcribe },
+    prompt: () => 'case vocab',
+    arrivalTimeoutMs
+  })
   return { a, transcribe, pending }
 }
 
@@ -33,7 +46,11 @@ describe('createAnswerAssembler', () => {
     pending[1].resolve({ text: 'the churn', voicedMs: 900 })
     pending[0].resolve({ text: ' Retention is high,', voicedMs: 1000 })
     pending[2].resolve({ text: 'is low. ', voicedMs: 500 })
-    expect(await done).toEqual({ text: 'Retention is high, the churn is low.', noAnswer: false, voicedMs: 2400 })
+    expect(await done).toEqual({
+      text: 'Retention is high, the churn is low.',
+      noAnswer: false,
+      voicedMs: 2400
+    })
   })
 
   it('given a chunk, when it arrives, then transcription starts immediately with the prompt', () => {
@@ -76,13 +93,20 @@ describe('createAnswerAssembler', () => {
   it('given no answer id and 0 chunks (FakeStt path), when finished, then one empty-pcm call with the prompt', async () => {
     const transcribe = vi.fn<SttPort['transcribe']>(async () => ({ text: ' Canned answer. ' }))
     const a = createAnswerAssembler({ stt: { transcribe }, prompt: () => 'case vocab' })
-    expect(await a.finish(undefined, 0)).toEqual({ text: 'Canned answer.', noAnswer: false, voicedMs: 0 })
+    expect(await a.finish(undefined, 0)).toEqual({
+      text: 'Canned answer.',
+      noAnswer: false,
+      voicedMs: 0
+    })
     expect(transcribe).toHaveBeenCalledTimes(1)
     expect(transcribe).toHaveBeenCalledWith(new Float32Array(0), { prompt: 'case vocab' })
   })
 
   it('given the FakeStt path returns empty text, when finished, then noAnswer', async () => {
-    const a = createAnswerAssembler({ stt: { transcribe: async () => ({ text: '' }) }, prompt: () => undefined })
+    const a = createAnswerAssembler({
+      stt: { transcribe: async () => ({ text: '' }) },
+      prompt: () => undefined
+    })
     expect(await a.finish(undefined, 0)).toMatchObject({ text: '', noAnswer: true })
   })
 

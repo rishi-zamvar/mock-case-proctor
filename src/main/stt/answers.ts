@@ -19,11 +19,18 @@ function combine(rs: SttResult[]): AnswerResult {
   return { text, noAnswer: text === '', voicedMs: rs.reduce((s, r) => s + (r.voicedMs ?? 0), 0) }
 }
 
+export type AnswerAssembler = {
+  chunk(answerId: string, idx: number, pcm: Float32Array): void
+  finish(answerId: string | undefined, chunks: number): Promise<AnswerResult>
+  /** Drop every pending answer (session change). */
+  reset(): void
+}
+
 export function createAnswerAssembler(o: {
   stt: SttPort
   prompt(): string | undefined
-  arrivalTimeoutMs?: number
-}) {
+  arrivalTimeoutMs?: number // default 5000
+}): AnswerAssembler {
   const timeoutMs = o.arrivalTimeoutMs ?? 5000
   let answers = new Map<string, Entry>()
   const entry = (id: string): Entry => {
