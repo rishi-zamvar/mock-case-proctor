@@ -173,7 +173,7 @@ Plans:
 
 Plans:
 - [x] 07-01-PLAN.md — whisper-cpp-node + models (cache-move, sha, disk guard) + engine.ts with real-whisper int test (wave 1)
-- [ ] 07-02-PLAN.md — TDD pure STT: voiced-frame gate, hallucination/n-gram cleaner, filteredStt, chunk assembler, port contracts (wave 1)
+- [x] 07-02-PLAN.md — TDD pure STT: voiced-frame gate, hallucination/n-gram cleaner, filteredStt, chunk assembler, port contracts (wave 1)
 - [x] 07-03-PLAN.md — Renderer capture: 16 kHz worklet, chunk accumulator (quietest cut, 5-min cap), mute, __mic WAV hook, shared brevityBand (wave 1)
 - [ ] 07-04-PLAN.md — whisperStt utilityProcess adapter (serialised, crash/respawn, Metal status, warm) + worker entry (wave 2)
 - [ ] 07-05-PLAN.md — TDD ClaudeLlm.interrupted: barge-in history keeps only spoken text, alternating (wave 2)
@@ -220,6 +220,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Proctored Review Block | 7/7 | Complete    | 2026-11-03 |
 | 5. Voice Out & Avatar | 2/8 | Complete    | 2026-11-03 |
 | 6. Interviewer Agent | 0/TBD | Not started | - |
-| 7. Voice In & Barge-In | 0/TBD | Not started | - |
+| 7. Voice In & Barge-In | 3/10 | In Progress|  |
 | 8. Review Mode & Trends | 0/TBD | Not started | - |
 | 9. Packaged Live Sign-off | 0/TBD | Not started | - |
