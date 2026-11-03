@@ -86,9 +86,17 @@ describe('registerIpc', () => {
 })
 
 const LIB = { cases: [], resumable: null, quarantined: 0, error: null }
+const TRENDS = { status: 'insufficient', summaries: [], insights: null }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred harness shape
-function full(o: { e2eSay?: boolean; library?: unknown; sttStatus?: () => Promise<unknown> } = {}) {
+function full(
+  o: {
+    e2eSay?: boolean
+    library?: unknown
+    sttStatus?: () => Promise<unknown>
+    trends?: () => Promise<unknown>
+  } = {}
+) {
   const handlers = new Map<string, Handler>()
   const ipc: IpcLike = { handle: (ch, fn) => void handlers.set(ch, fn) }
   const keyStore = { status: vi.fn(), save: vi.fn(), clear: vi.fn() }
@@ -103,17 +111,19 @@ function full(o: { e2eSay?: boolean; library?: unknown; sttStatus?: () => Promis
   }
   const library = vi.fn(() => o.library ?? LIB)
   const e2eSay = vi.fn()
+  const trends = vi.fn(o.trends ?? (async () => TRENDS))
   const deps: IpcDeps = {
     keyStore: keyStore as unknown as IpcDeps['keyStore'],
     runner,
     library: library as unknown as () => LibraryView,
     ...(o.e2eSay === false ? {} : { e2eSay }),
-    ...(o.sttStatus ? { sttStatus: o.sttStatus as IpcDeps['sttStatus'] } : {})
+    ...(o.sttStatus ? { sttStatus: o.sttStatus as IpcDeps['sttStatus'] } : {}),
+    trends: trends as unknown as IpcDeps['trends']
   }
   registerIpc(ipc, deps)
   const call = async (ch: string, ...args: unknown[]): Promise<unknown> =>
     handlers.get(ch)!(APP, ...args)
-  return { handlers, runner, library, e2eSay, call }
+  return { handlers, runner, library, e2eSay, trends, call }
 }
 
 describe('registerIpc session channels', () => {
@@ -132,6 +142,7 @@ describe('registerIpc session channels', () => {
         'speak:started',
         'stt:chunk',
         'stt:status',
+        'trends:get',
         'e2e:say'
       ].sort()
     )
@@ -234,9 +245,10 @@ describe('registerIpc session channels', () => {
     'speak:started',
     'stt:chunk',
     'stt:status',
+    'trends:get',
     'e2e:say'
   ])('given a foreign or missing sender, when %s, then rejects forbidden sender', async (ch) => {
-    const { handlers, runner, library, e2eSay } = full()
+    const { handlers, runner, library, e2eSay, trends } = full()
     const h = handlers.get(ch)!
     await expect(
       (async () => h({ senderFrame: { url: 'https://evil.com/' } }, '99', { warmup: true }))()
@@ -253,7 +265,8 @@ describe('registerIpc session channels', () => {
       runner.sttChunk,
       runner.started,
       library,
-      e2eSay
+      e2eSay,
+      trends
     ])
       expect(f).not.toHaveBeenCalled()
   })
@@ -287,5 +300,16 @@ describe('registerIpc session channels', () => {
     const { call, runner } = full()
     await call('session:intent', { type: 'bargeIn' })
     expect(runner.intent).toHaveBeenCalledWith({ type: 'bargeIn' })
+  })
+
+  it('given a trends dep, when trends:get, then returns the parsed view; a bad view rejects', async () => {
+    await expect(full().call('trends:get')).resolves.toEqual(TRENDS)
+    await expect(full({ trends: async () => ({ status: 'bogus' }) }).call('trends:get')).rejects.toThrow()
+  })
+
+  it('given extra args, when trends:get, then rejects without calling trends', async () => {
+    const { call, trends } = full()
+    await expect(call('trends:get', 'x')).rejects.toThrow('invalid arguments')
+    expect(trends).not.toHaveBeenCalled()
   })
 })
