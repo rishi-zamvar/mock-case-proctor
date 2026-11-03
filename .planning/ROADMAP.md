@@ -148,7 +148,7 @@ Plans:
   5. The model ID is one config value (default `claude-opus-5-5`). The case brief is the cached system prefix, with cache reads confirmed from turn 2 onwards. A new case starts a fresh interviewer with no prior-session context.
 **Plans**: 10 plans
 Plans:
-- [ ] 06-01-PLAN.md — Contracts (ports, control/state/schema widening) + reducer pushback tracking and 10-min warm-up timer
+- [x] 06-01-PLAN.md — Contracts (ports, control/state/schema widening) + reducer pushback tracking and 10-min warm-up timer
 - [x] 06-02-PLAN.md — turnText (4-sentence cap, banned phrases, fixed lines, candidate wrapping) + messages (tool_result-first history)
 - [ ] 06-03-PLAN.md — interview_control strict tool + zod parse/map; opening extraction mapping (order from considerations)
 - [ ] 06-04-PLAN.md — Cached system prefix (persona, deck_facts, evaluation_key, examples), case-free warm-up prompt, proctor note

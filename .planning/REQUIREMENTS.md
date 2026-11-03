@@ -40,7 +40,7 @@
 ### Session Flow (FLOW)
 
 - [x] **FLOW-01**: A pure, code-owned state machine runs the phases in order: warm-up, review, presentation, grilling, wrap-up, scoring, review mode.
-- [ ] **FLOW-02**: Optional warm-up: a 5–10 minute casual chat with the partner before "here is the project". It can be skipped.
+- [x] **FLOW-02**: Optional warm-up: a 5–10 minute casual chat with the partner before "here is the project". It can be skipped.
 - [x] **FLOW-03**: Proctored review:
   - The interviewee PDF is shown in the window.
   - A 45-minute countdown runs against a fixed deadline, so it doesn't drift.
@@ -69,7 +69,7 @@
   - Sometimes hints at the answer, but only after 2 failed probes, by code policy.
   - Calls out obvious BS and wrong numbers, checked against the case data.
   - Is not an idealized scrutinizer.
-- [ ] **INT-03**: For each section the interviewer opens with a high-level framing question ("let's dive into why you want to invest first"). It stays until the section's probe checklist has been sufficiently tested or the cap is hit, then moves on in Rishi's order.
+- [x] **INT-03**: For each section the interviewer opens with a high-level framing question ("let's dive into why you want to invest first"). It stays until the section's probe checklist has been sufficiently tested or the cap is hit, then moves on in Rishi's order.
 - [ ] **INT-04**: Sections cover:
   - the Lead Edge 8 (gross retention first);
   - a qualitative and quantitative view of the industry, including public comps as the anchor;
@@ -77,8 +77,8 @@
   - what he would diligence;
   - price, by working backwards to 3x with basic math;
   - the call.
-- [ ] **INT-05**: The interviewer probes what the deck does NOT show. The mandatory "You said X. I think it's the opposite. Convince me" pushback is used on every case.
-- [ ] **INT-06**: Each turn ends with a record-only `interview_control` tool call (section, status, evidence, flags surfaced, hint given). Code validates it.
+- [x] **INT-05**: The interviewer probes what the deck does NOT show. The mandatory "You said X. I think it's the opposite. Convince me" pushback is used on every case.
+- [x] **INT-06**: Each turn ends with a record-only `interview_control` tool call (section, status, evidence, flags surfaced, hint given). Code validates it.
 - [x] **INT-07**: Rishi's text is wrapped and treated as data, so prompt injection from the transcript can't change the interviewer's rules.
 - [ ] **INT-08**: Each case gets a fresh interviewer with no memory of other sessions.
 
@@ -153,7 +153,7 @@
 | BAR-02 | Phase 3 | Complete |
 | BAR-03 | Phase 2 | Complete |
 | FLOW-01 | Phase 2 | Complete |
-| FLOW-02 | Phase 6 | Pending |
+| FLOW-02 | Phase 6 | Complete |
 | FLOW-03 | Phase 4 | Complete |
 | FLOW-04 | Phase 6 | Pending |
 | FLOW-05 | Phase 6 | Pending |
@@ -167,10 +167,10 @@
 | VIN-05 | Phase 4 | Complete |
 | INT-01 | Phase 6 | Pending |
 | INT-02 | Phase 6 | Complete |
-| INT-03 | Phase 6 | Pending |
+| INT-03 | Phase 6 | Complete |
 | INT-04 | Phase 6 | Pending |
-| INT-05 | Phase 6 | Pending |
-| INT-06 | Phase 6 | Pending |
+| INT-05 | Phase 6 | Complete |
+| INT-06 | Phase 6 | Complete |
 | INT-07 | Phase 6 | Complete |
 | INT-08 | Phase 6 | Pending |
 | VOUT-01 | Phase 5 | Complete |
