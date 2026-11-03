@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 07-04-PLAN.md
-last_updated: "2026-11-03T11:04:41.860Z"
+stopped_at: Completed 07-06-PLAN.md
+last_updated: "2026-11-03T11:06:57.239Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 5
   total_plans: 61
-  completed_plans: 55
+  completed_plans: 56
   percent: 0
 ---
 
@@ -106,6 +106,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 07 P01 | 4min | 2 tasks | 5 files |
 | Phase 07 P02 | 4min | 2 tasks | 9 files |
 | Phase 07 P04 | 5min | 2 tasks | 5 files |
+| Phase 07 P06 | 12min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,7 @@ Recent decisions affecting current work:
 - [Phase 07]: STT assembler ignores text of noAnswer chunks; answer noAnswer when joined text empty
 - [Phase 07]: whisperStt: electron-vite 6 main inputs via build.rolldownOptions.input; init_failed sticky, exit/timeout respawn lazily
 - [Phase 07]: claudeLlm.interrupted rewrites the last turn to spoken text + [interrupted]; aborted turns stay forgotten without the call
+- [Phase 07]: 07-06: canTalk false while transcribing; latency stamps on unscaled realNow; sttChunk bypasses the runner queue
 
 ### Pending Todos
 
@@ -203,6 +205,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T11:04:36.164Z
-Stopped at: Completed 07-04-PLAN.md
+Last session: 2026-11-03T11:06:57.235Z
+Stopped at: Completed 07-06-PLAN.md
 Resume file: None
