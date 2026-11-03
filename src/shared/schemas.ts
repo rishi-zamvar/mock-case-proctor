@@ -201,4 +201,23 @@ const _sc: Scorecard = {} as z.infer<typeof ScorecardSchema>
 const _sc2: z.infer<typeof ScorecardSchema> = {} as Scorecard
 const _sx: SpeakCancel = {} as z.infer<typeof SpeakCancelSchema>
 const _sx2: z.infer<typeof SpeakCancelSchema> = {} as SpeakCancel
-void [_sx, _sx2, _ks, _ks2, _sr, _sr2, _cc, _cc2, _vs, _vs2, _lv, _lv2, _in, _in2, _se, _se2, _sc, _sc2]
+void [
+  _sx,
+  _sx2,
+  _ks,
+  _ks2,
+  _sr,
+  _sr2,
+  _cc,
+  _cc2,
+  _vs,
+  _vs2,
+  _lv,
+  _lv2,
+  _in,
+  _in2,
+  _se,
+  _se2,
+  _sc,
+  _sc2
+]
