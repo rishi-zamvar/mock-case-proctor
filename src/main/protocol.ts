@@ -55,3 +55,20 @@ export function resolveCasePdfRequest(url: string): string | 'deny' | null {
   // Exact raw match only: encoded and dot-segment variants are refused, never normalised.
   return /^\/cases\/(\d{2})\/interviewee\.pdf$/.exec(raw)?.[1] ?? 'deny'
 }
+
+/** null = not a /res route. 'deny' = /res route but refused (404). string = the file under root. */
+export function resolveResRequest(url: string, root: string): string | 'deny' | null {
+  let u: URL
+  try {
+    u = new URL(url)
+  } catch {
+    return null
+  }
+  if (u.protocol !== 'app:' || u.host !== 'bundle') return null
+  const raw = url.slice('app://bundle'.length).split(/[?#]/)[0]
+  if (!raw.startsWith('/res/') && !u.pathname.startsWith('/res/')) return null
+  // Check the raw path too: URL parsing collapses dot segments, which would hide a climb-out.
+  if (!raw.startsWith('/res/') || resolveSafePath(root, raw.slice(4)) === null) return 'deny'
+  if (!u.pathname.startsWith('/res/')) return 'deny'
+  return resolveSafePath(root, u.pathname.slice(4)) ?? 'deny'
+}

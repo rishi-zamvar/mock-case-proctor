@@ -1,14 +1,23 @@
 // app:// handler (FND-05): path-safe file serving, every response carries the CSP header.
+import { stat } from 'node:fs/promises'
+import { extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Net, Protocol } from 'electron'
 import { CSP } from '../shared/csp'
-import { resolveAppRequest, resolveCasePdfRequest } from './protocol'
+import { resolveAppRequest, resolveCasePdfRequest, resolveResRequest } from './protocol'
 
 export const APP_SCHEME_PRIVILEGES = {
   standard: true,
   secure: true,
   supportFetchAPI: true,
   stream: true
+}
+
+// Module workers need a JS MIME; file:// gives no reliable type for .mjs.
+const MIME: Record<string, string> = {
+  '.mjs': 'text/javascript',
+  '.js': 'text/javascript',
+  '.wasm': 'application/wasm'
 }
 
 export function registerAppProtocol(
@@ -24,6 +33,14 @@ export function registerAppProtocol(
     if (!res) return notFound()
     const headers = new Headers(res.headers)
     headers.set('Content-Security-Policy', CSP)
+    // Without Content-Length transformers.js re-copies its buffer per chunk (model load 133 s vs 1.3 s).
+    const size = await stat(file).then(
+      (s) => s.size,
+      () => null
+    )
+    if (size !== null) headers.set('Content-Length', String(size))
+    const type = MIME[extname(file).toLowerCase()]
+    if (type) headers.set('Content-Type', type)
     return new Response(res.body, { status: res.status, headers })
   }
   protocol.handle('app', async (req) => {
@@ -35,6 +52,9 @@ export function registerAppProtocol(
       if (!file || file.endsWith('_interviewer_package.pdf')) return notFound()
       return serve(file)
     }
+    const r = roots.assets ? resolveResRequest(req.url, roots.assets) : null
+    if (r === 'deny') return notFound()
+    if (r) return serve(r)
     const file = resolveAppRequest(req.url, roots)
     return file ? serve(file) : notFound()
   })

@@ -109,9 +109,10 @@ describe('registerAppProtocol', () => {
     expect((await setup()('app://bundle/res/models/missing.bin')).status).toBe(404)
   })
 
-  test('given a /res traversal, when requested, then 404 without fetching', async () => {
+  // Request normalises %2e%2e before the handler sees it; raw traversal is covered in protocol.test.ts.
+  test('given a refused /res url, when requested, then 404 without fetching', async () => {
     const get = setup()
-    expect((await get('app://bundle/res/%2e%2e/index.html')).status).toBe(404)
+    expect((await get('app://bundle/res/a%00.bin')).status).toBe(404)
     expect(get.fetch).not.toHaveBeenCalled()
   })
 })

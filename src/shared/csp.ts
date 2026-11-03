@@ -6,7 +6,7 @@ export const CSP = [
   "font-src 'self' app:",
   "media-src 'self' app: blob: mediastream:",
   "worker-src 'self' app: blob:",
-  "connect-src 'self' app: https://huggingface.co https://*.huggingface.co https://*.hf.co",
+  "connect-src 'self' app: blob: https://huggingface.co https://*.huggingface.co https://*.hf.co",
   "object-src 'none'",
   "base-uri 'none'",
   "frame-ancestors 'none'",
