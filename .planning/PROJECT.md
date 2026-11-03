@@ -34,6 +34,8 @@ It must feel like a real conversation with a Lead Edge partner: Rishi speaks, a 
 - [ ] Review mode: trends across cases — the review agent reads all previous session results and reports recurring weaknesses and progress
 - [ ] Every session (transcript, timings, scores, feedback) is stored in a local library
 - [ ] Each case gets a fresh interviewer agent (no memory across cases); only the review agent has cross-session memory
+- [ ] API key onboarding: the key is NEVER hardcoded or committed. First run shows a settings screen where the user pastes their Anthropic key; it is validated with a live probe and stored encrypted via Electron `safeStorage`. Dev convenience: if `ANTHROPIC_API_KEY` is present in the environment or the gitignored `.env` (symlinked from `~/.config/keys` keymgr), the field is pre-filled/auto-saved so Rishi never pastes it. Key lives only in main process.
+- [ ] Code hosted on GitHub (private repo `rishi-zamvar/mock-case-proctor`); `.env`, models, sessions and case data gitignored; secret-scan check in tests
 - [ ] Full TDD: unit tests written before logic; integration tests for the state machine, storage and Claude prompts; live E2E tests driving the real Electron app (Playwright for Electron) covering every screen and feature, including the real voice loop with recorded audio fixtures
 
 ### Out of Scope

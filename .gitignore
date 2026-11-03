@@ -1,0 +1,13 @@
+node_modules/
+out/
+dist/
+release/
+.env
+.env.*
+*.env
+models/
+sessions/
+test-results/
+playwright-report/
+coverage/
+.DS_Store
