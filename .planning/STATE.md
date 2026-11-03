@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Completed 07-04-PLAN.md
-last_updated: "2026-11-03T11:04:36.168Z"
+last_updated: "2026-11-03T11:04:41.860Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
@@ -188,6 +188,7 @@ Recent decisions affecting current work:
 - [Phase 07]: Whisper models via STT_MODELS with WHISPER_CACHE move + sha256 + 1 GiB disk guard; turbo q5_0 120s = 5.5s
 - [Phase 07]: STT assembler ignores text of noAnswer chunks; answer noAnswer when joined text empty
 - [Phase 07]: whisperStt: electron-vite 6 main inputs via build.rolldownOptions.input; init_failed sticky, exit/timeout respawn lazily
+- [Phase 07]: claudeLlm.interrupted rewrites the last turn to spoken text + [interrupted]; aborted turns stay forgotten without the call
 
 ### Pending Todos
 
