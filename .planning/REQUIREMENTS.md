@@ -46,7 +46,7 @@
   - A 45-minute countdown runs against a fixed deadline, so it doesn't drift.
   - The partner gives a spoken 10-minute warning.
   - A "Ready" button skips ahead.
-- [ ] **FLOW-04**: Presentation. Rishi gives a one-sentence recap, a recommendation, and considerations for and against. It is timed and never interrupted by the avatar.
+- [x] **FLOW-04**: Presentation. Rishi gives a one-sentence recap, a recommendation, and considerations for and against. It is timed and never interrupted by the avatar.
 - [x] **FLOW-05**: A structured call extracts the section order from Rishi's opening. Standard sections he didn't raise are appended at the end, and the omission is recorded.
 - [x] **FLOW-06**: The grilling has a target of about 25 minutes, configurable. Each section has a soft and a hard turn cap enforced in code. The interviewer's "section sufficient" signal is ignored on a section's first turn.
 - [x] **FLOW-07**: The session is saved atomically after every turn and can be resumed after a crash or restart.
@@ -155,7 +155,7 @@
 | FLOW-01 | Phase 2 | Complete |
 | FLOW-02 | Phase 6 | Complete |
 | FLOW-03 | Phase 4 | Complete |
-| FLOW-04 | Phase 6 | Pending |
+| FLOW-04 | Phase 6 | Complete |
 | FLOW-05 | Phase 6 | Complete |
 | FLOW-06 | Phase 2 | Complete |
 | FLOW-07 | Phase 3 | Complete |
