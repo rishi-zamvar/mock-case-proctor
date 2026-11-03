@@ -107,7 +107,12 @@ export type ViewState = {
   reveal: Reveal | null // non-null ONLY when phase === 'reviewMode'
 }
 export type LibraryEntry = { card: CaseCard; completed: { at: number; score: number } | null }
-export type ResumableSession = { sessionId: string; caseId: string; company: string; phase: ViewPhase }
+export type ResumableSession = {
+  sessionId: string
+  caseId: string
+  company: string
+  phase: ViewPhase
+}
 export type LibraryView = {
   cases: LibraryEntry[]
   resumable: ResumableSession | null
@@ -115,9 +120,6 @@ export type LibraryView = {
   error: string | null
 }
 export type Intent =
-  | { type: 'answer'; ms: number }
-  | { type: 'ready' }
-  | { type: 'skipWarmup' }
-  | { type: 'end' }
+  { type: 'answer'; ms: number } | { type: 'ready' } | { type: 'skipWarmup' } | { type: 'end' }
 export type StartOptions = { warmup: boolean }
 export type SpeakEvent = { turnId: string; seq: number; text: string }

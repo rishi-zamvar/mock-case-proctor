@@ -13,7 +13,9 @@ function setup(status: KeyStatus = NONE, outcome?: SaveOutcome) {
     status: outcome === 'valid' ? { hasKey: true, source: 'stored' } : NONE
   }))
   const clear = vi.fn(async (): Promise<KeyStatus> => NONE)
-  window.api = { key: { status: vi.fn(async () => status), save, clear } }
+  window.api = {
+    key: { status: vi.fn(async () => status), save, clear }
+  } as unknown as Window['api']
   const props = { onStatus: vi.fn(), onDone: vi.fn(), onBack: vi.fn() }
   const r = render(<Settings status={status} {...props} />)
   return { save, clear, props, ...r }

@@ -14,7 +14,7 @@ function mockApi(status: KeyStatus) {
       clear: vi.fn(async (): Promise<KeyStatus> => ({ hasKey: false, source: 'none' }))
     }
   }
-  window.api = api
+  window.api = api as unknown as Window['api'] // key-only mock
   return api
 }
 

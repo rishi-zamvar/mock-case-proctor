@@ -95,9 +95,7 @@ export const ChecksSchema = z
     ),
     ledWithCall: z.boolean(),
     omitted: z.array(z.string()),
-    numbers: z.array(
-      z.object({ said: z.string(), expected: z.string(), ok: z.boolean() }).strict()
-    )
+    numbers: z.array(z.object({ said: z.string(), expected: z.string(), ok: z.boolean() }).strict())
   })
   .strict()
 
