@@ -15,5 +15,21 @@ export const VOICE_FIXTURES = {
   // interviewer.t2 SCRIPT[2], SCRIPT[4]: extra grill answers for the barge-in retry.
   tooling:
     'Test tooling has a real tailwind as teams ship faster, and once seats are wired into CI the switching cost is meaningful. Public dev-tool comps are the easy anchor for the multiple.',
-  gaps: 'What the deck does not show is the customer concentration, the payback on new logos and the churn split between small and large teams. Those are my first three diligence asks.'
+  gaps: 'What the deck does not show is the customer concentration, the payback on new logos and the churn split between small and large teams. Those are my first three diligence asks.',
+  // signoff.t3: a wrong GRR the interviewer must push back on (generic candidate speech, never answer-key text).
+  wrong_grr:
+    'Gross retention is about ninety five percent, so churn is basically a non-issue here.',
+  // signoff.t3 case 02 (PawsHub): PAWS_OPENING from claudeLlm.live.test.ts plus generic grill answers.
+  paws_opening:
+    "PawsHub is a pet-care software business raising a growth round. I'd invest, but only at the right price. " +
+    'The key considerations are retention first, then the industry and how it stacks up against public comps, ' +
+    'then valuation and whether we can work back to a 3x. Happy to dive into each.',
+  paws_retention:
+    "If churn is concentrated in small clinics I'd want the larger accounts retaining above ninety percent. If it is broad based, the product isn't sticky and I'd pay a lower multiple.",
+  paws_industry:
+    "Pet care software is fragmented with a long tail of small operators, so I'd anchor on vertical software comps and check whether growth comes from new logos or from pricing.",
+  paws_valuation:
+    "At the ask I'd work back from a three x outcome over five years and see what growth that implies. If the required growth is well above plan, I'd only invest at a lower price.",
+  paws_diligence:
+    'My first diligence asks are cohort retention by customer size, payback on new customers, and how much growth comes from price increases versus new locations.'
 } as const
