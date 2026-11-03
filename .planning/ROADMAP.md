@@ -109,7 +109,7 @@ Plans:
 - [x] 04-02-PLAN.md — react-pdf 11 DeckViewer (labels, keys, zoom, thumbnail rail), dep-pin test, 4-page fixture deck (wave 1)
 - [x] 04-03-PLAN.md — MicCheck level meter + silence watch, mirrored WebcamTile, no-recording guard (wave 1)
 - [x] 04-04-PLAN.md — createAwake display-sleep blocker + ensureMediaAccess (macOS TCC) (wave 1)
-- [ ] 04-05-PLAN.md — Runner warning timer (resume-safe), deck page persistence, awake hold/release; index/compose wiring, no View menu (wave 2)
+- [x] 04-05-PLAN.md — Runner warning timer (resume-safe), deck page persistence, awake hold/release; index/compose wiring, no View menu (wave 2)
 - [ ] 04-06-PLAN.md — Session deck stage + Deck toggle, monotonic countdown, T-10 toast, webcam tile + toggles; start-sheet setup check (wave 2)
 - [ ] 04-07-PLAN.md — E2E review/media specs, flow + packaged updates, Phase 4 gate (wave 3)
 **UI hint**: yes
