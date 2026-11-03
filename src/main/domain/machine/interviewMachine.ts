@@ -25,6 +25,9 @@ export const DEFAULT_CONFIG: MachineConfig = {
   reviewMs: 45 * 60_000
 }
 
+/** The partner warns once, this long before the review deadline. */
+export const REVIEW_WARNING_MS = 10 * 60_000
+
 /** Minimal control block the interviewer emits each turn. Phase 6's zod schema must conform. */
 export type InterviewControl = {
   section: SectionId
@@ -42,6 +45,7 @@ export type InterviewEvent =
   | { type: 'WARMUP_SKIPPED'; now: number }
   | { type: 'READY'; now: number }
   | { type: 'REVIEW_DEADLINE'; now: number }
+  | { type: 'REVIEW_WARNING'; now: number }
   | { type: 'PRESENTATION_DONE'; now: number }
   | { type: 'SECTION_PLAN_SET'; now: number; order: string[] }
   | { type: 'ANSWER_TICK'; now: number; answerId: string; elapsedMs: number }
@@ -53,7 +57,8 @@ export type InterviewEvent =
 
 export type Effect =
   | { type: 'PHASE_CHANGED'; from: Phase; to: Phase; at: number }
-  | { type: 'START_TIMER'; id: 'review'; deadline: number }
+  | { type: 'START_TIMER'; id: 'review' | 'warning'; deadline: number }
+  | { type: 'REVIEW_WARNING'; at: number }
   | {
       type: 'REQUEST_LLM_TURN'
       kind: 'extraction' | 'grill' | 'wrapup' | 'score'
@@ -69,6 +74,7 @@ export type InterviewState = {
   config: MachineConfig
   startedAt: number | null
   reviewDeadline: number | null
+  reviewWarned: boolean
   plan: SectionId[]
   omitted: SectionId[]
   done: SectionId[]
@@ -91,6 +97,7 @@ export function initialState(): InterviewState {
     config: { ...DEFAULT_CONFIG },
     startedAt: null,
     reviewDeadline: null,
+    reviewWarned: false,
     plan: [],
     omitted: [],
     done: [],
@@ -125,9 +132,10 @@ function go(
 
 function toReview(state: InterviewState, now: number): Result {
   const deadline = now + state.config.reviewMs
-  return go(state, 'review', now, { reviewDeadline: deadline }, [
-    { type: 'START_TIMER', id: 'review', deadline }
-  ])
+  const timers: Effect[] = [{ type: 'START_TIMER', id: 'review', deadline }]
+  if (state.config.reviewMs > REVIEW_WARNING_MS)
+    timers.push({ type: 'START_TIMER', id: 'warning', deadline: deadline - REVIEW_WARNING_MS })
+  return go(state, 'review', now, { reviewDeadline: deadline, reviewWarned: false }, timers)
 }
 
 /** Leaving review: warm-up first if it was deferred to 'after', else the presentation. */
@@ -212,6 +220,17 @@ export function reduce(state: InterviewState, event: InterviewEvent): Result {
         now >= state.reviewDeadline
       )
         return afterReview(state, now)
+      if (
+        event.type === 'REVIEW_WARNING' &&
+        !state.reviewWarned &&
+        state.reviewDeadline !== null &&
+        now >= state.reviewDeadline - REVIEW_WARNING_MS &&
+        now < state.reviewDeadline
+      )
+        return {
+          state: { ...state, reviewWarned: true },
+          effects: [{ type: 'REVIEW_WARNING', at: now }, { type: 'PERSIST' }]
+        }
       return ignore(state)
     case 'presentation':
       if (event.type !== 'PRESENTATION_DONE') return ignore(state)

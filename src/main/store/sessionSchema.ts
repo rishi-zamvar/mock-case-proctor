@@ -31,6 +31,7 @@ export const InterviewStateSchema = z
       .strict(),
     startedAt: z.number().nullable(),
     reviewDeadline: z.number().nullable(),
+    reviewWarned: z.boolean().default(false), // absent in pre-Phase-4 session files
     plan: z.array(SectionEnum),
     omitted: z.array(SectionEnum),
     done: z.array(SectionEnum),
@@ -101,7 +102,8 @@ export const SessionFileSchema = z
         .strict()
     ),
     pending: PendingTurnSchema.nullable(),
-    scorecard: ScorecardSchema.optional()
+    scorecard: ScorecardSchema.optional(),
+    deckPage: z.number().int().min(1).max(500).optional()
   })
   .strict()
 
