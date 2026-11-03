@@ -106,7 +106,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md — TDD reducer T-10 REVIEW_WARNING + contracts (ViewState deckPage/reviewWarned, deckPage intent, AwakePort) (wave 1)
-- [ ] 04-02-PLAN.md — react-pdf 11 DeckViewer (labels, keys, zoom, thumbnail rail), dep-pin test, 4-page fixture deck (wave 1)
+- [x] 04-02-PLAN.md — react-pdf 11 DeckViewer (labels, keys, zoom, thumbnail rail), dep-pin test, 4-page fixture deck (wave 1)
 - [x] 04-03-PLAN.md — MicCheck level meter + silence watch, mirrored WebcamTile, no-recording guard (wave 1)
 - [x] 04-04-PLAN.md — createAwake display-sleep blocker + ensureMediaAccess (macOS TCC) (wave 1)
 - [ ] 04-05-PLAN.md — Runner warning timer (resume-safe), deck page persistence, awake hold/release; index/compose wiring, no View menu (wave 2)
