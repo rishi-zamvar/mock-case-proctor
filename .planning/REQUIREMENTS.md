@@ -35,7 +35,7 @@
 
 - [ ] **BAR-01**: No interviewer-package content (flags, answer key, rubric, ideal answer, prep brief) crosses to the renderer before review mode. An end-to-end test taps every IPC message and fails on any leak.
 - [ ] **BAR-02**: `app://` never serves `*_interviewer_package.pdf`.
-- [ ] **BAR-03**: A leak guard checks every interviewer utterance before it reaches the voice. It blocks answer-key phrasing (n-grams of 8 or more tokens, plus banned terms such as "rubric" and "answer key").
+- [x] **BAR-03**: A leak guard checks every interviewer utterance before it reaches the voice. It blocks answer-key phrasing (n-grams of 8 or more tokens, plus banned terms such as "rubric" and "answer key").
 
 ### Session Flow (FLOW)
 
@@ -151,7 +151,7 @@
 | LIB-03 | Phase 2 | Complete |
 | BAR-01 | Phase 3 | Pending |
 | BAR-02 | Phase 3 | Pending |
-| BAR-03 | Phase 2 | Pending |
+| BAR-03 | Phase 2 | Complete |
 | FLOW-01 | Phase 2 | Pending |
 | FLOW-02 | Phase 6 | Pending |
 | FLOW-03 | Phase 4 | Pending |
