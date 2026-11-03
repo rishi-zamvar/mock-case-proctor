@@ -1,6 +1,6 @@
 import type {} from '../../src/preload/index.d' // Window.api globals
 // KEY-01 / KEY-02 / KEY-04: API-key onboarding end to end in the built app, real safeStorage (mock keychain).
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdtemp, writeFile } from 'node:fs/promises'
@@ -10,8 +10,8 @@ import { launch } from './launch'
 
 const newKey = (): string => 'e2e-' + randomUUID()
 const status = (page: Page): Promise<unknown> => page.evaluate(() => window.api.key.status())
-const settings = (page: Page) => page.locator('main[data-screen="settings"]')
-const home = (page: Page) => page.locator('main[data-screen="home"]')
+const settings = (page: Page): Locator => page.locator('main[data-screen="settings"]')
+const home = (page: Page): Locator => page.locator('main[data-screen="home"]')
 
 type Log = { requests: { path: string; body: { max_tokens: number } }[] }
 const replayLog = async (scenarioKey: string): Promise<Log> =>

@@ -7,7 +7,7 @@ import {
   type InterviewState
 } from '../domain/machine/interviewMachine'
 
-const minimal = () => ({
+const minimal = (): Record<string, unknown> => ({
   schemaVersion: 1,
   id: 's1',
   caseId: '99',

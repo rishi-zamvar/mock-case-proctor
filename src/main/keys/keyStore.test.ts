@@ -9,8 +9,10 @@ import { createKeyStore, type Cipher, type KeyStoreDeps } from './keyStore'
 const K1 = 'key-one-' + randomUUID()
 const K2 = 'key-two-' + randomUUID()
 
-const enc = (s: string) => Buffer.from('fake:' + Buffer.from(s).toString('base64').split('').reverse().join(''))
-const dec = (b: Buffer) => Buffer.from(b.toString().slice(5).split('').reverse().join(''), 'base64').toString()
+const enc = (s: string): Buffer =>
+  Buffer.from('fake:' + Buffer.from(s).toString('base64').split('').reverse().join(''))
+const dec = (b: Buffer): string =>
+  Buffer.from(b.toString().slice(5).split('').reverse().join(''), 'base64').toString()
 
 let dir: string
 let file: string
@@ -29,7 +31,7 @@ beforeEach(async () => {
   reenc = false
   probeResult = 'valid'
   log = { info: vi.fn<LogFn>(), warn: vi.fn<LogFn>() }
-  probe = vi.fn(async (_k: string) => probeResult)
+  probe = vi.fn(async () => probeResult)
   cipher = {
     available: async () => avail,
     encrypt: async (s) => enc(s),
@@ -45,12 +47,16 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true })
 })
 
-const make = (o: Partial<KeyStoreDeps> = {}) =>
+const make = (o: Partial<KeyStoreDeps> = {}): ReturnType<typeof createKeyStore> =>
   createKeyStore({ cipher, file, env: {}, dotenvPath: null, probe, log, ...o })
 
-const exists = (p: string) => stat(p).then(() => true, () => false)
-const stored = async () => dec(await readFile(file))
-const shape = (s: object) => Object.keys(s).sort()
+const exists = (p: string): Promise<boolean> =>
+  stat(p).then(
+    () => true,
+    () => false
+  )
+const stored = async (): Promise<string> => dec(await readFile(file))
+const shape = (s: object): string[] => Object.keys(s).sort()
 
 describe('KeyStore.init precedence', () => {
   it('uses a stored key and ignores env without probing', async () => {
@@ -106,13 +112,18 @@ describe('KeyStore.init precedence', () => {
   })
   it('falls through to env when the stored file is corrupt', async () => {
     await writeFile(file, 'garbage')
-    cipher.decrypt = async () => { throw new Error('bad') }
+    cipher.decrypt = async () => {
+      throw new Error('bad')
+    }
     const ks = make({ env: { ANTHROPIC_API_KEY: K1 } })
     expect(await ks.init()).toEqual({ hasKey: true, source: 'env' })
   })
   it('re-encrypts when the cipher asks', async () => {
     await writeFile(file, Buffer.concat([Buffer.from('old:'), enc(K1)]))
-    cipher.decrypt = async (b) => ({ value: dec(b.subarray(b.toString().startsWith('old:') ? 4 : 0)), shouldReEncrypt: true })
+    cipher.decrypt = async (b) => ({
+      value: dec(b.subarray(b.toString().startsWith('old:') ? 4 : 0)),
+      shouldReEncrypt: true
+    })
     const before = await readFile(file)
     const ks = make()
     expect(await ks.init()).toEqual({ hasKey: true, source: 'stored' })

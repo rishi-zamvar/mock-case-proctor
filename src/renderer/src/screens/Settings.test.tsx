@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, type Mock } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { KeyStatus, SaveOutcome, SaveResult } from '../../../shared/ipc'
@@ -7,7 +7,14 @@ import Settings from './Settings'
 const KEY = 'paste-key-' + 'q'.repeat(6)
 const NONE: KeyStatus = { hasKey: false, source: 'none' }
 
-function setup(status: KeyStatus = NONE, outcome?: SaveOutcome) {
+function setup(
+  status: KeyStatus = NONE,
+  outcome?: SaveOutcome
+): {
+  save: Mock<() => Promise<SaveResult>>
+  clear: Mock<() => Promise<KeyStatus>>
+  props: { onStatus: Mock; onDone: Mock; onBack: Mock }
+} & ReturnType<typeof render> {
   const save = vi.fn(async (): Promise<SaveResult> => ({
     result: outcome ?? 'valid',
     status: outcome === 'valid' ? { hasKey: true, source: 'stored' } : NONE
@@ -21,12 +28,12 @@ function setup(status: KeyStatus = NONE, outcome?: SaveOutcome) {
   return { save, clear, props, ...r }
 }
 
-async function typeAndSave() {
+async function typeAndSave(): Promise<void> {
   await userEvent.type(screen.getByTestId('key-input'), KEY)
   await userEvent.click(screen.getByTestId('save-btn'))
 }
 
-const msg = () => screen.findByTestId('key-message')
+const msg = (): Promise<HTMLElement> => screen.findByTestId('key-message')
 
 describe('Settings', () => {
   it('uses a password input and saves with exactly one argument', async () => {

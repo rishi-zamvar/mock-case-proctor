@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, type Mock } from 'vitest'
 import { applyE2ESwitches } from './e2e'
 
-function fake() {
+type Fake = { setPath: Mock; commandLine: { appendSwitch: Mock } }
+function fake(): Fake {
   return { setPath: vi.fn(), commandLine: { appendSwitch: vi.fn() } }
 }
-const names = (f: ReturnType<typeof fake>): string[] =>
+const names = (f: Fake): string[] =>
   f.commandLine.appendSwitch.mock.calls.map((c) => c[0] as string)
 
 describe('applyE2ESwitches', () => {
@@ -44,7 +45,10 @@ describe('applyE2ESwitches', () => {
       'use-file-for-fake-audio-capture',
       '/x/tone.wav'
     )
-    expect(f.commandLine.appendSwitch).toHaveBeenCalledWith('disable-features', 'AudioServiceSandbox')
+    expect(f.commandLine.appendSwitch).toHaveBeenCalledWith(
+      'disable-features',
+      'AudioServiceSandbox'
+    )
     expect(names(f).filter((n) => n === 'disable-features')).toHaveLength(1)
   })
 })
