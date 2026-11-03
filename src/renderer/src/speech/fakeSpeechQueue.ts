@@ -7,7 +7,6 @@ export function createFakeSpeechQueue(o: {
   setTimeout?: typeof setTimeout
 }): { enqueue(s: SpeakEvent): void; clear(): void } {
   const msPerWord = o.msPerWord ?? 60
-  const schedule = o.setTimeout ?? setTimeout
   const queue: SpeakEvent[] = []
   let timer: ReturnType<typeof setTimeout> | null = null
 
@@ -15,7 +14,7 @@ export function createFakeSpeechQueue(o: {
     const head = queue.shift()
     if (!head) return
     const words = head.text.trim().split(/\s+/).filter(Boolean).length
-    timer = schedule(() => {
+    timer = (o.setTimeout ?? setTimeout)(() => {
       timer = null
       o.ack(head.turnId, head.seq)
       pump()
