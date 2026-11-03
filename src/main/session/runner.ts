@@ -396,13 +396,54 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     })
   }
 
+  /** Rehydrate from disk; an in-flight (pending) or implied turn is re-requested, never lost. */
+  function resume(id: string): { sessionId: string } {
+    const s = store.load(id)
+    if (!s || s.status !== 'active') throw new Error('session not resumable')
+    abortInflight()
+    stopTimer()
+    speaking = false
+    bind(s.caseId)
+    session = s
+    const m = s.machineState
+    const last = s.transcript.at(-1)
+    const lastCandidate = last?.speaker === 'candidate' ? last.phase : null
+    const derived: PendingTurn | null =
+      lastCandidate === 'grilling' && m.phase === 'grilling'
+        ? {
+            kind: 'grill',
+            ...(m.current ? { section: m.current } : {}),
+            hintAllowed: m.hintAllowed
+          }
+        : (lastCandidate === 'warmup' || s.transcript.length === 0) && m.phase === 'warmup'
+          ? { kind: 'warmup' }
+          : null
+    const need = s.pending ?? derived
+    if (m.phase === 'review' && m.reviewDeadline !== null) {
+      if (clock.now() >= m.reviewDeadline) {
+        dispatch({ type: 'REVIEW_DEADLINE', now: clock.now() })
+        return { sessionId: id }
+      }
+      armTimer(m.reviewDeadline)
+    }
+    pushView()
+    if (need) void runLlm(need)
+    return { sessionId: id }
+  }
+
   return {
     start,
-    async resume() {
-      throw new Error('not implemented')
-    },
-    discard() {
-      throw new Error('not implemented')
+    resume: (id) => enqueue(() => resume(id)),
+    discard(id) {
+      if (session?.id === id) {
+        abortInflight()
+        stopTimer()
+        speaking = false
+        session = null
+        lastView = null
+      }
+      const s = store.load(id)
+      if (s?.status === 'active') store.save({ ...s, status: 'abandoned', endedAt: clock.now() })
     },
     intent: (i) => enqueue(() => onIntent(i)),
     ack(turnId, seq) {
