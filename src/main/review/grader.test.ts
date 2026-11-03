@@ -50,7 +50,7 @@ const T: Turn[] = [
   }
 ]
 
-export const INPUT: ScoreInput = {
+const INPUT: ScoreInput = {
   transcript: T,
   controlLog: [
     {

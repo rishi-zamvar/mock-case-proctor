@@ -65,7 +65,7 @@ function deepFreeze<T>(x: T): T {
 }
 
 /** Allowed evaluation fields only, picked explicitly (never spread): no leak sources (Pitfall 6). */
-function evaluationKey(b: InterviewerBrief): unknown {
+export function evaluationKey(b: InterviewerBrief): unknown {
   return {
     intendedReadBucket: b.intendedRead.bucket,
     leadEdge8: {
