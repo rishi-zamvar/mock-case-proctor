@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import * as nodeFs from 'node:fs'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs'
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  readdirSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createSessionStore } from './sessionStore'
@@ -123,7 +130,11 @@ describe('SessionStore save/load', () => {
 
   it('given a missing root when listing then empty', () => {
     const log: Logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-    const store = createSessionStore({ root: join(tmpdir(), 'mcp-nope-' + Date.now()), now: () => 1, log })
+    const store = createSessionStore({
+      root: join(tmpdir(), 'mcp-nope-' + Date.now()),
+      now: () => 1,
+      log
+    })
     expect(store.list()).toEqual([])
   })
 
@@ -141,7 +152,9 @@ describe('SessionStore save/load', () => {
     store.save(session())
     plant(root, 'bad', JSON.stringify({ text: SECRET }))
     store.list()
-    const all = [log.info, log.warn, log.error].flatMap((f) => (f as ReturnType<typeof vi.fn>).mock.calls)
+    const all = [log.info, log.warn, log.error].flatMap(
+      (f) => (f as ReturnType<typeof vi.fn>).mock.calls
+    )
     expect(JSON.stringify(all)).not.toContain(SECRET)
   })
 })
