@@ -1,7 +1,7 @@
 // The only IPC surface: narrow channels, zod-validated both ways, app-origin senders only.
 // Never log handler args: key:save carries the API key.
 import { z } from 'zod'
-import { CH, type LibraryView, type SttStatus } from '../shared/ipc'
+import { CH, type LibraryView, type SttStatus, type TrendsView } from '../shared/ipc'
 import {
   AckArgsSchema,
   IdArgsSchema,
@@ -13,7 +13,8 @@ import {
   StartArgsSchema,
   StartedArgsSchema,
   SttChunkArgsSchema,
-  SttStatusSchema
+  SttStatusSchema,
+  TrendsViewSchema
 } from '../shared/schemas'
 import { isAppOrigin } from './protocol'
 import type { KeyStore } from './keys/keyStore'
@@ -32,6 +33,7 @@ export type IpcDeps = {
   library?: () => LibraryView
   e2eSay?: (text: string) => void
   sttStatus?: () => Promise<SttStatus>
+  trends?: () => Promise<TrendsView>
 }
 
 const NoArgs = z.tuple([])
@@ -89,5 +91,7 @@ export function registerIpc(ipc: IpcLike, deps: IpcDeps, devUrl?: string): void 
       SttStatusSchema.parse(sttStatus ? await sttStatus() : 'off')
     )
   }
+  const { trends } = deps
+  if (trends) on(CH.trendsGet, NoArgs, async () => TrendsViewSchema.parse(await trends()))
   if (e2eSay) on(CH.e2eSay, SayArgs, ([t]) => void e2eSay(t))
 }

@@ -132,7 +132,8 @@ app.whenReady().then(async () => {
       runner: core.runner,
       library: core.library,
       e2eSay: core.e2eSay,
-      sttStatus: core.sttStatus
+      sttStatus: core.sttStatus,
+      trends: core.trends
     },
     devUrl
   )

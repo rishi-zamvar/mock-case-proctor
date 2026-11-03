@@ -39,6 +39,7 @@ const api: Api = {
     clear: () => inv(CH.keyClear)
   },
   library: { list: () => inv(CH.libraryList) },
+  trends: { get: () => inv(CH.trendsGet) },
   session: {
     start: (caseId, opts) => inv(CH.sessionStart, caseId, opts),
     intent: (i) => inv(CH.sessionIntent, i),

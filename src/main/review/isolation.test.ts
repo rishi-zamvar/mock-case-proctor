@@ -39,7 +39,9 @@ describe('interviewer isolation', () => {
     } as never)(brief)
     const signal = new AbortController().signal
     for await (const _ of llm.warmupTurn({ history: [] }, signal)) void _
-    const history = [{ speaker: 'candidate' as const, text: 'I recommend invest', phase: 'presentation' as const }]
+    const history = [
+      { speaker: 'candidate' as const, text: 'I recommend invest', phase: 'presentation' as const }
+    ]
     for await (const _ of llm.streamTurn(
       { kind: 'grill', section: 'retention', turnInSection: 0, history },
       signal
@@ -59,7 +61,9 @@ describe('interviewer isolation', () => {
 
   it('given src/main/agent, when imports are read, then none reach the store, trends or the filesystem', () => {
     const dir = join(__dirname, '../agent')
-    const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !/\.(test|harness)\.ts$/.test(f))
+    const files = readdirSync(dir).filter(
+      (f) => f.endsWith('.ts') && !/\.(test|harness)\.ts$/.test(f)
+    )
     expect(files.length).toBeGreaterThan(0)
     for (const f of files) {
       const src = readFileSync(join(dir, f), 'utf8')

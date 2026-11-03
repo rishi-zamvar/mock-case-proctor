@@ -304,7 +304,9 @@ describe('registerIpc session channels', () => {
 
   it('given a trends dep, when trends:get, then returns the parsed view; a bad view rejects', async () => {
     await expect(full().call('trends:get')).resolves.toEqual(TRENDS)
-    await expect(full({ trends: async () => ({ status: 'bogus' }) }).call('trends:get')).rejects.toThrow()
+    await expect(
+      full({ trends: async () => ({ status: 'bogus' }) }).call('trends:get')
+    ).rejects.toThrow()
   })
 
   it('given extra args, when trends:get, then rejects without calling trends', async () => {
