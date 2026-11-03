@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 07-10-PLAN.md
-last_updated: "2026-11-03T12:10:52.437Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-11-03T12:16:01.399Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 72
-  completed_plans: 62
+  completed_plans: 63
   percent: 0
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-03)
 
 **Core value:** It must feel like a real conversation with a Lead Edge partner: Rishi speaks, a believable avatar answers out loud within a few seconds, follows his structure, and pushes on exactly what the case's answer key says matters.
-**Current focus:** Phase 6 — Interviewer Agent
+**Current focus:** Phase 8 — Review Mode & Trends
 
 ## Current Position
 
-Phase: 07
-Plan: 10 of 10
-Status: Phase complete — ready for verification
+Phase: 08
+Plan: 2 of 11 (08-01, 08-02 done)
+Status: In progress
 Last activity: 2026-11-03
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -113,6 +113,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 07 P09 | 15min | 3 tasks | 9 files |
 | Phase 08 P02 | 8min | 2 tasks | 6 files |
 | Phase 07 P10 | 115min | 3 tasks | 15 files |
+| Phase 08 P01 | 6min | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -206,6 +207,7 @@ Recent decisions affecting current work:
 - [Phase 08]: numberChecks window excludes the mention text; unit compatibility via matches(same value, tol 0); flagMap status fixed at first appearance, hinted wins within an entry
 - [Phase 07]: Barge-in sends bargeIn before stopSpeech (drop acks must trail it on the IPC pipe)
 - [Phase 07]: Live stop->first-audio median 3.78 s (TTFT-bound); model unchanged, Rishi's call (haiku / prefix shrink / parallel extraction)
+- [Phase 08]: SessionFileSchema wraps a session-level preprocess so legacy scorecards upgrade with scoredAt = endedAt ?? startedAt; v2 band labels Ready/Close, one fix/Run another
 
 ### Pending Todos
 
@@ -220,6 +222,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T12:10:52.433Z
-Stopped at: Completed 07-10-PLAN.md
+Last session: 2026-11-03T12:16:01.395Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None

@@ -93,14 +93,14 @@
 
 ### Review Mode (REV)
 
-- [ ] **REV-01**: The rubric scorecard uses the playbook's 6 dimensions, scored out of 30 with bands. Every score quotes evidence from the transcript, and the quote is checked against the transcript.
+- [x] **REV-01**: The rubric scorecard uses the playbook's 6 dimensions, scored out of 30 with bands. Every score quotes evidence from the transcript, and the quote is checked against the transcript.
 - [ ] **REV-02**: The flag map shows each case flag as found, found after a hint, or missed.
 - [ ] **REV-03**: Deterministic checks, computed in code rather than by the LLM:
   - whether the numbers Rishi stated match the case data;
   - brevity of each answer (30–60 s ideal, over 90 s flagged);
   - whether he led with a call;
   - which sections he omitted.
-- [ ] **REV-04**: Reveal. Review mode shows the 60-second ideal answer next to Rishi's opening, the key numbers, and the full transcript.
+- [x] **REV-04**: Reveal. Review mode shows the 60-second ideal answer next to Rishi's opening, the key numbers, and the full transcript.
 - [x] **REV-05**: Every session (transcript, timings, control log, scorecard) is stored in a local session library.
 - [ ] **REV-06**: Trends across cases. A separate review agent reads the summaries of past scorecards and reports recurring weaknesses, progress by dimension, and the carried-forward "one fix".
 
@@ -179,10 +179,10 @@
 | VOUT-04 | Phase 7 | Complete |
 | VOUT-05 | Phase 7 | Complete |
 | VOUT-06 | Phase 4 | Complete |
-| REV-01 | Phase 8 | Pending |
+| REV-01 | Phase 8 | Complete |
 | REV-02 | Phase 8 | Pending |
 | REV-03 | Phase 8 | Pending |
-| REV-04 | Phase 8 | Pending |
+| REV-04 | Phase 8 | Complete |
 | REV-05 | Phase 3 | Complete |
 | REV-06 | Phase 8 | Pending |
 | QA-01 | Phase 1 | Complete |
