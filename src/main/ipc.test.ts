@@ -1,9 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { registerIpc, type IpcLike } from './ipc'
+import type { LibraryView } from '../shared/ipc'
+import { registerIpc, type IpcDeps, type IpcLike } from './ipc'
 
 type Handler = (event: { senderFrame: { url: string } | null }, ...args: unknown[]) => unknown
 const APP = { senderFrame: { url: 'app://bundle/index.html' } }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred harness shape
 function setup(devUrl?: string, status: unknown = { hasKey: false, source: 'none' }) {
   const handlers = new Map<string, Handler>()
   const ipc: IpcLike = { handle: (ch, fn) => void handlers.set(ch, fn) }
@@ -14,8 +16,11 @@ function setup(devUrl?: string, status: unknown = { hasKey: false, source: 'none
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   registerIpc(ipc, { keyStore: store as any }, devUrl)
-  const call = async (ch: string, event: Parameters<Handler>[0], ...args: unknown[]) =>
-    handlers.get(ch)!(event, ...args)
+  const call = async (
+    ch: string,
+    event: Parameters<Handler>[0],
+    ...args: unknown[]
+  ): Promise<unknown> => handlers.get(ch)!(event, ...args)
   return { handlers, store, call }
 }
 
@@ -82,6 +87,7 @@ describe('registerIpc', () => {
 
 const LIB = { cases: [], resumable: null, quarantined: 0, error: null }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred harness shape
 function full(o: { e2eSay?: boolean; library?: unknown } = {}) {
   const handlers = new Map<string, Handler>()
   const ipc: IpcLike = { handle: (ch, fn) => void handlers.set(ch, fn) }
@@ -95,17 +101,15 @@ function full(o: { e2eSay?: boolean; library?: unknown } = {}) {
   }
   const library = vi.fn(() => o.library ?? LIB)
   const e2eSay = vi.fn()
-  registerIpc(
-    ipc,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    {
-      keyStore: keyStore as any,
-      runner,
-      library: library as any,
-      ...(o.e2eSay === false ? {} : { e2eSay })
-    }
-  )
-  const call = async (ch: string, ...args: unknown[]) => handlers.get(ch)!(APP, ...args)
+  const deps: IpcDeps = {
+    keyStore: keyStore as unknown as IpcDeps['keyStore'],
+    runner,
+    library: library as unknown as () => LibraryView,
+    ...(o.e2eSay === false ? {} : { e2eSay })
+  }
+  registerIpc(ipc, deps)
+  const call = async (ch: string, ...args: unknown[]): Promise<unknown> =>
+    handlers.get(ch)!(APP, ...args)
   return { handlers, runner, library, e2eSay, call }
 }
 

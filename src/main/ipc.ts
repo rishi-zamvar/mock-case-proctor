@@ -1,24 +1,54 @@
-// The only IPC surface (KEY-03): three channels, zod-validated both ways, app-origin senders only.
+// The only IPC surface: narrow channels, zod-validated both ways, app-origin senders only.
 // Never log handler args: key:save carries the API key.
-import { CH } from '../shared/ipc'
-import { KeyStatusSchema, SaveArgsSchema, SaveResultSchema } from '../shared/schemas'
+import { z } from 'zod'
+import { CH, type LibraryView } from '../shared/ipc'
+import {
+  AckArgsSchema,
+  IdArgsSchema,
+  IntentSchema,
+  KeyStatusSchema,
+  LibraryViewSchema,
+  SaveArgsSchema,
+  SaveResultSchema,
+  StartArgsSchema
+} from '../shared/schemas'
 import { isAppOrigin } from './protocol'
 import type { KeyStore } from './keys/keyStore'
+import type { SessionRunner } from './session/runner'
 
 type Sender = { senderFrame: { url: string } | null }
 export type IpcLike = {
   handle(channel: string, fn: (event: Sender, ...args: unknown[]) => unknown): void
 }
+export type IpcDeps = {
+  keyStore: Pick<KeyStore, 'status' | 'save' | 'clear'>
+  runner?: Pick<SessionRunner, 'start' | 'resume' | 'discard' | 'intent' | 'ack'>
+  library?: () => LibraryView
+  e2eSay?: (text: string) => void
+}
 
-export function registerIpc(
-  ipc: IpcLike,
-  store: Pick<KeyStore, 'status' | 'save' | 'clear'>,
-  devUrl?: string
-): void {
+const NoArgs = z.tuple([])
+const IntentArgs = z.tuple([IntentSchema])
+const SayArgs = z.tuple([z.string().max(2000)])
+
+export function registerIpc(ipc: IpcLike, deps: IpcDeps, devUrl?: string): void {
+  const store = deps.keyStore
   const guard = (event: Sender): void => {
     const url = event.senderFrame?.url
     if (!url || !isAppOrigin(url, devUrl)) throw new Error('forbidden sender')
   }
+  /** Guarded + validated handler: the guard runs before any argument is looked at. */
+  const on = <S extends z.ZodType<unknown[]>>(
+    ch: string,
+    schema: S,
+    fn: (args: z.infer<S>) => unknown
+  ): void =>
+    ipc.handle(ch, async (event, ...args) => {
+      guard(event)
+      const parsed = schema.safeParse(args)
+      if (!parsed.success) throw new Error('invalid arguments')
+      return fn(parsed.data)
+    })
 
   ipc.handle(CH.keyStatus, (event) => {
     guard(event)
@@ -36,4 +66,15 @@ export function registerIpc(
     guard(event)
     return KeyStatusSchema.parse(await store.clear())
   })
+
+  const { runner, library, e2eSay } = deps
+  if (library) on(CH.libraryList, NoArgs, () => LibraryViewSchema.parse(library()))
+  if (runner) {
+    on(CH.sessionStart, StartArgsSchema, ([id, opts]) => runner.start(id, opts))
+    on(CH.sessionResume, IdArgsSchema, ([id]) => runner.resume(id))
+    on(CH.sessionIntent, IntentArgs, async ([i]) => void (await runner.intent(i)))
+    on(CH.sessionDiscard, IdArgsSchema, ([id]) => void runner.discard(id))
+    on(CH.speakAck, AckArgsSchema, ([t, seq]) => void runner.ack(t, seq))
+  }
+  if (e2eSay) on(CH.e2eSay, SayArgs, ([t]) => void e2eSay(t))
 }
