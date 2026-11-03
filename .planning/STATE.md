@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-11-PLAN.md
-last_updated: "2026-11-03T13:43:43.615Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-11-03T13:51:37.064Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 75
-  completed_plans: 72
+  completed_plans: 73
   percent: 88
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-03)
 
 **Core value:** It must feel like a real conversation with a Lead Edge partner: Rishi speaks, a believable avatar answers out loud within a few seconds, follows his structure, and pushes on exactly what the case's answer key says matters.
-**Current focus:** Phase 8 — Review Mode & Trends
+**Current focus:** Phase 9 — Packaged Live Sign-off
 
 ## Current Position
 
-Phase: 08
-Plan: 11 of 11 (08-01, 08-02 done)
-Status: Ready to execute
+Phase: 09
+Plan: 2 of 3 (09-01 done)
+Status: Executing
 Last activity: 2026-11-03
 
 Progress: [█████████░] 88%
@@ -123,6 +123,7 @@ Progress: [█████████░] 88%
 | Phase 08 P09 | 12min | 2 tasks | 8 files |
 | Phase 08 P10 | 6min | 2 tasks | 7 files |
 | Phase 08 P11 | 71min | 3 tasks | 8 files |
+| Phase 09 P01 | 14min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -226,6 +227,7 @@ Recent decisions affecting current work:
 - [Phase 08]: Reviewer + trends agent share REVIEWER switch/key; reviewer client 180 s timeout; trends cache at sessionsDir/trends.json
 - [Phase 08]: 08-10: grader prompt unchanged; recorded+live case_99 ordering strong>average>weak (live 21/12/6, 0% dropped quotes)
 - [Phase 08]: T1 numbers-row check uses a concrete case_99 opening (GRR 85% correct, 95% wrong with expected 85%)
+- [Phase 09]: bargeInto returns nCut alongside cutTurn/bargeMs; @t3 excluded from T1, run via npm run test:t3
 
 ### Pending Todos
 
@@ -240,6 +242,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T13:43:43.611Z
-Stopped at: Completed 08-11-PLAN.md
+Last session: 2026-11-03T13:51:37.060Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None
