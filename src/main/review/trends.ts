@@ -1,5 +1,7 @@
 // Trends (REV-06): per-session summaries -> one structured Claude call. The agent reads summaries
 // only, never transcripts.
+import * as nodeFs from 'node:fs'
+import { createHash } from 'node:crypto'
 import Anthropic, { APIError } from '@anthropic-ai/sdk'
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import { z } from 'zod'
@@ -8,8 +10,10 @@ import {
   DIMENSION_LABELS,
   type DimensionId,
   type SessionSummary,
-  type TrendsInsights
+  type TrendsInsights,
+  type TrendsView
 } from '../../shared/ipc'
+import { TrendsInsightsSchema as InsightsSchema, TrendsViewSchema } from '../../shared/schemas'
 import type { SessionFile } from '../store/sessionSchema'
 import type { Logger } from '../log'
 
@@ -114,7 +118,7 @@ export function createTrendsAgent(cfg: {
       )
     } catch (e) {
       if (e instanceof APIError) throw e // APIUserAbortError is an APIError subclass
-      throw new Error('trends unparsable') // SDK schema validation failed (incl. unknown dimension ids)
+      throw new Error('trends unparsable', { cause: e }) // SDK schema validation failed (incl. unknown dimension ids)
     }
     if (!r.parsed_output) throw new Error('trends unparsable')
     return toInsights(r.parsed_output, input.unseen, cfg.log)
@@ -144,5 +148,95 @@ export function createFakeTrendsAgent(): TrendsAgent {
       nextCase: unseen[0] ? { caseId: unseen[0].id, why: 'Not attempted yet.' } : null,
       readiness: `Latest ${last?.total ?? 0}/30; ready at 26.`
     }
+  }
+}
+
+// Insights are cached in trends.json under a key of the scored sessions; a new scorecard changes it.
+export function createTrendsService(o: {
+  listSummaries: () => SessionSummary[]
+  cases: () => { id: string; vertical: string; level: number }[]
+  agent: () => TrendsAgent
+  file: string
+  log: Logger
+  fs?: Partial<typeof nodeFs>
+}): { refresh(): Promise<void>; get(): Promise<TrendsView> } {
+  const fs: typeof nodeFs = { ...nodeFs, ...o.fs }
+  const Cache = z.object({ key: z.string(), insights: InsightsSchema })
+  let inflight: { key: string; p: Promise<TrendsInsights | null> } | null = null
+
+  const keyOf = (ss: SessionSummary[]): string =>
+    createHash('sha256')
+      .update(ss.map((s) => `${s.sessionId}:${s.at}`).join('\n'))
+      .digest('hex')
+
+  function readCache(key: string): TrendsInsights | null {
+    try {
+      const c = Cache.safeParse(JSON.parse(fs.readFileSync(o.file, 'utf8')))
+      return c.success && c.data.key === key ? c.data.insights : null
+    } catch {
+      return null // missing or corrupt -> recompute
+    }
+  }
+
+  function writeCache(key: string, insights: TrendsInsights): void {
+    const tmp = `${o.file}.tmp`
+    try {
+      const fd = fs.openSync(tmp, 'w')
+      try {
+        fs.writeFileSync(fd, JSON.stringify({ key, insights }, null, 2))
+        fs.fsyncSync(fd)
+      } finally {
+        fs.closeSync(fd)
+      }
+      fs.renameSync(tmp, o.file)
+    } catch (e) {
+      try {
+        fs.unlinkSync(tmp)
+      } catch {
+        /* best effort */
+      }
+      o.log.warn('trends cache write failed', (e as { code?: string }).code ?? 'unknown')
+    }
+  }
+
+  function compute(ss: SessionSummary[], key: string): Promise<TrendsInsights | null> {
+    if (inflight?.key === key) return inflight.p
+    const seen = new Set(ss.map((s) => s.caseId))
+    const unseen = o.cases().filter((c) => !seen.has(c.id))
+    const p = (async () => {
+      try {
+        const insights = InsightsSchema.parse(
+          await o.agent()({ summaries: ss, unseen }, new AbortController().signal)
+        )
+        writeCache(key, insights)
+        return insights
+      } catch (e) {
+        const err = e as { code?: string; name?: string }
+        o.log.warn('trends failed', err.code ?? err.name ?? 'unknown')
+        return null
+      }
+    })()
+    const entry = { key, p }
+    inflight = entry
+    void p.then(() => {
+      if (inflight === entry) inflight = null
+    })
+    return p
+  }
+
+  async function resolve(): Promise<TrendsView> {
+    const summaries = o.listSummaries()
+    if (summaries.length < 2)
+      return TrendsViewSchema.parse({ status: 'insufficient', summaries, insights: null })
+    const key = keyOf(summaries)
+    const insights = readCache(key) ?? (await compute(summaries, key))
+    return TrendsViewSchema.parse({ status: insights ? 'ready' : 'failed', summaries, insights })
+  }
+
+  return {
+    async refresh() {
+      await resolve()
+    },
+    get: resolve
   }
 }

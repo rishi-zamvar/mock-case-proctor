@@ -13,7 +13,12 @@ import {
 } from './trends'
 import { sseFetch, jsonMessage } from '../agent/sse.harness'
 import { TrendsViewSchema } from '../../shared/schemas'
-import { DIMENSION_IDS, type DimensionId, type Scorecard, type SessionSummary } from '../../shared/ipc'
+import {
+  DIMENSION_IDS,
+  type DimensionId,
+  type Scorecard,
+  type SessionSummary
+} from '../../shared/ipc'
 import type { SessionFile } from '../store/sessionSchema'
 import { initialState } from '../domain/machine/interviewMachine'
 import type { Logger } from '../log'
@@ -21,7 +26,9 @@ import type { Logger } from '../log'
 const SECRET = 'transcript-secret 184 million'
 const mkLog = (): Logger => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 
-function card(o: Partial<Scorecard> & { dims?: Partial<Record<DimensionId, number>> } = {}): Scorecard {
+function card(
+  o: Partial<Scorecard> & { dims?: Partial<Record<DimensionId, number>> } = {}
+): Scorecard {
   const { dims = {}, ...rest } = o
   return {
     rubric: DIMENSION_IDS.map((id) => ({
@@ -129,7 +136,10 @@ describe('toSummary', () => {
 })
 
 const input: TrendsInput = {
-  summaries: [summ({ sessionId: 'a', at: 1, total: 18 }), summ({ sessionId: 'b', at: 2, total: 22 })],
+  summaries: [
+    summ({ sessionId: 'a', at: 1, total: 18 }),
+    summ({ sessionId: 'b', at: 2, total: 22 })
+  ],
   unseen: [{ id: '07', vertical: 'SaaS', level: 2 }]
 }
 
@@ -196,12 +206,16 @@ describe('createTrendsAgent', () => {
 
   it('given a suggestion outside the unseen list when mapped then nextCase is null and a code is logged', async () => {
     const { agent, log } = agentWith([
-      jsonMessage(JSON.stringify(raw({ next_case_suggestion: { case_id: '03', why: 'why-secret' } })))
+      jsonMessage(
+        JSON.stringify(raw({ next_case_suggestion: { case_id: '03', why: 'why-secret' } }))
+      )
     ])
     const out = await agent(input, new AbortController().signal)
     expect(out.nextCase).toBeNull()
     expect(log.warn).toHaveBeenCalled()
-    expect(JSON.stringify((log.warn as ReturnType<typeof vi.fn>).mock.calls)).not.toContain('why-secret')
+    expect(JSON.stringify((log.warn as ReturnType<typeof vi.fn>).mock.calls)).not.toContain(
+      'why-secret'
+    )
   })
 
   it('given unparsable output when called then it throws trends unparsable', async () => {
@@ -217,10 +231,13 @@ describe('createTrendsAgent', () => {
 
   it('given an API error when called then it rethrows the APIError', async () => {
     const fetch = (async () =>
-      new Response(JSON.stringify({ type: 'error', error: { type: 'overloaded_error', message: 'x' } }), {
-        status: 529,
-        headers: { 'content-type': 'application/json' }
-      })) as typeof globalThis.fetch
+      new Response(
+        JSON.stringify({ type: 'error', error: { type: 'overloaded_error', message: 'x' } }),
+        {
+          status: 529,
+          headers: { 'content-type': 'application/json' }
+        }
+      )) as typeof globalThis.fetch
     const client = new Anthropic({ apiKey: 'test', fetch, maxRetries: 0 })
     const agent = createTrendsAgent({ client, model: 'm', log: mkLog() })
     await expect(agent(input, new AbortController().signal)).rejects.toBeInstanceOf(APIError)
@@ -273,10 +290,7 @@ describe('createFakeTrendsAgent', () => {
 })
 
 describe('createTrendsService', () => {
-  function svc(o: {
-    summaries: SessionSummary[]
-    agent?: TrendsAgent
-  }): {
+  function svc(o: { summaries: SessionSummary[]; agent?: TrendsAgent }): {
     service: ReturnType<typeof createTrendsService>
     calls: () => number
     file: string
@@ -305,7 +319,10 @@ describe('createTrendsService', () => {
     return { service, calls: () => n, file, log, set: (s) => (summaries = s) }
   }
 
-  const two = [summ({ sessionId: 'a', at: 1, total: 18 }), summ({ sessionId: 'b', at: 2, total: 22 })]
+  const two = [
+    summ({ sessionId: 'a', at: 1, total: 18 }),
+    summ({ sessionId: 'b', at: 2, total: 22 })
+  ]
 
   it('given fewer than 2 summaries when getting then it is insufficient and the agent is not called', async () => {
     for (const summaries of [[], [summ()]]) {
@@ -361,6 +378,23 @@ describe('createTrendsService', () => {
     expect(JSON.stringify((log.warn as ReturnType<typeof vi.fn>).mock.calls)).not.toContain(
       'transcript-secret'
     )
+  })
+
+  it('given the agent factory throws synchronously then status is failed and a retry recomputes', async () => {
+    let boom = true
+    const s2 = createTrendsService({
+      listSummaries: () => two,
+      cases: () => [],
+      agent: () => {
+        if (boom) throw new Error('no key')
+        return createFakeTrendsAgent()
+      },
+      file: join(mkdtempSync(join(tmpdir(), 'mcp-trends-')), 'trends.json'),
+      log: mkLog()
+    })
+    expect((await s2.get()).status).toBe('failed')
+    boom = false
+    expect((await s2.get()).status).toBe('ready')
   })
 
   it('given a corrupt trends.json when getting then it recomputes without throwing', async () => {
