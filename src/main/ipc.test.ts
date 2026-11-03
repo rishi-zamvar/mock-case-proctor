@@ -13,7 +13,7 @@ function setup(devUrl?: string, status: unknown = { hasKey: false, source: 'none
     clear: vi.fn(async () => ({ hasKey: false, source: 'none' }))
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registerIpc(ipc, store as any, devUrl)
+  registerIpc(ipc, { keyStore: store as any }, devUrl)
   const call = async (ch: string, event: Parameters<Handler>[0], ...args: unknown[]) =>
     handlers.get(ch)!(event, ...args)
   return { handlers, store, call }
@@ -63,9 +63,9 @@ describe('registerIpc', () => {
     'given a foreign or missing sender, when %s, then rejects forbidden sender',
     async (ch) => {
       const { call, store } = setup()
-      await expect(call(ch, { senderFrame: { url: 'https://evil.com/' } }, 'k', {})).rejects.toThrow(
-        'forbidden sender'
-      )
+      await expect(
+        call(ch, { senderFrame: { url: 'https://evil.com/' } }, 'k', {})
+      ).rejects.toThrow('forbidden sender')
       await expect(call(ch, { senderFrame: null }, 'k', {})).rejects.toThrow('forbidden sender')
       expect(store.save).not.toHaveBeenCalled()
       expect(store.clear).not.toHaveBeenCalled()
@@ -77,5 +77,162 @@ describe('registerIpc', () => {
     await expect(
       call('key:status', { senderFrame: { url: 'http://localhost:5173/' } })
     ).resolves.toEqual({ hasKey: false, source: 'none' })
+  })
+})
+
+const LIB = { cases: [], resumable: null, quarantined: 0, error: null }
+
+function full(o: { e2eSay?: boolean; library?: unknown } = {}) {
+  const handlers = new Map<string, Handler>()
+  const ipc: IpcLike = { handle: (ch, fn) => void handlers.set(ch, fn) }
+  const keyStore = { status: vi.fn(), save: vi.fn(), clear: vi.fn() }
+  const runner = {
+    start: vi.fn(async () => ({ sessionId: 's_1' })),
+    resume: vi.fn(async () => ({ sessionId: 's_1' })),
+    discard: vi.fn(),
+    intent: vi.fn(async () => undefined),
+    ack: vi.fn()
+  }
+  const library = vi.fn(() => o.library ?? LIB)
+  const e2eSay = vi.fn()
+  registerIpc(
+    ipc,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    {
+      keyStore: keyStore as any,
+      runner,
+      library: library as any,
+      ...(o.e2eSay === false ? {} : { e2eSay })
+    }
+  )
+  const call = async (ch: string, ...args: unknown[]) => handlers.get(ch)!(APP, ...args)
+  return { handlers, runner, library, e2eSay, call }
+}
+
+describe('registerIpc session channels', () => {
+  it('given all deps, when inspected, then registers the session, library, speak and e2e channels', () => {
+    expect([...full().handlers.keys()].sort()).toEqual(
+      [
+        'key:clear',
+        'key:save',
+        'key:status',
+        'library:list',
+        'session:discard',
+        'session:intent',
+        'session:resume',
+        'session:start',
+        'speak:ack',
+        'e2e:say'
+      ].sort()
+    )
+  })
+
+  it('given no e2eSay, when inspected, then e2e:say is not registered', () => {
+    expect(full({ e2eSay: false }).handlers.has('e2e:say')).toBe(false)
+  })
+
+  it('given valid start args, when session:start, then forwards to the runner', async () => {
+    const { call, runner } = full()
+    await expect(call('session:start', '99', { warmup: true })).resolves.toEqual({
+      sessionId: 's_1'
+    })
+    expect(runner.start).toHaveBeenCalledWith('99', { warmup: true })
+  })
+
+  it.each([[['../x', { warmup: true }]], [['99']], [['99', { warmup: 'y' }]]])(
+    'given invalid start args %j, when session:start, then rejects without calling the runner',
+    async (args) => {
+      const { call, runner } = full()
+      await expect(call('session:start', ...args)).rejects.toThrow('invalid arguments')
+      expect(runner.start).not.toHaveBeenCalled()
+    }
+  )
+
+  it('given a valid intent, when session:intent, then forwards and returns undefined', async () => {
+    const { call, runner } = full()
+    await expect(call('session:intent', { type: 'answer', ms: 100 })).resolves.toBeUndefined()
+    expect(runner.intent).toHaveBeenCalledWith({ type: 'answer', ms: 100 })
+  })
+
+  it.each([[{ type: 'answer' }], [{ type: 'hack' }]])(
+    'given invalid intent %j, when session:intent, then rejects',
+    async (i) => {
+      const { call, runner } = full()
+      await expect(call('session:intent', i)).rejects.toThrow('invalid arguments')
+      expect(runner.intent).not.toHaveBeenCalled()
+    }
+  )
+
+  it('given a valid id, when resume and discard, then forward to the runner', async () => {
+    const { call, runner } = full()
+    await expect(call('session:resume', 's_1')).resolves.toEqual({ sessionId: 's_1' })
+    await expect(call('session:discard', 's_1')).resolves.toBeUndefined()
+    expect(runner.resume).toHaveBeenCalledWith('s_1')
+    expect(runner.discard).toHaveBeenCalledWith('s_1')
+  })
+
+  it.each(['session:resume', 'session:discard'])(
+    'given a bad id, when %s, then rejects without calling the runner',
+    async (ch) => {
+      const { call, runner } = full()
+      await expect(call(ch, '../etc')).rejects.toThrow('invalid arguments')
+      expect(runner.resume).not.toHaveBeenCalled()
+      expect(runner.discard).not.toHaveBeenCalled()
+    }
+  )
+
+  it('given valid ack args, when speak:ack, then forwards; a negative seq rejects', async () => {
+    const { call, runner } = full()
+    await expect(call('speak:ack', 't', 0)).resolves.toBeUndefined()
+    expect(runner.ack).toHaveBeenCalledWith('t', 0)
+    await expect(call('speak:ack', 't', -1)).rejects.toThrow('invalid arguments')
+    expect(runner.ack).toHaveBeenCalledTimes(1)
+  })
+
+  it('given text, when e2e:say, then forwards; over 2000 chars rejects', async () => {
+    const { call, e2eSay } = full()
+    await call('e2e:say', 'hello')
+    expect(e2eSay).toHaveBeenCalledWith('hello')
+    await expect(call('e2e:say', 'x'.repeat(2001))).rejects.toThrow('invalid arguments')
+    expect(e2eSay).toHaveBeenCalledTimes(1)
+  })
+
+  it('given a library view, when library:list, then returns it parsed', async () => {
+    await expect(full().call('library:list')).resolves.toEqual(LIB)
+  })
+
+  it('given a library leaking an extra field, when library:list, then rejects', async () => {
+    await expect(
+      full({ library: { ...LIB, brief: 'secret' } }).call('library:list')
+    ).rejects.toThrow()
+  })
+
+  it.each([
+    'library:list',
+    'session:start',
+    'session:intent',
+    'session:resume',
+    'session:discard',
+    'speak:ack',
+    'e2e:say'
+  ])('given a foreign or missing sender, when %s, then rejects forbidden sender', async (ch) => {
+    const { handlers, runner, library, e2eSay } = full()
+    const h = handlers.get(ch)!
+    await expect(
+      (async () => h({ senderFrame: { url: 'https://evil.com/' } }, '99', { warmup: true }))()
+    ).rejects.toThrow('forbidden sender')
+    await expect((async () => h({ senderFrame: null }, '99', { warmup: true }))()).rejects.toThrow(
+      'forbidden sender'
+    )
+    for (const f of [
+      runner.start,
+      runner.intent,
+      runner.resume,
+      runner.discard,
+      runner.ack,
+      library,
+      e2eSay
+    ])
+      expect(f).not.toHaveBeenCalled()
   })
 })
