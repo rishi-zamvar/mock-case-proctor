@@ -298,6 +298,16 @@ describe('reveal', () => {
     expect(buildReveal(s, brief).checks.ledWithCall).toBe(false)
   })
 
+  it('given a wrong GRR claim, then checks.numbers flags it with the case value', () => {
+    const s = atPhase('reviewMode', {
+      scorecard: SCORECARD,
+      transcript: [turn('p', 'candidate', 'presentation', 'GRR is about 95%', 30_000)]
+    })
+    expect(buildReveal(s, brief).checks.numbers).toEqual([
+      { claim: '95%', matched: null, expected: '85%', correct: false }
+    ])
+  })
+
   it('given reviewMode, then reveal carries the intended read, back-solve and a timed transcript', () => {
     const transcript: Turn[] = [
       {

@@ -185,6 +185,11 @@ describe('createFakeLlm scoreSession', () => {
       expect(r.unverified).toBe(false)
     })
     expect(card.total).toBe(18)
+    expect(card.checksSummary.ledWithCall).toBe(false)
+    expect(card.insight).toEqual({
+      calledOut: ['Fake called-out point'],
+      missed: ['Fake missed point']
+    })
     expect(card.band).toBe('another')
     expect(card.flags.find((f) => f.id === 'f1')?.where).toBe(
       brief.flags.map.find((f) => f.id === 'f1')?.templates.join(', ')
@@ -207,7 +212,7 @@ describe('createFakeLlm scoreSession', () => {
     const card = await createFakeLlm()(brief).scoreSession(
       {
         transcript: [turn],
-        controlLog: [ctl({ flags_surfaced: ['f1'], hint_given: true })],
+        controlLog: [ctl({ flags_surfaced: ['f1'], flags_hinted: ['f1'], hint_given: true })],
         endedEarly: false,
         omitted: [],
         at: 42
@@ -237,6 +242,9 @@ describe('createFakeLlm scoreSession', () => {
     expect(ScorecardSchema.parse(b)).toEqual(b)
     expect(b.rubric[0].evidence).toEqual([])
     expect(b.rubric.every((r) => r.unverified)).toBe(true)
-    expect(b.evidenceStats).toEqual({ proposed: 6, verified: 0, dropped: 0 })
+    expect(b.rubric.every((r) => r.score === 2)).toBe(true)
+    expect(b.total).toBe(12)
+    expect(b.evidenceStats).toEqual({ proposed: 0, verified: 0, dropped: 0 })
+    expect(Object.isFrozen(b)).toBe(true)
   })
 })
