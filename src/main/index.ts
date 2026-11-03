@@ -21,7 +21,7 @@ import { compose } from './compose'
 import { log } from './log'
 import { createAwake } from './power'
 import { ensureMediaAccess } from './media'
-import { createKeyStore } from './keys/keyStore'
+import { createKeyStore, type KeyStore } from './keys/keyStore'
 import { createSafeStorageCipher } from './keys/cipher'
 import { probeKey } from './keys/probe'
 import { resolveDotenvPath } from './keys/dotenv'
@@ -68,7 +68,10 @@ function createWindow(e2e: boolean, tts: TtsMode): BrowserWindow {
 let win: BrowserWindow | null = null
 
 app.whenReady().then(async () => {
+  // Assigned below; getKey runs only at session start, after keyStore.init().
+  let keyStore: KeyStore | null = null
   const core = compose(process.env, {
+    getKey: () => keyStore?.getKey() ?? null,
     userData: app.getPath('userData'),
     log,
     send: (ch, p) => {
@@ -88,7 +91,7 @@ app.whenReady().then(async () => {
     (_wc, perm, origin) => perm === 'media' && isAppOrigin(origin, devUrl)
   )
 
-  const keyStore = createKeyStore({
+  keyStore = createKeyStore({
     cipher: createSafeStorageCipher(safeStorage),
     file: join(app.getPath('userData'), 'anthropic-key.enc'),
     env: process.env,
