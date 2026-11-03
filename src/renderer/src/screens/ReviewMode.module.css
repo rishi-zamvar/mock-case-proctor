@@ -117,9 +117,8 @@
   margin: 0;
   padding: calc(var(--space) / 2) var(--space);
   background: transparent;
-  border: none;
-  border-left: 2px solid var(--accent);
-  border-radius: 0;
+  border: var(--border);
+  border-radius: calc(var(--radius) / 2);
   font-style: italic;
   text-align: left;
 }
@@ -251,16 +250,28 @@ p > .label {
 .callout {
   padding: var(--space) calc(var(--space) * 1.5);
   background: var(--elevated);
-  border-left: 3px solid var(--muted);
+  border: var(--border);
   border-radius: calc(var(--radius) / 2);
 }
 
-.keep {
-  border-left-color: var(--accent);
+/* status dot before the Keep / Fix label */
+.callout .label::before {
+  content: '';
+  display: inline-block;
+  width: var(--space);
+  height: var(--space);
+  margin-right: calc(var(--space) / 2);
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--muted);
 }
 
-.fix {
-  border-left-color: var(--warning);
+.keep .label::before {
+  background: var(--accent);
+}
+
+.fix .label::before {
+  background: var(--warning);
 }
 
 .bullets {
@@ -438,7 +449,8 @@ p > .label {
 
 .lineOn {
   background: var(--elevated);
-  box-shadow: inset 3px 0 0 var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
 }
 
 .time {
