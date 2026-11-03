@@ -218,7 +218,12 @@ Plans:
   1. A T3 `@live` run on the packaged, ad-hoc-signed arm64 `.app` completes a full session from library to review mode. Whisper is on Metal, HeadTTS is on WebGPU, and the native files are unpacked from the asar archive.
   2. The live evals pass: no answer-key leaks, pushback on a wrong GRR, and every section completing within its cap.
   3. A median-latency report against the 3 s target is produced from the live run. The app runs offline apart from the Claude connection, permissions are prompted again after `tccutil reset`, and memory does not grow unbounded across 3 back-to-back sessions.
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — latencyStages/p90 (TDD), shared E2E drivers + tap, case-02/wrong-GRR WAVs, @t3 packaged live + offline + soak spec
+- [ ] 09-02-PLAN.md — package + run @t3 (live case_99 + case 02, net tap, 3-session soak), test:live evals, LATENCY.md
+- [ ] 09-03-PLAN.md — README, docs/SIGNOFF.md (requirements + Looks-Done checklist + TCC human item), final gate, push
 
 ## Progress
 
