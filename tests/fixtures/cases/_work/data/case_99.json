@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.1",
+  "case_id": "99",
+  "level": 1,
+  "vertical": "Test Widgets SaaS",
+  "intended_read_short": "Pass: retention too thin for the price",
+  "intended_read_bucket": "pass",
+  "intended_read_sentence": "Pass at the ask, because {grr} gross retention cannot support {mult} ARR.",
+  "company": {
+    "name": "Fixturely",
+    "one_liner": "Seat-based widget testing software for QA teams.",
+    "tagline": "Widgets, tested.",
+    "legal_name": "Fixturely Test Systems, Inc."
+  },
+  "bank": { "house": "H1" },
+  "inserts": [],
+  "deck_numbers": ["$9.9M ARR", "40% ARR growth", "104% NRR", "85% GRR"],
+  "hidden_flags": [
+    { "flag": "GRR measured only on tenured customers", "type": "primary", "kind": "buried", "where_buried": "S2 footnote", "anchor": "S2" },
+    { "flag": "Multi-year prepay terms inflate cash", "type": "secondary", "kind": "buried", "where_buried": "S2 footnote", "anchor": "S2" }
+  ],
+  "deck": {
+    "s1": { "notes": { "source": "Company data", "note": null, "numbered": [] } },
+    "s2": {
+      "notes": {
+        "source": "Company data",
+        "note": null,
+        "numbered": [
+          { "id": "churn", "text": "GRR excludes customers live under twelve months." },
+          { "id": "terms", "text": "Some customers prepay two years." }
+        ]
+      }
+    }
+  },
+  "tokens": {
+    "arr": { "v": 9.9, "fmt": "$M", "s": "$9.9M" },
+    "grr": { "v": 0.85, "fmt": "pct", "s": "85%" },
+    "nrr": { "v": 1.04, "fmt": "pct", "s": "104%" },
+    "mult": { "v": 4.1, "fmt": "x", "s": "4.1x" },
+    "growth": { "v": 0.4, "fmt": "pct", "s": "40%" },
+    "required_cagr": { "v": 0.31, "fmt": "pct", "s": "31%" },
+    "works_at_pre": { "v": 30, "fmt": "$M", "s": "$30.0M" },
+    "exA_breakeven_pre": { "v": 12, "fmt": "$M", "s": "$12.0M" }
+  },
+  "answer_key": {
+    "lead_edge_8": [
+      { "n": 1, "key": "revenue", "criterion": "ARR above $10M", "bar": "$10M", "value": "{arr}", "slides": ["S1"], "note": "Just under the bar." },
+      { "n": 6, "key": "retention", "criterion": "GRR above 90%", "bar": "90%", "value": "{grr}", "slides": ["S2"], "note": "Tenured-only, see {fn:s2.churn}." }
+    ],
+    "weakest": "retention",
+    "weakest_why": "{grr} GRR on a flattering cohort.",
+    "intended_read": "Pass unless price falls toward {exA_breakeven_pre} pre-money.",
+    "accepted_calls": [
+      { "call": "Pass", "price_range": "above {works_at_pre}" },
+      { "call": "Invest", "price_range": "at or below {exA_breakeven_pre}" }
+    ],
+    "accepted_calls_condition": "Invest only if all-cohort GRR holds near {grr}.",
+    "back_solve": {
+      "moic": 3,
+      "years": 5,
+      "dilution": 0.1,
+      "exit_multiple": 4,
+      "steps": [
+        { "id": "post", "label": "Post-money", "v": 34, "fmt": "$M" },
+        { "id": "exit", "label": "Exit equity needed", "v": 102, "fmt": "$M" }
+      ],
+      "required_cagr": 0.31,
+      "underwrite_cagr": 0.25,
+      "breakeven_pre": 12,
+      "works_at_pre": 30,
+      "sensitivity": "Each turn of exit multiple moves required CAGR about 5 points.",
+      "le_band_check": "Required {required_cagr} sits above the underwrite.",
+      "formula_ignores": "Ignores the prepay cash timing in {fn:terms}."
+    },
+    "scores": { "revenue": "Soft", "retention": "Miss" }
+  },
+  "interviewer": {
+    "s1_cover": {
+      "must_ask": ["q1", "q2", "q3"],
+      "convince_me": { "if_invest": "Convince me GRR of {grr} is fine.", "if_pass": "Convince me {nrr} NRR is not enough." },
+      "accepted_calls_header": "Accepted calls"
+    },
+    "s2_answer_key": {
+      "snapshot": [{ "label": "ARR", "value": "{arr}" }, { "label": "GRR", "value": "{grr}" }],
+      "weakest_line": "Retention is the weakest of the eight.",
+      "ntm_line": "NTM ARR about $13M at {growth} growth.",
+      "boundary_line": "Breakeven pre-money {exA_breakeven_pre}.",
+      "rule_of_40": "Growth {growth} plus margin -10% = 30.",
+      "lifetime_burn": "$8M burned to date."
+    },
+    "s3_flag_map": {
+      "rows": [
+        { "id": "f1", "flag": "Tenured-only GRR", "kind": "buried", "role": "primary", "templates": ["S2"], "anchor": "S2", "notice": "Reads {fn:s2.churn}.", "say": "GRR excludes new customers." },
+        { "id": "f2", "flag": "Prepay terms", "kind": "buried", "role": "secondary", "templates": ["S2"], "anchor": "S2", "notice": "Reads {fn:terms}.", "say": "Cash is pulled forward." }
+      ],
+      "deliberate_omissions": "No all-cohort retention and no burn bridge.",
+      "banker_rationale": null,
+      "banker_rationale_why": null
+    },
+    "s4_back_solve": {},
+    "s5_comps": {
+      "rows": [{ "name": "WidgetPeer A", "multiple": "5.0x", "grr": "92%" }],
+      "placement": "Below peers on retention.",
+      "bucket_vs_peer": "Lower bucket.",
+      "subject": "Fixturely at {mult}",
+      "backdrop_line": "Test tooling trades at 4-6x ARR."
+    },
+    "s6_pushback": {
+      "questions": [
+        { "id": "q1", "q": "What is GRR across all cohorts?", "must_ask": true, "strong": "Spots {fn:s2.churn}.", "weak": "Takes {grr} at face value.", "follow_up": "How would that change your price?" },
+        { "id": "q2", "q": "Why is cash ahead of revenue?", "must_ask": true, "strong": "Cites prepay terms.", "weak": "Calls it efficiency.", "follow_up": "Is that repeatable?" }
+      ],
+      "convince_me_strong": "Holds the pass and names the price that flips it.",
+      "do_not_use_unless_raised": ["q3"],
+      "generic_bank": ["What would change your mind?"]
+    },
+    "s7_model_answer": {
+      "call": "Pass at the ask.",
+      "what": "Fixturely sells widget testing seats.",
+      "le8": "Misses retention, soft on revenue.",
+      "retention": "{grr} GRR is tenured-only.",
+      "price": "Works near {exA_breakeven_pre} pre.",
+      "risks": "Cohort quality and prepay timing.",
+      "close": "Revisit with all-cohort data."
+    },
+    "s8_scoring": {
+      "rubric": [
+        ["Clear call", "Firm call with a price.", "No call."],
+        ["Lead Edge 8", "Walks all eight with verdicts.", "Skips the framework."],
+        ["Retention insight", "Finds the tenured-only GRR.", "Takes GRR at face value."],
+        ["Valuation and comps", "Places it against peers.", "No comps."],
+        ["Return back-solve", "Back-solves the required CAGR.", "No math."],
+        ["Business quality and poise", "Clear and calm.", "Rambles."]
+      ],
+      "rubric_5": { "Clear call": "Pass with a flip price." },
+      "bonus": ["Spots the prepay terms."],
+      "debrief": ["Ask for all-cohort GRR next time."],
+      "notes": "Score retention hardest."
+    },
+    "s9_annotations": [{ "n": 1, "template": "S2", "anchor": "S2", "title": "GRR", "body": "See {fn:s2.churn}." }],
+    "s10_calibration": { "notes": ["Fictional calibration note."], "sources": ["Fictional source."] },
+    "prep_brief": {
+      "business": "Fixturely sells widget testing seats to QA teams on annual contracts.",
+      "business_facts": [{ "label": "Model", "text": "Per-seat SaaS" }],
+      "glossary": [
+        { "term": "Widget seat", "def": "One licensed tester." },
+        { "term": "WSU", "def": "Widget seat utilization." },
+        { "term": "Gizmo rate", "def": "Share of tests that pass first time." }
+      ],
+      "tests": [{ "skill": "Retention diligence", "evidence": "Finds the footnote." }],
+      "pull_outs": [{ "fact": "GRR is tenured-only", "pages": ["S2"], "why": "Flatters retention.", "primary": true }],
+      "comps": [{ "key": "WidgetPeer A", "anchor": true, "retention": "92%", "use": "Retention anchor." }],
+      "comps_rows": [{ "name": "WidgetPeer A", "multiple": "5.0x" }],
+      "precedents": [{ "date": "2025", "deal": "WidgetPeer B growth round", "ev": "$50M", "multiple": "5x", "lesson": "Retention set the price." }],
+      "kpis": [{ "kpi": "GRR", "company": "{grr}", "benchmark": "90%", "read": "Below." }],
+      "tailwinds": [{ "driver": "QA automation spend", "number": "+15%/yr", "source": "Fictional survey" }],
+      "headwinds": [{ "driver": "Bundled tooling", "number": "3 suites", "source": "Fictional survey" }],
+      "exit_buyers": [{ "buyer": "BigTools Co", "why": "Fills a testing gap." }],
+      "traps": ["Taking GRR at face value."],
+      "ideal_answer": "I would pass at the ask. Fixturely has {arr} ARR growing {growth}, but GRR of {grr} only covers tenured customers, so true retention is worse. At {mult} the back-solve needs {required_cagr} growth; it works near {exA_breakeven_pre} pre-money.",
+      "memorize": [{ "label": "Deal", "text": "{arr} ARR at {mult}" }]
+    }
+  },
+  "params": {}
+}
