@@ -233,14 +233,16 @@ describe('Session — Phase 4', () => {
   it('countdown never moves backward for the same deadline, resets on a new one', () => {
     let t = 1000
     const onIntent = vi.fn()
-    const { rerender } = render(
-      <Session view={view(rv())} onIntent={onIntent} now={() => t} />
-    )
+    const { rerender } = render(<Session view={view(rv())} onIntent={onIntent} now={() => t} />)
     t += 10_000
-    rerender(<Session view={view(rv())} onIntent={onIntent} now={() => t} />)
+    rerender(
+      <Session view={view(rv({ clockNow: CLOCK + 10_000 }))} onIntent={onIntent} now={() => t} />
+    )
     expect(id('countdown').textContent).toBe('09:50')
     // a new view anchored 2 s in the past would estimate 2 s higher
-    rerender(<Session view={view(rv({ clockNow: CLOCK + 8000 }))} onIntent={onIntent} now={() => t} />)
+    rerender(
+      <Session view={view(rv({ clockNow: CLOCK + 8000 }))} onIntent={onIntent} now={() => t} />
+    )
     expect(id('countdown').textContent).toBe('09:50')
     rerender(
       <Session

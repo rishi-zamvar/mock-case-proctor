@@ -9,11 +9,26 @@
 }
 
 .stage {
+  position: relative;
   min-height: 0;
   background: var(--surface);
   border: var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+.toast {
+  position: absolute;
+  top: calc(var(--space) * 2);
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+  padding: var(--space) calc(var(--space) * 2);
+  background: var(--elevated);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: 600;
 }
 
 .placeholder {
@@ -47,16 +62,6 @@
   min-height: 0;
 }
 
-.webcam {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 16 / 9;
-  background: var(--surface);
-  border: var(--border);
-  border-radius: var(--radius);
-  color: var(--muted);
-}
 
 .header {
   display: flex;

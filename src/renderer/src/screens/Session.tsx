@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Intent, ViewPhase, ViewState } from '../../../shared/ipc'
+import DeckViewer from '../deck/DeckViewer'
+import WebcamTile from '../media/WebcamTile'
 import s from './Session.module.css'
 
 export type SessionProps = { view: ViewState; onIntent(i: Intent): void; now?: () => number }
@@ -25,24 +27,89 @@ const mss = (ms: number): string => {
   return `${Math.floor(t / 60)}:${pad(t % 60)}`
 }
 
+const DECK_TOGGLE: ViewPhase[] = ['presentation', 'extraction', 'grilling', 'wrapup']
+const TOAST_MS = 8000
+
+type Recv = { view: ViewState; at: number }
+type Countdown = { deadline: number | null; ms: number }
+
+const rawRemaining = (r: Recv, t: number): number =>
+  r.view.reviewDeadline === null
+    ? 0
+    : r.view.reviewDeadline - (r.view.clockNow + (t - r.at) * r.view.timeScale)
+
+/** Clamp: for the same deadline the countdown only goes down; a new deadline resets it. */
+// eslint-disable-next-line react-refresh/only-export-components -- pure helper, exported for tests
+export function nextRemaining(
+  prev: Countdown | null,
+  deadline: number | null,
+  raw: number
+): Countdown {
+  return { deadline, ms: prev && prev.deadline === deadline ? Math.min(prev.ms, raw) : raw }
+}
+
 export default function Session({
   view,
   onIntent,
   now = Date.now
 }: SessionProps): React.JSX.Element {
   // Anchor the app clock to the local clock at the moment this view arrived.
-  const [recv, setRecv] = useState(() => ({ view, at: now() }))
-  if (recv.view !== view) setRecv({ view, at: now() })
+  const [recv, setRecv] = useState<Recv>(() => ({ view, at: now() }))
+  const [countdown, setCountdown] = useState<Countdown>(() =>
+    nextRemaining(null, view.reviewDeadline, rawRemaining({ view, at: now() }, now()))
+  )
+  if (recv.view !== view) {
+    const r = { view, at: now() }
+    setRecv(r)
+    setCountdown(nextRemaining(countdown, view.reviewDeadline, rawRemaining(r, r.at)))
+  }
+  const recvRef = useRef(recv)
+  useEffect(() => {
+    recvRef.current = recv
+  }, [recv])
   const [, setTick] = useState(0)
+  const [deckOpen, setDeckOpen] = useState(false)
+  const [camOn, setCamOn] = useState(true)
+  // ponytail: mute is UI state only; Phase 7 gates capture on it
+  const [muted, setMuted] = useState(false)
+  const [warning, setWarning] = useState(false)
+  const warnedRef = useRef(view.reviewWarned)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [confirming, setConfirming] = useState(false)
   const recording = startedAt !== null
   const talkDisabled = !view.canTalk && !recording
 
   useEffect(() => {
-    const h = setInterval(() => setTick((n) => n + 1), 250)
-    return () => clearInterval(h)
-  }, [])
+    // The raw value always comes from the deadline; ticks never accumulate.
+    const update = (): void =>
+      setCountdown((prev) =>
+        nextRemaining(
+          prev,
+          recvRef.current.view.reviewDeadline,
+          rawRemaining(recvRef.current, now())
+        )
+      )
+    const h = setInterval(() => {
+      update()
+      setTick((n) => n + 1)
+    }, 250)
+    document.addEventListener('visibilitychange', update)
+    return () => {
+      clearInterval(h)
+      document.removeEventListener('visibilitychange', update)
+    }
+  }, [now])
+
+  useEffect(() => {
+    const was = warnedRef.current
+    warnedRef.current = view.reviewWarned
+    if (was || !view.reviewWarned || view.phase !== 'review') return
+    setWarning(true)
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setWarning(false), TOAST_MS)
+  }, [view.reviewWarned, view.phase])
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
 
   const toggleTalk = (): void => {
     if (recording) {
@@ -67,23 +134,29 @@ export default function Session({
   })
 
   const { phase } = view
-  const remaining =
-    view.reviewDeadline === null
-      ? 0
-      : view.reviewDeadline - (view.clockNow + (now() - recv.at) * view.timeScale)
+  const deckFile = `app://bundle/cases/${view.card.id}/interviewee.pdf`
+  const canToggleDeck = DECK_TOGGLE.includes(phase)
+  const showDeck = phase === 'review' || (deckOpen && canToggleDeck)
   const lastInterviewer = [...view.transcript].reverse().find((l) => l.speaker === 'interviewer')
 
   return (
     <main data-screen="session" data-phase={phase} className={s.layout}>
       <section className={s.stage} aria-label="Main stage">
-        {phase === 'review' ? (
-          <div data-testid="deck-placeholder" className={s.placeholder}>
-            Deck viewer — Phase 4
+        {warning && (
+          <div data-testid="review-warning" role="status" className={s.toast}>
+            10 minutes left
           </div>
-        ) : phase === 'scoring' ? (
+        )}
+        {phase === 'scoring' ? (
           <div data-testid="scoring" className={s.placeholder} role="status">
             Scoring your session…
           </div>
+        ) : showDeck ? (
+          <DeckViewer
+            file={deckFile}
+            initialPage={view.deckPage}
+            onPageChange={(page) => onIntent({ type: 'deckPage', page })}
+          />
         ) : (
           <div data-testid="avatar-stage" className={s.placeholder}>
             <div
@@ -98,9 +171,7 @@ export default function Session({
       </section>
 
       <aside className={s.side}>
-        <div data-testid="webcam-tile" className={s.webcam}>
-          Camera — Phase 4
-        </div>
+        <WebcamTile on={camOn && phase !== 'scoring'} />
         <header className={s.header}>
           <div>
             <h1 data-testid="phase-label" className={s.phase}>
@@ -114,7 +185,7 @@ export default function Session({
               className={`${s.countdown} tabular`}
               aria-label="Review time left"
             >
-              {mmss(remaining)}
+              {mmss(countdown.ms)}
             </div>
           )}
           {phase === 'grilling' && view.section && (
@@ -157,6 +228,32 @@ export default function Session({
           </span>
         )}
         <span className={s.hint}>Space to {recording ? 'finish' : 'talk'}</span>
+        <button
+          type="button"
+          data-testid="cam-toggle"
+          aria-pressed={camOn}
+          onClick={() => setCamOn((v) => !v)}
+        >
+          {camOn ? 'Camera on' : 'Camera off'}
+        </button>
+        <button
+          type="button"
+          data-testid="mic-toggle"
+          aria-pressed={muted}
+          onClick={() => setMuted((v) => !v)}
+        >
+          {muted ? 'Unmute' : 'Mute'}
+        </button>
+        {canToggleDeck && (
+          <button
+            type="button"
+            data-testid="deck-toggle"
+            aria-pressed={deckOpen}
+            onClick={() => setDeckOpen((v) => !v)}
+          >
+            {deckOpen ? 'Interviewer' : 'Deck'}
+          </button>
+        )}
         <div className={s.spacer} />
         {phase === 'review' && (
           <button type="button" data-testid="ready-btn" onClick={() => onIntent({ type: 'ready' })}>

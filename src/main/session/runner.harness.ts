@@ -16,10 +16,8 @@ export const FIXTURE_ROOT = join(__dirname, '../../../tests/fixtures/cases')
 export const deck = readFileSync(join(FIXTURE_ROOT, 'case_99_fixture/deck.txt'), 'utf8')
 export const REVIEW_MS = 45 * 60_000
 export const WARN_MS = 10 * 60_000
-export const fakeAwake = (): AwakePort & { hold: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> } => ({
-  hold: vi.fn(),
-  release: vi.fn()
-})
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- inferred mock shape
+export const fakeAwake = () => ({ hold: vi.fn<() => void>(), release: vi.fn<() => void>() })
 
 export function manualClock(t = 1_000_000): ClockPort & {
   advance(ms: number): void

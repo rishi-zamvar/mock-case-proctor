@@ -1,6 +1,17 @@
 // Composition root: the only module that imports electron broadly.
 // Never gate security on is.dev / !app.isPackaged: both are true when E2E runs out/.
-import { app, BrowserWindow, ipcMain, net, protocol, safeStorage, session } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  net,
+  powerSaveBlocker,
+  protocol,
+  safeStorage,
+  session,
+  systemPreferences
+} from 'electron'
 import { join } from 'node:path'
 import { applyE2ESwitches } from './e2e'
 import { APP_SCHEME_PRIVILEGES, registerAppProtocol } from './appProtocol'
@@ -8,6 +19,8 @@ import { isAppOrigin } from './protocol'
 import { registerIpc } from './ipc'
 import { compose } from './compose'
 import { log } from './log'
+import { createAwake } from './power'
+import { ensureMediaAccess } from './media'
 import { createKeyStore } from './keys/keyStore'
 import { createSafeStorageCipher } from './keys/cipher'
 import { probeKey } from './keys/probe'
@@ -57,7 +70,8 @@ app.whenReady().then(async () => {
     log,
     send: (ch, p) => {
       if (win && !win.isDestroyed()) win.webContents.send(ch, p)
-    }
+    },
+    awake: createAwake(powerSaveBlocker, log)
   })
   const roots = {
     bundle: join(__dirname, '../renderer'),
@@ -92,6 +106,12 @@ app.whenReady().then(async () => {
     { keyStore, runner: core.runner, library: core.library, e2eSay: core.e2eSay },
     devUrl
   )
+  // No View menu: its Cmd+= / Cmd+- page zoom and reload would fight the deck viewer's zoom keys.
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }])
+  )
+  // Non-blocking TCC prompt; a denial degrades to Camera off / mic unavailable, never a crash.
+  void ensureMediaAccess({ platform: process.platform, e2e, prefs: systemPreferences, log })
   win = createWindow(e2e)
 })
 

@@ -10,6 +10,7 @@ import { createFakeStt } from './adapters/fakeStt'
 import { readDeckText } from './domain/cases/deckSource'
 import { casePdfResolver, DEFAULT_LIBRARY_ROOT, listCases, loadCase } from './domain/cases/library'
 import type { Logger } from './log'
+import type { AwakePort } from './ports'
 import { createSessionRunner, type SessionRunner } from './session/runner'
 import { createSessionStore } from './store/sessionStore'
 
@@ -41,7 +42,12 @@ export function readConfig(env: Env, userData: string): AppConfig {
 
 export function compose(
   env: Env,
-  o: { userData: string; log: Logger; send(channel: string, payload: unknown): void }
+  o: {
+    userData: string
+    log: Logger
+    send(channel: string, payload: unknown): void
+    awake?: AwakePort
+  }
 ): {
   config: AppConfig
   runner: SessionRunner
@@ -63,6 +69,7 @@ export function compose(
     emitSpeak: (s) => o.send(CH.speak, SpeakEventSchema.parse(s)),
     newId: (p) =>
       `${p === 'session' ? 's' : 't'}_${Date.now().toString(36)}_${randomUUID().slice(0, 8)}`,
+    awake: o.awake,
     log: o.log
   })
   const library = (): LibraryView => {
