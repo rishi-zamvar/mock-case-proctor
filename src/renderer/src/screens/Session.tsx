@@ -138,8 +138,11 @@ export default function Session({
       else onIntent({ type: 'answer', ms })
     } else if (view.canTalk || canBargeIn) {
       if (canBargeIn && !view.canTalk) {
-        stopSpeech?.() // synchronous: the avatar goes quiet before main hears the barge-in
+        // bargeIn first: stopSpeech acks the unplayed sentences spoken:false over the same IPC pipe,
+        // and if those reach main first it commits the turn as fully spoken and ignores the barge-in.
+        // Both are synchronous here, so the avatar still goes quiet within this click.
         onIntent({ type: 'bargeIn' })
+        stopSpeech?.()
       }
       setStartedAt(now())
       void mic?.start(() => stopRef.current()).catch(() => undefined) // denied mic: stop() still answers

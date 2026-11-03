@@ -69,6 +69,25 @@ describe('SessionRunner barge-in', () => {
     expect(tail[1]).toMatchObject({ speaker: 'interviewer', text: REPLY })
   })
 
+  it('given the real IPC order (bargeIn, then the renderer drop acks spoken:false), then only the spoken sentence is kept and the turn is interrupted', async () => {
+    const { makeLlm, interrupted } = spy()
+    const t = setup({ makeLlm })
+    const id = await t.toGrilling()
+    await t.idle()
+    const turn = await grillReply(t)
+    t.runner.ack(turn, 0, true)
+    const cut = t.runner.intent({ type: 'bargeIn' })
+    t.runner.ack(turn, 1, false)
+    t.runner.ack(turn, 2, false)
+    await cut
+    await t.idle()
+    expect(interviewerLine(t, turn)?.text).toBe(S[0])
+    expect(t.file(id).timings.filter((x) => x.turnId === turn)).toMatchObject([
+      { interrupted: true }
+    ])
+    expect(interrupted).toHaveBeenCalledWith(S[0])
+  })
+
   it('given sentence 0 acked spoken:false, when bargeIn, then no interviewer line and interrupted("")', async () => {
     const { makeLlm, interrupted } = spy()
     const t = setup({ makeLlm })

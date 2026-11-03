@@ -109,11 +109,13 @@ describe('Session voice', () => {
     )
   })
 
-  it('given a mic and the avatar speaking in grilling, when Talk is clicked, then speech stops before bargeIn and recording starts', () => {
+  // bargeIn must reach main BEFORE stopSpeech's spoken:false drop acks (same IPC pipe, in order);
+  // acks-first lets main finish the turn as fully spoken and then ignore the barge-in.
+  it('given a mic and the avatar speaking in grilling, when Talk is clicked, then bargeIn is sent before speech stops and recording starts', () => {
     const s = setup({ speaking: true, canTalk: false })
     expect((id('talk-btn') as HTMLButtonElement).disabled).toBe(false)
     fireEvent.click(id('talk-btn'))
-    expect(s.order).toEqual(['stopSpeech', 'intent:bargeIn', 'start'])
+    expect(s.order).toEqual(['intent:bargeIn', 'stopSpeech', 'start'])
     expect(s.onIntent).toHaveBeenCalledWith({ type: 'bargeIn' })
     expect(id('talk-btn').textContent).toBe('Done')
   })
