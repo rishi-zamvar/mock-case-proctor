@@ -84,7 +84,7 @@ Plans:
 - [x] 03-03-PLAN.md — TDD SessionStore: atomic tmp+fsync+rename, quarantine, library view (greyed completion, resumable) (wave 2)
 - [ ] 03-04-PLAN.md — TDD fake adapters: scripted FakeLlm, FakeStt with injection, scaled clock (wave 2)
 - [x] 03-05-PLAN.md — TDD candidate-safe ViewState projection + review-mode reveal (wave 2)
-- [ ] 03-06-PLAN.md — Library screen: case grid, greyed completed + Retake, start sheet, resume banner (wave 2)
+- [x] 03-06-PLAN.md — Library screen: case grid, greyed completed + Retake, start sheet, resume banner (wave 2)
 - [ ] 03-07-PLAN.md — Session layout (talk/ready/skip/end) and ReviewMode screen (wave 2)
 - [ ] 03-08-PLAN.md — TDD SessionRunner: reducer effects, speech acks, leak guard, end early, crash resume (wave 3)
 - [ ] 03-09-PLAN.md — App routing over IPC + fake renderer speech queue (wave 3)

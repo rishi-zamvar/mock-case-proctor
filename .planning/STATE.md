@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-05-PLAN.md
-last_updated: "2026-11-03T07:55:35.936Z"
+stopped_at: Completed 03-06-PLAN.md
+last_updated: "2026-11-03T07:55:54.190Z"
 last_activity: 2026-11-03
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 26
-  completed_plans: 18
+  completed_plans: 19
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 ## Current Position
 
 Phase: 3 (Walking Skeleton on Fakes) — EXECUTING
-Plan: 5 of 12
+Plan: 6 of 12
 Status: Ready to execute
 Last activity: 2026-11-03
 
@@ -70,6 +70,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P01 | 4min | 2 tasks | 9 files |
 | Phase 03 P03 | 6min | 2 tasks | 2 files |
 | Phase 03 P05 | 4min | 1 tasks | 2 files |
+| Phase 03 P06 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,7 @@ Recent decisions affecting current work:
 - [Phase 03]: Preload typed as Pick<Api,'key'> until 03-10 wires the session API
 - [Phase 03]: SessionStore fs seam is Partial<typeof fs> over node:fs; quarantine failures logged and swallowed so list() never throws
 - [Phase 03]: toViewState is the sole session->renderer projection; explicit literals + ViewStateSchema.parse on every return
+- [Phase 03]: Library start sheet restores focus to its trigger on close
 
 ### Pending Todos
 
@@ -120,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-03T07:55:35.933Z
-Stopped at: Completed 03-05-PLAN.md
+Last session: 2026-11-03T07:55:54.186Z
+Stopped at: Completed 03-06-PLAN.md
 Resume file: None
