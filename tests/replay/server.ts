@@ -24,7 +24,13 @@ interface Seen {
   xkey?: string
 }
 
-const FORWARD = ['anthropic-version', 'anthropic-beta', 'content-type', 'authorization', 'x-api-key']
+const FORWARD = [
+  'anthropic-version',
+  'anthropic-beta',
+  'content-type',
+  'authorization',
+  'x-api-key'
+]
 
 const readBody = async (req: IncomingMessage): Promise<string> => {
   const chunks: Buffer[] = []
@@ -65,7 +71,12 @@ export async function startReplayServer(opts: {
       const sawCanary =
         canary !== null && list.some((s) => s.auth === `Bearer ${canary}` || s.xkey === canary)
       res.writeHead(200, { 'content-type': 'application/json' })
-      res.end(JSON.stringify({ requests: list.map(({ method, path, body }) => ({ method, path, body })), sawCanary }))
+      res.end(
+        JSON.stringify({
+          requests: list.map(({ method, path, body }) => ({ method, path, body })),
+          sawCanary
+        })
+      )
       return
     }
 
@@ -123,7 +134,12 @@ export async function startReplayServer(opts: {
       fx = JSON.parse(await readFile(join(fixtureDir, `${n}.res.json`), 'utf8')) as Fixture
     } catch {
       res.writeHead(599, { 'content-type': 'application/json' })
-      res.end(JSON.stringify({ type: 'error', error: { type: 'replay_missing', message: `${scenario}/${n}` } }))
+      res.end(
+        JSON.stringify({
+          type: 'error',
+          error: { type: 'replay_missing', message: `${scenario}/${n}` }
+        })
+      )
       return
     }
     send(res, fx)
@@ -132,7 +148,9 @@ export async function startReplayServer(opts: {
   const server = createServer((req, res) => {
     handle(req, res).catch((err: unknown) => {
       if (!res.headersSent) res.writeHead(500, { 'content-type': 'application/json' })
-      res.end(JSON.stringify({ type: 'error', error: { type: 'replay_internal', message: String(err) } }))
+      res.end(
+        JSON.stringify({ type: 'error', error: { type: 'replay_internal', message: String(err) } })
+      )
     })
   })
   await new Promise<void>((resolve) => server.listen(opts.port ?? 0, '127.0.0.1', resolve))

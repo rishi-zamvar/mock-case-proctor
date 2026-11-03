@@ -1,4 +1,8 @@
-import Anthropic, { AuthenticationError, PermissionDeniedError, RateLimitError } from '@anthropic-ai/sdk'
+import Anthropic, {
+  AuthenticationError,
+  PermissionDeniedError,
+  RateLimitError
+} from '@anthropic-ai/sdk'
 import type { ProbeResult } from '../../shared/ipc'
 
 export const PROBE_MODEL = 'claude-haiku-5-5'

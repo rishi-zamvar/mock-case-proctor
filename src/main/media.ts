@@ -20,7 +20,12 @@ export async function ensureMediaAccess(o: {
     try {
       const s = o.prefs.getMediaAccessStatus(kind)
       // Only undetermined prompts; macOS will not re-show the dialog to a denied user anyway.
-      out[kind] = s === 'not-determined' ? ((await o.prefs.askForMediaAccess(kind)) ? 'granted' : 'denied') : s
+      out[kind] =
+        s === 'not-determined'
+          ? (await o.prefs.askForMediaAccess(kind))
+            ? 'granted'
+            : 'denied'
+          : s
     } catch {
       o.log.warn('media access failed', kind)
       out[kind] = 'error'

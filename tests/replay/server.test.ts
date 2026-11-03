@@ -93,13 +93,20 @@ describe('replay server', () => {
       body: '{"type":"error","error":{"type":"authentication_error","message":"x"}}'
     })
     server = await startReplayServer({ fixturesDir, logDir })
-    const err = await client(server.url, 'probe-401').messages.create(PING).catch((e: unknown) => e)
+    const err = await client(server.url, 'probe-401')
+      .messages.create(PING)
+      .catch((e: unknown) => e)
     expect(err).toBeInstanceOf(Anthropic.AuthenticationError)
   })
 
   test('given an SSE fixture, when fetched, then the body is byte-identical with event-stream content type', async () => {
-    const sse = 'event: ping\ndata: {"type":"ping"}\n\nevent: message_stop\ndata: {"type":"message_stop"}\n\n'
-    await writeFixture('sse', 0, { status: 200, headers: { 'content-type': 'text/event-stream' }, body: sse })
+    const sse =
+      'event: ping\ndata: {"type":"ping"}\n\nevent: message_stop\ndata: {"type":"message_stop"}\n\n'
+    await writeFixture('sse', 0, {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: sse
+    })
     server = await startReplayServer({ fixturesDir, logDir })
     const res = await fetch(`${server.url}/s/sse/v1/messages`, { method: 'POST', body: '{}' })
     expect(res.status).toBe(200)

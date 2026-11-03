@@ -43,7 +43,10 @@ export function listCases(root: string = DEFAULT_LIBRARY_ROOT): CaseCard[] {
     .sort((a, b) => a.number - b.number)
 }
 
-export function findCase(root: string, id: string): { id: string; slug: string; dir: string } | null {
+export function findCase(
+  root: string,
+  id: string
+): { id: string; slug: string; dir: string } | null {
   if (!/^\d{2}$/.test(id)) return null
   const c = caseDirs(root).find((d) => d.id === id)
   return c ? { ...c, dir: join(root, `case_${id}_${c.slug}`) } : null

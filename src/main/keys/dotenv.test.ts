@@ -29,7 +29,11 @@ describe('resolveDotenvPath', () => {
   })
   it('returns the E2E override path', () => {
     expect(
-      resolveDotenvPath({ env: { E2E: '1', E2E_DOTENV_PATH: '/t/.env' }, isPackaged: false, appPath: '/p' })
+      resolveDotenvPath({
+        env: { E2E: '1', E2E_DOTENV_PATH: '/t/.env' },
+        isPackaged: false,
+        appPath: '/p'
+      })
     ).toBe('/t/.env')
   })
   it('returns null when packaged', () => {

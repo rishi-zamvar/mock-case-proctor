@@ -42,19 +42,6 @@
   font-size: 16px;
 }
 
-.ring {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: var(--elevated);
-  border: 3px solid transparent;
-  transition: border-color 150ms ease;
-}
-
-.ring[data-speaking='true'] {
-  border-color: var(--accent);
-}
-
 .side {
   display: flex;
   flex-direction: column;

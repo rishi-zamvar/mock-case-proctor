@@ -7,7 +7,8 @@ import { findCase, intervieweePdfPath } from './library'
 export function readDeckText(
   root: string,
   id: string,
-  run: (pdf: string) => string = (pdf) => execFileSync('pdftotext', [pdf, '-'], { encoding: 'utf8' })
+  run: (pdf: string) => string = (pdf) =>
+    execFileSync('pdftotext', [pdf, '-'], { encoding: 'utf8' })
 ): string {
   const c = findCase(root, id)
   if (!c) throw new Error(`case ${id} not found`)

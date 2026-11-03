@@ -4,7 +4,10 @@ export type SwitchTarget = {
   commandLine: { appendSwitch(name: string, value?: string): void }
 }
 
-export function applyE2ESwitches(app: SwitchTarget, env: Record<string, string | undefined>): boolean {
+export function applyE2ESwitches(
+  app: SwitchTarget,
+  env: Record<string, string | undefined>
+): boolean {
   if (env.E2E !== '1') return false
   if (env.USER_DATA_DIR) app.setPath('userData', env.USER_DATA_DIR)
   app.commandLine.appendSwitch('use-mock-keychain') // no keychain prompts for safeStorage

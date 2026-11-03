@@ -84,7 +84,8 @@ export function createKeyStore(deps: KeyStoreDeps): KeyStore {
       }
       key = candidate
       source = from
-      if (!(await persist(candidate))) log.warn(`encryption unavailable; key from ${from} kept in memory only`)
+      if (!(await persist(candidate)))
+        log.warn(`encryption unavailable; key from ${from} kept in memory only`)
       return status()
     },
     status,
@@ -93,7 +94,8 @@ export function createKeyStore(deps: KeyStoreDeps): KeyStore {
       if (!k) return { status: status(), result: 'empty' }
       if (!(await cipher.available())) return { status: status(), result: 'unavailable' }
       const result: ProbeResult = opts?.force ? 'unverified' : await probe(k)
-      if (result === 'invalid' || (result === 'unverified' && !opts?.force)) return { status: status(), result }
+      if (result === 'invalid' || (result === 'unverified' && !opts?.force))
+        return { status: status(), result }
       if (!(await persist(k))) return { status: status(), result: 'unavailable' }
       key = k
       source = 'stored'

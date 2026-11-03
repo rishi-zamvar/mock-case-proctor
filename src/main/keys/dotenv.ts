@@ -10,7 +10,8 @@ export function parseDotenv(text: string): Record<string, string> {
     const key = line.slice(0, eq).trim()
     let value = line.slice(eq + 1).trim()
     const q = value[0]
-    if ((q === '"' || q === "'") && value.length > 1 && value.endsWith(q)) value = value.slice(1, -1)
+    if ((q === '"' || q === "'") && value.length > 1 && value.endsWith(q))
+      value = value.slice(1, -1)
     else value = value.replace(/\s+#.*$/, '').trim()
     if (key) out[key] = value
   }

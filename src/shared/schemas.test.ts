@@ -161,11 +161,14 @@ describe('ViewStateSchema', () => {
     bad.scorecard.rubric[0].score = 6
     expect(() => ViewStateSchema.parse({ ...baseView, phase: 'reviewMode', reveal: bad })).toThrow()
   })
-  it.each(['deckPage', 'reviewWarned'])('given a view missing %s when parsed then it throws', (k) => {
-    const v: Record<string, unknown> = { ...baseView }
-    delete v[k]
-    expect(() => ViewStateSchema.parse(v)).toThrow()
-  })
+  it.each(['deckPage', 'reviewWarned'])(
+    'given a view missing %s when parsed then it throws',
+    (k) => {
+      const v: Record<string, unknown> = { ...baseView }
+      delete v[k]
+      expect(() => ViewStateSchema.parse(v)).toThrow()
+    }
+  )
   it('given deckPage 0 or 2.5 when parsed then it throws', () => {
     expect(() => ViewStateSchema.parse({ ...baseView, deckPage: 0 })).toThrow()
     expect(() => ViewStateSchema.parse({ ...baseView, deckPage: 2.5 })).toThrow()
