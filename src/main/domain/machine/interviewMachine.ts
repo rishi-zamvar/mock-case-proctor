@@ -36,7 +36,18 @@ export type InterviewControl = {
   probe_failed?: boolean
   hint_given?: boolean
   flags_surfaced?: string[]
+  /** Subset of flags_surfaced the candidate only got via a hint. */
+  flags_hinted?: string[]
+  /** <= ~15 words of the candidate's own words. */
+  evidence?: string
+  numbers_checked?: { claim: string; correct: boolean }[]
+  pushback_done?: boolean
 }
+
+/** Warm-up auto-ends after this long (FLOW-02). */
+export const WARMUP_MS = 10 * 60_000
+/** Where the one mandatory "convince me" pushback goes by default (INT-05). */
+export const PUSHBACK_SECTION: SectionId = 'valuation'
 
 /** Every event carries `now` (ms epoch): timers are data, the reducer never reads the clock. */
 export type InterviewEvent =
@@ -57,7 +68,7 @@ export type InterviewEvent =
 
 export type Effect =
   | { type: 'PHASE_CHANGED'; from: Phase; to: Phase; at: number }
-  | { type: 'START_TIMER'; id: 'review' | 'warning'; deadline: number }
+  | { type: 'START_TIMER'; id: 'review' | 'warning' | 'warmup'; deadline: number }
   | { type: 'REVIEW_WARNING'; at: number }
   | {
       type: 'REQUEST_LLM_TURN'
@@ -85,6 +96,9 @@ export type InterviewState = {
   hintAllowed: boolean
   interruptedAnswerId: string | null
   endedEarly: boolean
+  pushbackDone: boolean
+  grillStartedAt: number | null
+  warmupDeadline: number | null
 }
 
 type Result = { state: InterviewState; effects: Effect[] }
@@ -107,7 +121,10 @@ export function initialState(): InterviewState {
     failedProbes: 0,
     hintAllowed: false,
     interruptedAnswerId: null,
-    endedEarly: false
+    endedEarly: false,
+    pushbackDone: false,
+    grillStartedAt: null,
+    warmupDeadline: null
   }
 }
 

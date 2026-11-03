@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import { SECTION_IDS } from '../domain/machine/sections'
 import type { InterviewControl, InterviewState } from '../domain/machine/interviewMachine'
+import type { OpeningPlan } from '../ports'
 import { ScorecardSchema } from '../../shared/schemas'
 
 const PhaseEnum = z.enum([
@@ -41,7 +42,11 @@ export const InterviewStateSchema = z
     failedProbes: count,
     hintAllowed: z.boolean(),
     interruptedAnswerId: z.string().nullable(),
-    endedEarly: z.boolean()
+    endedEarly: z.boolean(),
+    // absent in pre-Phase-6 session files
+    pushbackDone: z.boolean().default(false),
+    grillStartedAt: z.number().nullable().default(null),
+    warmupDeadline: z.number().nullable().default(null)
   })
   .strict()
 
@@ -52,7 +57,28 @@ export const InterviewControlSchema = z
     next_section: SectionEnum.optional(),
     probe_failed: z.boolean().optional(),
     hint_given: z.boolean().optional(),
-    flags_surfaced: z.array(z.string()).optional()
+    flags_surfaced: z.array(z.string()).optional(),
+    flags_hinted: z.array(z.string()).optional(),
+    evidence: z.string().optional(),
+    numbers_checked: z
+      .array(z.object({ claim: z.string(), correct: z.boolean() }).strict())
+      .optional(),
+    pushback_done: z.boolean().optional()
+  })
+  .strict()
+
+/** Plain on purpose: 06-03 reuses it as the zodOutputFormat schema (no refinements/defaults/transforms). */
+export const OpeningPlanSchema = z
+  .object({
+    recap: z.string(),
+    recommendation: z.enum(['invest', 'pass', 'invest_at_price', 'unclear']),
+    price: z.string().nullable(),
+    considerations: z.array(
+      z
+        .object({ label: z.string(), section_id: SectionEnum, stance: z.enum(['for', 'against']) })
+        .strict()
+    ),
+    order: z.array(SectionEnum)
   })
   .strict()
 
@@ -97,13 +123,25 @@ export const SessionFileSchema = z
           kind: z.string(),
           startedAt: z.number(),
           firstTextAt: z.number().optional(),
-          doneAt: z.number()
+          firstSentenceAt: z.number().optional(),
+          doneAt: z.number(),
+          usage: z
+            .object({
+              inputTokens: count,
+              outputTokens: count,
+              cacheRead: count,
+              cacheWrite: count,
+              stopReason: z.string().nullable()
+            })
+            .strict()
+            .optional()
         })
         .strict()
     ),
     pending: PendingTurnSchema.nullable(),
     scorecard: ScorecardSchema.optional(),
-    deckPage: z.number().int().min(1).max(500).optional()
+    deckPage: z.number().int().min(1).max(500).optional(),
+    openingPlan: OpeningPlanSchema.optional()
   })
   .strict()
 
@@ -116,4 +154,6 @@ const _is: InterviewState = {} as z.infer<typeof InterviewStateSchema>
 const _is2: z.infer<typeof InterviewStateSchema> = {} as InterviewState
 const _ic: InterviewControl = {} as z.infer<typeof InterviewControlSchema>
 const _ic2: z.infer<typeof InterviewControlSchema> = {} as InterviewControl
-void [_is, _is2, _ic, _ic2]
+const _op: OpeningPlan = {} as z.infer<typeof OpeningPlanSchema>
+const _op2: z.infer<typeof OpeningPlanSchema> = {} as OpeningPlan
+void [_is, _is2, _ic, _ic2, _op, _op2]

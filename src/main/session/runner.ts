@@ -63,7 +63,8 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
   let inflight: AbortController | null = null
   let speaking = false
   let speakingTurn: string | null = null
-  const timers = new Map<'review' | 'warning', () => void>()
+  type TimerId = 'review' | 'warning' | 'warmup'
+  const timers = new Map<TimerId, () => void>()
   let lastView: ViewState | null = null
   const acks = new Map<string, () => void>()
   let queue: Promise<unknown> = Promise.resolve()
@@ -90,7 +91,7 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
     timers.clear()
   }
 
-  function armTimer(id: 'review' | 'warning', at: number): void {
+  function armTimer(id: TimerId, at: number): void {
     timers.get(id)?.()
     timers.set(
       id,
@@ -100,7 +101,9 @@ export function createSessionRunner(d: RunnerDeps): SessionRunner {
           dispatch(
             id === 'review'
               ? { type: 'REVIEW_DEADLINE', now: clock.now() }
-              : { type: 'REVIEW_WARNING', now: clock.now() }
+              : id === 'warning'
+                ? { type: 'REVIEW_WARNING', now: clock.now() }
+                : { type: 'WARMUP_DONE', now: clock.now() }
           )
         )
       })
